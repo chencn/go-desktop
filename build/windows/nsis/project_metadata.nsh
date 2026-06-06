@@ -1,0 +1,10 @@
+## 由 scripts/sync_project_metadata.go 根据 project.metadata.json 生成；不要手工修改。
+!define INFO_PROJECTNAME    "go-desktop"
+!define INFO_COMPANYNAME    "chencn"
+!define INFO_PRODUCTNAME    "go-desktop"
+!define INFO_COPYRIGHT      "© 2026, chencn"
+!define PRODUCT_EXECUTABLE  "go-desktop.exe"
+!define UNINST_KEY_NAME     "chencn-go-desktop"
+!define APP_WINDOW_CLASS    "GoDesktopWailsWindow"
+!define APP_WINDOW_TITLE    "go-desktop"
+!define APP_INSTALL_DIR     "$LOCALAPPDATA\Programs\go-desktop"

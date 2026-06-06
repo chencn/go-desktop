@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=go-desktop
+Comment=Wails3 中文桌面工具
+Exec=/usr/local/bin/go-desktop %u
+Terminal=false
+Type=Application
+Icon=go-desktop
+Categories=Utility;
+StartupWMClass=go-desktop

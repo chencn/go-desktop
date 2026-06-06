@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows-amd64:
+    name: Windows amd64
+    runs-on: windows-latest
+
+    env:
+      GO_VERSION: "1.25.x"
+      NODE_VERSION: "22"
+      WAILS_VERSION: "v3.0.0-alpha.97"
+      APP_NAME: go-desktop
+      ARCH: amd64
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 解析版本
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "发布标签必须符合 vX.Y.Z，当前是 $tag"
+          }
+          $version = $tag.TrimStart('v')
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "APP_VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: 设置 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装 NSIS
+        shell: pwsh
+        run: choco install nsis -y --no-progress
+
+      - name: 安装 Wails3
+        shell: pwsh
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@${{ env.WAILS_VERSION }}
+
+      - name: 同步项目元数据
+        shell: pwsh
+        run: go run ./scripts/sync_project_metadata.go -sync
+
+      - name: 安装前端依赖
+        shell: pwsh
+        run: npm ci
+        working-directory: frontend
+
+      - name: 前端类型检查
+        shell: pwsh
+        run: npx vue-tsc --noEmit
+        working-directory: frontend
+
+      - name: 构建前端
+        shell: pwsh
+        run: npm run build
+        working-directory: frontend
+
+      - name: 运行 Go 测试
+        shell: pwsh
+        run: |
+          go test ./...
+          Push-Location tests
+          go test ./...
+          Pop-Location
+
+      - name: 打包 Windows 安装器
+        shell: pwsh
+        run: wails3 task windows:package
+
+      - name: 生成 SHA256
+        id: assets
+        shell: pwsh
+        run: |
+          $asset = "bin/${{ env.APP_NAME }}-v${{ steps.version.outputs.version }}-windows-${{ env.ARCH }}.exe"
+          if (!(Test-Path $asset)) {
+            throw "找不到安装器资产：$asset"
+          }
+          $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $asset).Hash.ToLowerInvariant()
+          "$sha  $(Split-Path -Leaf $asset)" | Set-Content -NoNewline -Encoding ascii "$asset.sha256"
+          "installer=$asset" >> $env:GITHUB_OUTPUT
+          "checksum=$asset.sha256" >> $env:GITHUB_OUTPUT
+
+      - name: 创建 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: go-desktop ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            ${{ steps.assets.outputs.installer }}
+            ${{ steps.assets.outputs.checksum }}

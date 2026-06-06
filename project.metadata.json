@@ -1,0 +1,33 @@
+{
+  "companyName": "chencn",
+  "appName": "go-desktop",
+  "modulePath": "github.com/chencn/go-desktop",
+  "defaultVersion": "0.0.1",
+  "description": "Wails3 中文桌面工具",
+  "repositoryUrl": "https://github.com/chencn/go-desktop",
+  "repositoryComment": "github.com/chencn/go-desktop",
+  "copyright": "© 2026, chencn",
+  "github": {
+    "owner": "chencn",
+    "repo": "go-desktop",
+    "apiBase": "https://api.github.com",
+    "apiVersion": "2026-03-10",
+    "userAgent": "go-desktop-updater"
+  },
+  "settingsDefaults": {
+    "githubProxyBase": "",
+    "updateCheckIntervalHours": 3,
+    "minimizeToTray": true,
+    "logRetentionDays": 30,
+    "autoLaunch": false,
+    "createDesktopShortcut": true,
+    "launchHiddenToTray": false
+  },
+  "windows": {
+    "singleInstanceId": "com.chencn.go-desktop",
+    "productIdentifier": "com.chencn.godesktop",
+    "windowClass": "GoDesktopWailsWindow",
+    "installDir": "$LOCALAPPDATA\\Programs\\go-desktop",
+    "uninstallKeyName": "chencn-go-desktop"
+  }
+}

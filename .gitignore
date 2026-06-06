@@ -1,32 +1,63 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+# Go build outputs
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-
-# Test binary, built with `go test -c`
 *.test
-
-# Code coverage profiles and other test artifacts
 *.out
+bin/
+
+# Coverage and profiling
 coverage.*
 *.coverprofile
 profile.cov
+cpu.out
+mem.out
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
+# Go workspace and local dependencies
 go.work
 go.work.sum
+vendor/
 
-# env file
+# Wails generated/runtime outputs
+.task/
+.tmp/*
+!.tmp/.gitkeep
+frontend/dist/
+build/linux/appimage/build/
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+build/windows/info.generated.json
+
+# Frontend dependencies and caches
+/node_modules/
+frontend/node_modules/
+frontend/.vite/
+frontend/.vite-*/
+frontend/%SystemDrive%/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/bindings
+
+# Environment and local config
 .env
+.env.*
+!.env.example
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# Logs
+*.log
+logs/
+!frontend/src/features/logs/
+!frontend/src/features/logs/**
+
+# Editor and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vite
