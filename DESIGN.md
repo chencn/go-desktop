@@ -95,7 +95,7 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 | `updateSource` | `update.source` | `github` | 更新源，下拉选择 `github / local` |
 | `githubOwner` | `github.owner` | 元数据 owner | 当前不在设置页展示 |
 | `githubRepo` | `github.repo` | 元数据 repo | 当前不在设置页展示 |
-| `githubProxyBase` | `github.proxy_base` | 空 | 当前不在设置页展示 |
+| `githubProxyBase` | `github.proxy_base` | `https://gh-proxy.com` | 默认启用 GitHub API、Release 资产和 `.sha256` 下载代理，当前不在设置页展示 |
 | `updateCheckIntervalHours` | `update.check_interval_hours` | `3` | 检查间隔，`1 / 3 / 6 / 12 小时` |
 | `minimizeToTray` | `window.minimize_to_tray` | `true` | 关闭到系统托盘 |
 | `logRetentionDays` | `log.retention_days` | `30` | `7 / 30 / 60 / 90 / 180 / 365 / 永不清理` |

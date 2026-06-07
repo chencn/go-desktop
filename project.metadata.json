@@ -20,7 +20,7 @@
     "localManifestPath": "releases/latest.json"
   },
   "settingsDefaults": {
-    "githubProxyBase": "",
+    "githubProxyBase": "https://gh-proxy.com",
     "updateCheckIntervalHours": 3,
     "minimizeToTray": true,
     "logRetentionDays": 30,

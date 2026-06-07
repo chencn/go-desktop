@@ -52,7 +52,7 @@ export const projectMetadata = {
   // 默认设置值
   "settingsDefaults": {
     // GitHub 代理地址（空表示不使用代理）
-    "githubProxyBase": "",
+    "githubProxyBase": "https://gh-proxy.com",
     // 更新检查间隔（小时）
     "updateCheckIntervalHours": 3,
     // 是否关闭到系统托盘

@@ -73,7 +73,7 @@ const (
 
 const (
 	// DefaultGitHubProxyBase 默认 GitHub 代理地址（空表示不使用代理）
-	DefaultGitHubProxyBase = ""
+	DefaultGitHubProxyBase = "https://gh-proxy.com"
 	// DefaultUpdateCheckIntervalHours 默认更新检查间隔（小时）
 	DefaultUpdateCheckIntervalHours = 3
 	// DefaultMinimizeToTray 默认是否关闭到系统托盘

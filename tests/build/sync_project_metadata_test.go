@@ -166,6 +166,7 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 		{"DefaultUpdateSource", `"github"`},
 		{"LocalUpdateBaseURL", `"http://www.xqchen.shop/exe/go-desktop"`},
 		{"LocalUpdateManifestPath", `"releases/latest.json"`},
+		{"DefaultGitHubProxyBase", `"https://gh-proxy.com"`},
 		{"DefaultUpdateCheckIntervalHours", "3"},
 		{"DefaultMinimizeToTray", "true"},
 		{"DefaultAutoLaunch", "false"},
@@ -187,7 +188,8 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 		meta.Update.LocalManifestPath != "releases/latest.json" {
 		t.Fatalf("unexpected update metadata: %#v", meta.Update)
 	}
-	if meta.SettingsDefaults.UpdateCheckIntervalHours != 3 ||
+	if meta.SettingsDefaults.GitHubProxyBase != "https://gh-proxy.com" ||
+		meta.SettingsDefaults.UpdateCheckIntervalHours != 3 ||
 		!meta.SettingsDefaults.MinimizeToTray ||
 		meta.SettingsDefaults.LogRetentionDays != 30 ||
 		meta.SettingsDefaults.AutoLaunch ||
