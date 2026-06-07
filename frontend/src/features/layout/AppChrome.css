@@ -1,0 +1,314 @@
+:global(:root.is-log-fullscreen) .app-shell {
+  visibility: hidden;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  height: 100vh;
+  min-width: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.app-sidebar {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 22px;
+  border-right: 1px solid var(--sidebar-border);
+  background: var(--sidebar);
+  padding: 18px 14px;
+}
+
+:global(:root[data-menu="default-translucent"]) .app-sidebar,
+:global(:root[data-menu="default-muted"]) .app-sidebar {
+  background: color-mix(in oklch, var(--background) 74%, var(--card));
+  backdrop-filter: blur(14px);
+}
+
+:global(:root[data-menu="inverted"]) .app-sidebar,
+:global(:root[data-menu="inverted-translucent"]) .app-sidebar {
+  --sidebar: var(--foreground);
+  --sidebar-foreground: var(--background);
+  --sidebar-accent: color-mix(in oklch, var(--background) 14%, transparent);
+  --sidebar-accent-foreground: var(--background);
+  --sidebar-border: color-mix(in oklch, var(--background) 16%, transparent);
+  background: var(--sidebar);
+  color: var(--sidebar-foreground);
+}
+
+:global(:root[data-menu="inverted-translucent"]) .app-sidebar {
+  background: color-mix(in oklch, var(--foreground) 88%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.sidebar-brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 6px 12px;
+}
+
+.brand-mark {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.brand-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.brand-copy strong {
+  overflow: hidden;
+  color: var(--foreground);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand-copy small {
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: var(--fs-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 4px;
+}
+
+.sidebar-item {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: 8px;
+  color: var(--sidebar-foreground);
+  text-align: left;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.sidebar-item:hover,
+.sidebar-item.is-active,
+.compact-nav-item:hover,
+.compact-nav-item.is-active {
+  background: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+}
+
+.sidebar-item.is-active .nav-icon {
+  background: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
+}
+
+:global(:root[data-menu="default-translucent"]) .sidebar-item.is-active .nav-icon,
+:global(:root[data-menu="default-muted"]) .sidebar-item.is-active .nav-icon {
+  background: var(--secondary);
+  color: var(--primary);
+}
+
+:global(:root[data-menu-accent="bold"]) .sidebar-item.is-active,
+:global(:root[data-menu-accent="bold"]) .compact-nav-item.is-active {
+  background: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
+}
+
+:global(:root[data-menu-accent="bold"]) .sidebar-item.is-active .nav-icon {
+  background: color-mix(in oklch, var(--sidebar-primary-foreground) 18%, transparent);
+  color: var(--sidebar-primary-foreground);
+}
+
+.compact-nav-item.is-active {
+  color: var(--primary);
+}
+
+.sidebar-item span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:global(:root[data-icon-tone="colorful"]) .sidebar-item.is-active .nav-icon {
+  color: var(--sidebar-primary-foreground);
+}
+
+:global(:root[data-icon-tone="colorful"]) .compact-nav-item.is-active svg {
+  color: currentColor;
+}
+
+.app-main {
+  display: grid;
+  min-width: 0;
+  height: 100vh;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.topbar {
+  display: grid;
+  min-height: var(--topbar-height);
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--background) 82%, var(--card));
+  padding: 14px var(--page-gutter);
+}
+
+.topbar-title {
+  min-width: 0;
+}
+
+.topbar-title h1 {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-title h1 {
+  font-family: var(--font-heading);
+}
+
+.topbar-title p {
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: var(--fs-caption);
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-actions {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.topbar-utility {
+  display: grid;
+  min-width: 0;
+  align-items: center;
+  justify-content: end;
+  gap: 10px;
+}
+
+.update-icon-button.is-ready,
+.update-icon-button.is-busy {
+  background: var(--accent);
+  color: var(--primary);
+}
+
+.update-icon-button.is-danger {
+  background: var(--soft-danger);
+  color: var(--destructive);
+}
+
+.update-icon-button.is-busy svg {
+  animation: spin 1.2s linear infinite;
+}
+
+.compact-nav {
+  display: none;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.compact-nav-item {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: 0 10px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.content-scroll {
+  min-width: 0;
+  overflow: auto;
+  padding: var(--page-gutter);
+}
+
+.app-error {
+  border: 1px solid color-mix(in oklch, var(--destructive) 38%, var(--border));
+  border-radius: var(--radius-lg);
+  background: var(--soft-danger);
+  padding: 12px 14px;
+  color: var(--destructive);
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-sidebar {
+    display: none;
+  }
+
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    row-gap: 12px;
+  }
+
+  .topbar-utility {
+    display: contents;
+  }
+
+  .topbar-actions {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-end;
+  }
+
+  .compact-nav {
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+    width: 100%;
+    justify-self: stretch;
+    overflow-x: auto;
+  }
+
+  .compact-nav-item {
+    flex: 0 0 auto;
+    gap: 5px;
+    padding: 0 6px;
+  }
+}

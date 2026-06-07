@@ -21,3 +21,9 @@ const checkedModel = computed({
 <template>
   <Switch class="ui-switch" :model-value="checkedModel" :aria-label="ariaLabel" :disabled="disabled" @update:model-value="checkedModel = $event" />
 </template>
+
+<style scoped>
+.ui-switch[data-state="checked"] {
+  background: var(--primary);
+}
+</style>

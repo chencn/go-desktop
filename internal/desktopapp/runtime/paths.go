@@ -6,10 +6,6 @@ import (
 	"github.com/chencn/go-desktop/internal/platform/paths"
 )
 
-func DefaultSettingsPath(appName string) string {
-	return paths.DefaultSettingsPath(appName)
-}
-
 func DefaultDatabasePath(appName string) string {
 	return paths.DefaultDatabasePath(appName)
 }

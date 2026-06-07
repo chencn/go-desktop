@@ -1,0 +1,130 @@
+.preference-color-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.preference-color-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  padding: 0 10px 0 12px;
+  color: var(--foreground);
+  font-size: var(--fs-caption);
+  font-weight: 400;
+  text-align: left;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.preference-color-select.is-disabled .preference-color-trigger {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.preference-color-trigger:hover,
+.preference-color-select.is-open .preference-color-trigger {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 16%, transparent);
+}
+
+.preference-color-value {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.preference-color-value span:last-child,
+.preference-color-option span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preference-color-caret {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: var(--muted-foreground);
+  line-height: 1;
+}
+
+.preference-color-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  display: grid;
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--popover);
+  box-shadow: 0 18px 45px color-mix(in oklch, var(--foreground) 12%, transparent);
+  padding: 4px;
+}
+
+.preference-color-option {
+  display: flex;
+  min-height: 32px;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  padding: 0 8px;
+  color: var(--popover-foreground);
+  font-size: var(--fs-caption);
+  font-weight: 400;
+  text-align: left;
+}
+
+.preference-color-option:hover,
+.preference-color-option.is-selected {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.preference-swatch {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--runtime-swatch-color, var(--foreground));
+  pointer-events: none;
+}
+
+.preference-swatch[data-accent="neutral"] { --runtime-swatch-color: var(--runtime-color-neutral); }
+.preference-swatch[data-accent="stone"] { --runtime-swatch-color: var(--runtime-color-stone); }
+.preference-swatch[data-accent="zinc"] { --runtime-swatch-color: var(--runtime-color-zinc); }
+.preference-swatch[data-accent="mauve"] { --runtime-swatch-color: var(--runtime-color-mauve); }
+.preference-swatch[data-accent="olive"] { --runtime-swatch-color: var(--runtime-color-olive); }
+.preference-swatch[data-accent="mist"] { --runtime-swatch-color: var(--runtime-color-mist); }
+.preference-swatch[data-accent="taupe"] { --runtime-swatch-color: var(--runtime-color-taupe); }
+.preference-swatch[data-accent="amber"] { --runtime-swatch-color: var(--runtime-color-amber); }
+.preference-swatch[data-accent="blue"] { --runtime-swatch-color: var(--runtime-color-blue); }
+.preference-swatch[data-accent="cyan"] { --runtime-swatch-color: var(--runtime-color-cyan); }
+.preference-swatch[data-accent="emerald"] { --runtime-swatch-color: var(--runtime-color-emerald); }
+.preference-swatch[data-accent="fuchsia"] { --runtime-swatch-color: var(--runtime-color-fuchsia); }
+.preference-swatch[data-accent="green"] { --runtime-swatch-color: var(--runtime-color-green); }
+.preference-swatch[data-accent="indigo"] { --runtime-swatch-color: var(--runtime-color-indigo); }
+.preference-swatch[data-accent="lime"] { --runtime-swatch-color: var(--runtime-color-lime); }
+.preference-swatch[data-accent="orange"] { --runtime-swatch-color: var(--runtime-color-orange); }
+.preference-swatch[data-accent="pink"] { --runtime-swatch-color: var(--runtime-color-pink); }
+.preference-swatch[data-accent="purple"] { --runtime-swatch-color: var(--runtime-color-purple); }
+.preference-swatch[data-accent="red"] { --runtime-swatch-color: var(--runtime-color-red); }
+.preference-swatch[data-accent="rose"] { --runtime-swatch-color: var(--runtime-color-rose); }
+.preference-swatch[data-accent="sky"] { --runtime-swatch-color: var(--runtime-color-sky); }
+.preference-swatch[data-accent="teal"] { --runtime-swatch-color: var(--runtime-color-teal); }
+.preference-swatch[data-accent="violet"] { --runtime-swatch-color: var(--runtime-color-violet); }
+.preference-swatch[data-accent="yellow"] { --runtime-swatch-color: var(--runtime-color-yellow); }

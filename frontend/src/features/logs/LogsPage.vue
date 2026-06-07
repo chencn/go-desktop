@@ -356,3 +356,5 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
     </div>
   </Teleport>
 </template>
+
+<style scoped src="./LogsPage.css"></style>

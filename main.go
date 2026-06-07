@@ -67,7 +67,6 @@ func main() {
 		Version:       appVersion,
 		Description:   metadata.Description,
 		Repository:    metadata.RepositoryURL,
-		SettingsPath:  desktopapp.DefaultSettingsPath(metadata.AppName),
 		DatabasePath:  desktopapp.DefaultDatabasePath(metadata.AppName),
 		LogFilePath:   desktopapp.DefaultLogFilePath(metadata.AppName),
 		CrashReporter: crashReporter,

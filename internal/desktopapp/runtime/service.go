@@ -59,10 +59,6 @@ type ServiceOptions struct {
 	// 用于更新检查和关于页面链接
 	Repository string // Repository 保存 Repository 对应的数据，供当前实体的调用方读取或持久化。
 
-	// SettingsPath 设置文件存储路径
-	// 如果为空，使用默认路径（用户配置目录）
-	SettingsPath string // SettingsPath 保存 SettingsPath 对应的数据，供当前实体的调用方读取或持久化。
-
 	// DatabasePath SQLite 数据库文件路径
 	// 只存储 config_items 配置项
 	DatabasePath string // DatabasePath 保存 DatabasePath 对应的数据，供当前实体的调用方读取或持久化。
@@ -109,9 +105,6 @@ type Runtime struct {
 	// startedAt 应用启动时间（UTC）
 	// 用于计算运行时长和日志时间戳
 	startedAt time.Time // startedAt 保存 startedAt 对应的数据，供当前实体的调用方读取或持久化。
-
-	// settingsPath 设置文件路径
-	settingsPath string // settingsPath 保存 settingsPath 对应的数据，供当前实体的调用方读取或持久化。
 
 	// databasePath 数据库文件路径
 	databasePath string // databasePath 保存 databasePath 对应的数据，供当前实体的调用方读取或持久化。
@@ -257,9 +250,6 @@ type EnvironmentInfo struct {
 
 	// WailsVersion Wails 框架版本
 	WailsVersion string `json:"wailsVersion"` // WailsVersion 保存 wailsVersion 对应的数据，供当前实体的调用方读取或持久化。
-
-	// SettingsPath 设置文件路径
-	SettingsPath string `json:"settingsPath"` // SettingsPath 保存 settingsPath 对应的数据，供当前实体的调用方读取或持久化。
 
 	// DatabasePath 数据库文件路径
 	DatabasePath string `json:"databasePath"` // DatabasePath 保存 databasePath 对应的数据，供当前实体的调用方读取或持久化。
@@ -557,7 +547,6 @@ func NewRuntime(options ServiceOptions) *Runtime {
 		options:            options,
 		releaseChecker:     options.ReleaseChecker,
 		startedAt:          time.Now().UTC(),
-		settingsPath:       options.SettingsPath,
 		databasePath:       options.DatabasePath,
 		logDirPath:         logDirPath,
 		logFilePattern:     logFilePattern,
@@ -697,7 +686,6 @@ func (s *Runtime) GetEnvironmentInfo() EnvironmentInfo {
 		Arch:            goruntime.GOARCH,
 		GoVersion:       goruntime.Version(),
 		WailsVersion:    moduleVersion("github.com/wailsapp/wails/v3"),
-		SettingsPath:    s.settingsPath,
 		DatabasePath:    s.databasePath,
 		DatabaseReady:   storeReady,
 		DatabaseStatus:  databaseStatus(storeReady, s.databasePath),

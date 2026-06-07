@@ -197,6 +197,8 @@ func TestDisplayPreferencesNormaliseInvalidValues(t *testing.T) {
 func TestDefaultRuntimePathsUseExecutableDataDirectory(t *testing.T) {
 	databasePath := filepath.ToSlash(app.DefaultDatabasePath("go-desktop"))
 	logFilePath := filepath.ToSlash(app.DefaultLogFilePath("go-desktop"))
+	crashLogPath := filepath.ToSlash(app.DefaultCrashLogPath("go-desktop"))
+	crashStatePath := filepath.ToSlash(app.DefaultCrashStatePath("go-desktop"))
 	cachePath := filepath.ToSlash(app.DefaultCachePath("go-desktop"))
 
 	if !strings.Contains(databasePath, "/data/") || !strings.HasSuffix(databasePath, "/go-desktop.db") {
@@ -204,6 +206,12 @@ func TestDefaultRuntimePathsUseExecutableDataDirectory(t *testing.T) {
 	}
 	if !strings.Contains(logFilePath, "/data/logs/") || !strings.Contains(logFilePath, "/go-desktop-") || !strings.HasSuffix(logFilePath, ".log") {
 		t.Fatalf("expected daily log path under data/logs directory, got %q", logFilePath)
+	}
+	if !strings.Contains(crashLogPath, "/data/logs/") || !strings.HasSuffix(crashLogPath, "/crash.log") {
+		t.Fatalf("expected crash log path under data/logs directory, got %q", crashLogPath)
+	}
+	if !strings.Contains(crashStatePath, "/data/logs/") || !strings.HasSuffix(crashStatePath, "/crash-state.json") {
+		t.Fatalf("expected crash state path under data/logs directory, got %q", crashStatePath)
 	}
 	if !strings.HasSuffix(cachePath, "/data/updates") {
 		t.Fatalf("expected cache path to use data/updates directory, got %q", cachePath)
@@ -213,13 +221,11 @@ func TestDefaultRuntimePathsUseExecutableDataDirectory(t *testing.T) {
 // TestGetEnvironmentInfoReturnsRuntimeAndStoragePaths 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
 func TestGetEnvironmentInfoReturnsRuntimeAndStoragePaths(t *testing.T) {
 	tempDir := t.TempDir()
-	settingsPath := filepath.Join(tempDir, "settings.json")
 	databasePath := filepath.Join(tempDir, "go-desktop.db")
 	logFilePath := filepath.Join(tempDir, "go-desktop.log")
 	cachePath := filepath.Join(tempDir, "cache")
 
 	runtimeService := app.NewRuntime(app.ServiceOptions{
-		SettingsPath: settingsPath,
 		DatabasePath: databasePath,
 		LogFilePath:  logFilePath,
 		CachePath:    cachePath,
@@ -236,7 +242,7 @@ func TestGetEnvironmentInfoReturnsRuntimeAndStoragePaths(t *testing.T) {
 	if !strings.HasPrefix(info.GoVersion, "go") {
 		t.Fatalf("expected Go version, got %#v", info)
 	}
-	if info.SettingsPath != settingsPath || info.DatabasePath != databasePath || !strings.HasPrefix(info.LogFilePath, tempDir) || !strings.Contains(info.LogFilePath, "go-desktop-") || info.CachePath != cachePath {
+	if info.DatabasePath != databasePath || !strings.HasPrefix(info.LogFilePath, tempDir) || !strings.Contains(info.LogFilePath, "go-desktop-") || info.CachePath != cachePath {
 		t.Fatalf("expected configured paths in environment info, got %#v", info)
 	}
 	if strings.TrimSpace(info.WailsVersion) == "" {

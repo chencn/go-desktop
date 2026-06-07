@@ -375,3 +375,5 @@ function networkStatus(): ServiceCard {
     </section>
   </div>
 </template>
+
+<style scoped src="./HomePage.css"></style>

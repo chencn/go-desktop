@@ -16,3 +16,9 @@ const delegatedAttrs = computed(() => {
     <slot />
   </span>
 </template>
+
+<style scoped>
+.ui-label {
+  color: var(--muted-foreground);
+}
+</style>

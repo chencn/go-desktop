@@ -29,3 +29,9 @@ const delegatedAttrs = computed(() => {
     <slot />
   </select>
 </template>
+
+<style scoped>
+.ui-native-select {
+  min-height: var(--control-height);
+}
+</style>

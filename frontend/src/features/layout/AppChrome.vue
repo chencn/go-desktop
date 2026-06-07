@@ -145,3 +145,5 @@ function updateIconTone(status?: string) {
     <UpdateStatusDialog :open="updateOpen" @close="updateOpen = false" />
   </div>
 </template>
+
+<style scoped src="./AppChrome.css"></style>

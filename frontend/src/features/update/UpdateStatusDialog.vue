@@ -187,3 +187,5 @@ function updateStatusLabel(status?: string) {
       </footer>
   </UiDialog>
 </template>
+
+<style scoped src="./UpdateStatusDialog.css"></style>

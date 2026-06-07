@@ -6,10 +6,6 @@ import (
 	appruntime "github.com/chencn/go-desktop/internal/desktopapp/runtime"
 )
 
-func DefaultSettingsPath(appName string) string {
-	return appruntime.DefaultSettingsPath(appName)
-}
-
 func DefaultDatabasePath(appName string) string {
 	return appruntime.DefaultDatabasePath(appName)
 }

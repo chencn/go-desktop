@@ -138,10 +138,20 @@ func TestMainInstallsEarliestCrashReporter(t *testing.T) {
 	for _, required := range []string{
 		"func DefaultCrashLogPath(appName string) string",
 		"func DefaultCrashStatePath(appName string) string",
-		"os.UserConfigDir()",
+		"DefaultLogDirPath(appName)",
 	} {
 		if !strings.Contains(platformPathsSource, required) {
 			t.Fatalf("internal/platform/paths should own writable crash log paths: missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"func DefaultSettingsPath(appName string) string",
+		"SettingsPath string",
+		"settingsPath",
+		"settings.json",
+	} {
+		if strings.Contains(source, forbidden) || strings.Contains(pathsSource, forbidden) || strings.Contains(platformPathsSource, forbidden) || strings.Contains(appFacadeSource, forbidden) {
+			t.Fatalf("runtime environment info must not expose legacy settings file path: found %q", forbidden)
 		}
 	}
 	for _, required := range []string{

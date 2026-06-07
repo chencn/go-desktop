@@ -384,7 +384,6 @@ func TestDownloadUpdateRequiresCurrentProcessCheckAfterRestart(t *testing.T) {
 	restarted := app.NewRuntime(app.ServiceOptions{
 		DatabasePath:  dbPath,
 		UpdateManager: manager,
-		SettingsPath:  filepath.Join(t.TempDir(), "settings.json"),
 		ReleaseChecker: githubrelease.NewChecker(githubrelease.Config{
 			Owner:          "chencn",
 			Repo:           "go-desktop",

@@ -72,8 +72,7 @@ const releaseDetails = computed<DetailItem[]>(() => [
 ])
 
 const localDataDetails = computed<DetailItem[]>(() => [
-  { label: '设置文件', value: appStore.environmentInfo?.settingsPath ?? '未配置' },
-  { label: 'SQLite 数据库', value: appStore.environmentInfo?.databasePath ?? '未配置' },
+  { label: '配置数据库', value: appStore.environmentInfo?.databasePath ?? '未配置' },
   { label: '文件日志', value: appStore.environmentInfo?.logFilePath ?? '未配置' },
   { label: '更新缓存', value: appStore.environmentInfo?.cachePath ?? '未配置' },
 ])
@@ -275,3 +274,5 @@ const InfoRow = defineComponent({
     </section>
   </div>
 </template>
+
+<style scoped src="./AboutPage.css"></style>

@@ -50,6 +50,8 @@ func TestFrontendFeatureBoundariesExist(t *testing.T) {
 		filepath.Join("frontend", "src", "components", "ui", "table", "Table.vue"),
 		filepath.Join("frontend", "src", "components", "ui", "tooltip", "Tooltip.vue"),
 		filepath.Join("frontend", "src", "features", "settings", "SettingsColorSelect.vue"),
+		filepath.Join("frontend", "src", "shared", "ui", "Card.vue"),
+		filepath.Join("frontend", "src", "shared", "ui", "CardTitle.vue"),
 		filepath.Join("frontend", "src", "shared", "ui", "plugin.ts"),
 	} {
 		if _, err := os.Stat(rootPath(path)); err != nil {
@@ -598,7 +600,8 @@ func TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
 	appChrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
-	styles := readRootFile(t, "frontend", "src", "styles.css")
+	layoutStyles := readRootFile(t, "frontend", "src", "styles", "layout.css")
+	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
 
 	for _, required := range []string{
 		`tone: { type: String, required: true }`,
@@ -631,7 +634,7 @@ func TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation(t *testing.T) {
 		`.sidebar-item.is-active .nav-icon`,
 		`.compact-nav-item.is-active svg`,
 	} {
-		if !strings.Contains(appChrome+styles, required) {
+		if !strings.Contains(appChrome+appChromeStyles+layoutStyles, required) {
 			t.Fatalf("active navigation icons should not keep colorful tone: missing %q", required)
 		}
 	}
@@ -640,9 +643,9 @@ func TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation(t *testing.T) {
 // TestHomePageFocusesOnRuntimeStatusAndBusinessStats 验证首页职责只承载软件运行状态和业务统计，不回退成快捷入口页。
 func TestHomePageFocusesOnRuntimeStatusAndBusinessStats(t *testing.T) {
 	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
+	homeStyles := readRootFile(t, "frontend", "src", "features", "home", "HomePage.css")
 	appRoot := readRootFile(t, "frontend", "src", "App.vue")
 	views := readRootFile(t, "frontend", "src", "shared", "views.ts")
-	styles := readRootFile(t, "frontend", "src", "styles.css")
 
 	for _, required := range []string{
 		"software-status-grid",
@@ -654,6 +657,7 @@ func TestHomePageFocusesOnRuntimeStatusAndBusinessStats(t *testing.T) {
 		"business-stats-grid",
 		"demoStats",
 		"demo-bar-chart",
+		".demo-bar-fill",
 		"distribution-list",
 		"正常",
 		"异常",
@@ -663,7 +667,7 @@ func TestHomePageFocusesOnRuntimeStatusAndBusinessStats(t *testing.T) {
 		".status-inline.is-warning",
 		".status-inline.is-error",
 	} {
-		if !strings.Contains(homePage+views+styles, required) {
+		if !strings.Contains(homePage+views+homeStyles, required) {
 			t.Fatalf("home page should focus on runtime status and business stats: missing %q", required)
 		}
 	}
@@ -682,9 +686,31 @@ func TestHomePageFocusesOnRuntimeStatusAndBusinessStats(t *testing.T) {
 		"updateStatus",
 		"checking",
 		"GetUpdateStatus",
+		"linear-gradient(180deg, var(--chart-2), var(--chart-1))",
 	} {
-		if strings.Contains(homePage+appRoot+views+styles, forbidden) {
+		if strings.Contains(homePage+appRoot+views+homeStyles, forbidden) {
 			t.Fatalf("home page should not fall back to quick-entry workflow content: found %q", forbidden)
+		}
+	}
+
+	demoBarFillStart := strings.Index(homeStyles, ".demo-bar-fill")
+	if demoBarFillStart < 0 {
+		t.Fatal("home page trend chart should style .demo-bar-fill")
+	}
+	demoBarFillEnd := strings.Index(homeStyles[demoBarFillStart:], "\n}")
+	if demoBarFillEnd < 0 {
+		t.Fatal("home page trend chart .demo-bar-fill rule is malformed")
+	}
+	demoBarFillRule := homeStyles[demoBarFillStart : demoBarFillStart+demoBarFillEnd]
+	if !strings.Contains(demoBarFillRule, "background: var(--chart-1)") {
+		t.Fatalf("home page trend chart should use chart token, got: %s", demoBarFillRule)
+	}
+	for _, forbidden := range []string{
+		"background: var(--primary)",
+		"linear-gradient(",
+	} {
+		if strings.Contains(demoBarFillRule, forbidden) {
+			t.Fatalf("home page trend chart should not use non-chart or noisy fill %q: %s", forbidden, demoBarFillRule)
 		}
 	}
 }
@@ -729,7 +755,8 @@ func TestAboutPageOwnsRuntimeReleaseAndTechInformation(t *testing.T) {
 // TestLogsPageUsesThemeAlignedPageLayout 验证日志页保留专注模式，同时服从主题 token 和 shadcn Table 结构。
 func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
-	styles := readRootFile(t, "frontend", "src", "styles.css")
+	logStyles := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.css")
+	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
 
 	for _, required := range []string{
 		"<Teleport to=\"body\"",
@@ -781,8 +808,8 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		`.log-table [data-slot="table-cell"]`,
 		".log-message-cell",
 		".log-col-message",
-		":root.is-log-fullscreen .app-shell",
-		":root.is-log-fullscreen .log-fullscreen",
+		":global(:root.is-log-fullscreen) .app-shell",
+		":global(:root.is-log-fullscreen) .log-fullscreen",
 		".page-stack.log-fullscreen",
 		`.log-fullscreen > [data-slot="card"]`,
 		".log-fullscreen .log-page-main",
@@ -792,7 +819,7 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		"height: 100dvh",
 		"background: var(--background)",
 	} {
-		if !strings.Contains(styles, required) {
+		if !strings.Contains(logStyles+appChromeStyles, required) {
 			t.Fatalf("logs page themed layout should define %q", required)
 		}
 	}
@@ -804,7 +831,7 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		"log-side-panel",
 		"log-stat-list",
 	} {
-		if strings.Contains(logsPage, forbidden) || strings.Contains(styles, forbidden) {
+		if strings.Contains(logsPage, forbidden) || strings.Contains(logStyles, forbidden) {
 			t.Fatalf("logs page should not carry stale workbench/sidebar styling %q", forbidden)
 		}
 	}
@@ -815,7 +842,7 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		".ui-table-cell",
 		".ui-table-row",
 	} {
-		if strings.Contains(styles, forbidden) {
+		if strings.Contains(logStyles, forbidden) {
 			t.Fatalf("logs page should target shadcn table data-slot instead of stale class %q", forbidden)
 		}
 	}
@@ -824,7 +851,7 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 // TestLogsPageKeepsFileSelectorInsideFilterPanel 验证日志文件/日期选择收进折叠筛选，避免顶部常驻摘要挤占日志流。
 func TestLogsPageKeepsFileSelectorInsideFilterPanel(t *testing.T) {
 	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
-	styles := readRootFile(t, "frontend", "src", "styles.css")
+	logStyles := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.css")
 
 	selectorIndex := strings.Index(logsPage, "日期/日志文件")
 	filterIndex := strings.Index(logsPage, "log-filter-panel")
@@ -840,7 +867,7 @@ func TestLogsPageKeepsFileSelectorInsideFilterPanel(t *testing.T) {
 		".log-file-field",
 		"grid-template-columns: repeat(5, minmax(0, 1fr))",
 	} {
-		if !strings.Contains(styles, required) {
+		if !strings.Contains(logStyles, required) {
 			t.Fatalf("logs page layout should define %q", required)
 		}
 	}
@@ -851,7 +878,7 @@ func TestLogsPageKeepsFileSelectorInsideFilterPanel(t *testing.T) {
 		"log-source-summary",
 		"log-file-path",
 	} {
-		if strings.Contains(logsPage, removed) || strings.Contains(styles, removed) {
+		if strings.Contains(logsPage, removed) || strings.Contains(logStyles, removed) {
 			t.Fatalf("logs page should not keep the removed persistent log source summary %q", removed)
 		}
 	}
@@ -861,7 +888,7 @@ func TestLogsPageKeepsFileSelectorInsideFilterPanel(t *testing.T) {
 func TestMenuAccentCssOnlyUsesSupportedValues(t *testing.T) {
 	displayState := readRootFile(t, "frontend", "src", "app", "display.ts")
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
-	styles := readRootFile(t, "frontend", "src", "styles.css")
+	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
 
 	for _, required := range []string{
 		"export type MenuAccent = 'subtle' | 'bold'",
@@ -869,7 +896,7 @@ func TestMenuAccentCssOnlyUsesSupportedValues(t *testing.T) {
 		"['bold', 'Bold']",
 		`:root[data-menu-accent="bold"]`,
 	} {
-		if !strings.Contains(displayState+settingsPage+styles, required) {
+		if !strings.Contains(displayState+settingsPage+appChromeStyles, required) {
 			t.Fatalf("menu accent should expose and style the supported values only: missing %q", required)
 		}
 	}
@@ -880,7 +907,7 @@ func TestMenuAccentCssOnlyUsesSupportedValues(t *testing.T) {
 		"['solid',",
 		"['outline',",
 	} {
-		if strings.Contains(displayState+settingsPage+styles, forbidden) {
+		if strings.Contains(displayState+settingsPage+appChromeStyles, forbidden) {
 			t.Fatalf("menu accent should not keep unsupported legacy value %q", forbidden)
 		}
 	}
@@ -892,7 +919,7 @@ func TestTopbarUsesSharedNavigationAndResponsiveUtilityRow(t *testing.T) {
 	appChrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
 	routes := readRootFile(t, "frontend", "src", "app", "routes.ts")
 	views := readRootFile(t, "frontend", "src", "shared", "views.ts")
-	styles := readRootFile(t, "frontend", "src", "styles.css")
+	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
 
 	for _, required := range []string{
 		"viewComponents",
@@ -926,8 +953,119 @@ func TestTopbarUsesSharedNavigationAndResponsiveUtilityRow(t *testing.T) {
 		"grid-row: 2",
 		"justify-self: stretch",
 	} {
-		if !strings.Contains(appChrome+views+styles, required) {
+		if !strings.Contains(appChrome+views+appChromeStyles, required) {
 			t.Fatalf("responsive topbar should share navigation metadata and utility row %q", required)
+		}
+	}
+}
+
+// TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme 验证公共 CSS 只承载主题 token 和少量跨页面 primitive，页面/组件样式必须归属到对应文件。
+func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
+	mainTS := readRootFile(t, "frontend", "src", "main.ts")
+	styles := readRootFile(t, "frontend", "src", "styles.css")
+	layoutStyles := readRootFile(t, "frontend", "src", "styles", "layout.css")
+	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
+	aboutPage := readRootFile(t, "frontend", "src", "features", "about", "AboutPage.vue")
+	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
+	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
+	updateDialog := readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.vue")
+	primitiveCard := readRootFile(t, "frontend", "src", "components", "ui", "card", "Card.vue")
+	primitiveCardTitle := readRootFile(t, "frontend", "src", "components", "ui", "card", "CardTitle.vue")
+	sharedCard := readRootFile(t, "frontend", "src", "shared", "ui", "Card.vue")
+	sharedCardTitle := readRootFile(t, "frontend", "src", "shared", "ui", "CardTitle.vue")
+	uiPlugin := readRootFile(t, "frontend", "src", "shared", "ui", "plugin.ts")
+	featureStyles := strings.Join([]string{
+		readRootFile(t, "frontend", "src", "features", "about", "AboutPage.css"),
+		readRootFile(t, "frontend", "src", "features", "home", "HomePage.css"),
+		readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css"),
+		readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.css"),
+		readRootFile(t, "frontend", "src", "features", "settings", "SettingsColorSelect.css"),
+		readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.css"),
+		readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.css"),
+	}, "\n")
+	design := readRootFile(t, "DESIGN.md")
+
+	for _, required := range []string{
+		"@theme inline",
+		"--color-sidebar",
+		"--runtime-color-yellow",
+		":root[data-card-border=\"visible\"]",
+	} {
+		if !strings.Contains(styles, required) {
+			t.Fatalf("styles.css should keep theme/reset contract %q", required)
+		}
+	}
+
+	for _, forbidden := range []string{
+		".app-shell",
+		".about-",
+		".software-",
+		".business-",
+		".settings-",
+		".preference-",
+		".log-page",
+		".dialog-header",
+		".status-pill",
+		".ui-dialog-content",
+		".ui-switch",
+	} {
+		if strings.Contains(styles, forbidden) {
+			t.Fatalf("styles.css should not own page/component selector %q", forbidden)
+		}
+	}
+
+	for _, forbidden := range []string{
+		".ui-",
+		`[data-slot="button"]`,
+		".ui-dialog-layer",
+		".ui-dialog-content",
+	} {
+		if strings.Contains(featureStyles, forbidden) {
+			t.Fatalf("feature CSS should not reach into component implementation selector %q", forbidden)
+		}
+	}
+
+	for _, forbidden := range []string{
+		"--card-border",
+		"--font-heading",
+		"<style scoped>",
+	} {
+		if strings.Contains(primitiveCard+primitiveCardTitle, forbidden) {
+			t.Fatalf("components/ui/card primitives should not carry project style patch %q", forbidden)
+		}
+	}
+
+	for _, required := range []string{
+		".page-stack",
+		".content-grid",
+		".split-header",
+		".section-title-row",
+		".data-icon",
+		".icon-tone-indigo",
+	} {
+		if !strings.Contains(layoutStyles, required) {
+			t.Fatalf("layout.css should keep shared layout/icon primitive %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`import './styles/layout.css'`,
+		`<style scoped src="./HomePage.css">`,
+		`<style scoped src="./AboutPage.css">`,
+		`<style scoped src="./SettingsPage.css">`,
+		`<style scoped src="./LogsPage.css">`,
+		`<style scoped src="./UpdateStatusDialog.css">`,
+		"settings-control-switch",
+		"settings-control-select",
+		"CardCompat",
+		"CardTitleCompat",
+		"--card-border",
+		"--font-heading",
+		"CSS 归属规则",
+		"`frontend/src/styles.css` 只放 Tailwind",
+	} {
+		if !strings.Contains(mainTS+homePage+aboutPage+settingsPage+logsPage+updateDialog+sharedCard+sharedCardTitle+uiPlugin+design, required) {
+			t.Fatalf("frontend CSS ownership should be documented and wired: missing %q", required)
 		}
 	}
 }

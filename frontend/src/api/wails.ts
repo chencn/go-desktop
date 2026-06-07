@@ -47,8 +47,6 @@ export type EnvironmentInfo = {
   goVersion: string
   /** Wails 框架版本 */
   wailsVersion: string
-  /** 设置文件路径 */
-  settingsPath: string
   /** SQLite 数据库路径 */
   databasePath: string
   /** SQLite 配置库是否已打开并完成默认配置初始化 */
@@ -464,7 +462,6 @@ export async function getEnvironmentInfo(): Promise<EnvironmentInfo> {
       arch: 'preview',
       goVersion: '未连接 Go 运行时',
       wailsVersion: '未连接 Wails 运行时',
-      settingsPath: '前端预览模式',
       databasePath: '前端预览模式',
       databaseReady: false,
       databaseStatus: 'disabled',

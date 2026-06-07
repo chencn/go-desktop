@@ -39,3 +39,35 @@ const dialogOpen = computed({
     </DialogContent>
   </Dialog>
 </template>
+
+<style scoped>
+.ui-dialog-content {
+  display: grid;
+  width: min(100%, 560px);
+  max-height: calc(100vh - 112px);
+  gap: 16px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 24px 70px color-mix(in oklch, var(--foreground) 18%, transparent);
+  padding: 18px;
+}
+
+.ui-dialog-content-top-right {
+  top: 84px;
+  right: 28px;
+  left: auto;
+  width: min(100% - 56px, 560px);
+  max-height: calc(100vh - 112px);
+  transform: none;
+}
+
+@media (max-width: 980px) {
+  .ui-dialog-content {
+    max-height: calc(100vh - 86px);
+    width: 100%;
+  }
+}
+</style>

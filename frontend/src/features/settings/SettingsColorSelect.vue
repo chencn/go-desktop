@@ -77,3 +77,5 @@ function selectValue(value: string) {
     </div>
   </div>
 </template>
+
+<style scoped src="./SettingsColorSelect.css"></style>

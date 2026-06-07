@@ -359,7 +359,7 @@ function persistDisplayPreferences() {
               <strong>关闭到系统托盘</strong>
               <small>点击关闭按钮时隐藏窗口；点击最小化仍进任务栏。</small>
             </span>
-            <UiSwitch :checked="draft.minimizeToTray" :disabled="!settingsReady" aria-label="关闭到系统托盘" @update:checked="persistSettingsPatch({ minimizeToTray: $event })" />
+            <UiSwitch class="settings-control-switch" :checked="draft.minimizeToTray" :disabled="!settingsReady" aria-label="关闭到系统托盘" @update:checked="persistSettingsPatch({ minimizeToTray: $event })" />
           </div>
           <div class="settings-compact-row">
             <span class="data-icon icon-tone-indigo" aria-hidden="true"><Power :size="17" /></span>
@@ -367,7 +367,7 @@ function persistDisplayPreferences() {
               <strong>开机自启</strong>
               <small>登录 Windows 后自动启动应用。</small>
             </span>
-            <UiSwitch :checked="draft.autoLaunch" :disabled="!settingsReady" aria-label="开机自启" @update:checked="persistSettingsPatch({ autoLaunch: $event })" />
+            <UiSwitch class="settings-control-switch" :checked="draft.autoLaunch" :disabled="!settingsReady" aria-label="开机自启" @update:checked="persistSettingsPatch({ autoLaunch: $event })" />
           </div>
           <div class="settings-compact-row">
             <span class="data-icon icon-tone-purple" aria-hidden="true"><AppWindow :size="17" /></span>
@@ -375,7 +375,7 @@ function persistDisplayPreferences() {
               <strong>开机自启时隐藏到托盘</strong>
               <small>仅对开机自启入口生效；手动启动仍显示界面。</small>
             </span>
-            <UiSwitch :checked="draft.launchHiddenToTray" :disabled="!settingsReady || !draft.autoLaunch" aria-label="开机自启时隐藏到托盘" @update:checked="persistSettingsPatch({ launchHiddenToTray: $event })" />
+            <UiSwitch class="settings-control-switch" :checked="draft.launchHiddenToTray" :disabled="!settingsReady || !draft.autoLaunch" aria-label="开机自启时隐藏到托盘" @update:checked="persistSettingsPatch({ launchHiddenToTray: $event })" />
           </div>
           <div class="settings-compact-row">
             <span class="data-icon icon-tone-green" aria-hidden="true"><AppWindow :size="17" /></span>
@@ -383,7 +383,7 @@ function persistDisplayPreferences() {
               <strong>创建桌面快捷图标</strong>
               <small>在当前用户桌面创建应用启动快捷方式。</small>
             </span>
-            <UiSwitch :checked="draft.createDesktopShortcut" :disabled="!settingsReady" aria-label="创建桌面快捷图标" @update:checked="persistSettingsPatch({ createDesktopShortcut: $event })" />
+            <UiSwitch class="settings-control-switch" :checked="draft.createDesktopShortcut" :disabled="!settingsReady" aria-label="创建桌面快捷图标" @update:checked="persistSettingsPatch({ createDesktopShortcut: $event })" />
           </div>
           <div class="settings-compact-row">
             <span class="data-icon icon-tone-indigo" aria-hidden="true"><RefreshCw :size="17" /></span>
@@ -391,7 +391,7 @@ function persistDisplayPreferences() {
               <strong>检查间隔</strong>
               <small>自动检查 Release 的时间间隔。</small>
             </span>
-            <UiNativeSelect :model-value="draft.updateCheckIntervalHours" :disabled="!settingsReady" aria-label="检查间隔" @update:model-value="persistSettingsPatch({ updateCheckIntervalHours: Number($event) })">
+            <UiNativeSelect class="settings-control-select" :model-value="draft.updateCheckIntervalHours" :disabled="!settingsReady" aria-label="检查间隔" @update:model-value="persistSettingsPatch({ updateCheckIntervalHours: Number($event) })">
               <option v-for="hours in updateIntervalOptions" :key="hours" :value="hours">{{ hours }} 小时</option>
             </UiNativeSelect>
           </div>
@@ -401,7 +401,7 @@ function persistDisplayPreferences() {
               <strong>保留周期</strong>
               <small>每日文件日志自动清理周期。</small>
             </span>
-            <UiNativeSelect :model-value="draft.logRetentionDays" :disabled="!settingsReady" aria-label="保留周期" @update:model-value="persistSettingsPatch({ logRetentionDays: Number($event) })">
+            <UiNativeSelect class="settings-control-select" :model-value="draft.logRetentionDays" :disabled="!settingsReady" aria-label="保留周期" @update:model-value="persistSettingsPatch({ logRetentionDays: Number($event) })">
               <option :value="7">7 天</option>
               <option :value="30">30 天</option>
               <option :value="60">60 天</option>
@@ -417,7 +417,7 @@ function persistDisplayPreferences() {
               <strong>日志级别</strong>
               <small>调试级别会记录更详细的后端保存和异常定位信息。</small>
             </span>
-            <UiNativeSelect :model-value="draft.logLevel" :disabled="!settingsReady" aria-label="日志级别" @update:model-value="persistSettingsPatch({ logLevel: normaliseLogLevel(String($event)) })">
+            <UiNativeSelect class="settings-control-select" :model-value="draft.logLevel" :disabled="!settingsReady" aria-label="日志级别" @update:model-value="persistSettingsPatch({ logLevel: normaliseLogLevel(String($event)) })">
               <option v-for="[level, label] in logLevelOptions" :key="level" :value="level">{{ label }}</option>
             </UiNativeSelect>
           </div>
@@ -434,7 +434,7 @@ function persistDisplayPreferences() {
                 <UiCardDescription>参考 shadcn-vue create 参数，覆盖 Style、Base Color、Theme、Chart Color、图标、Radius、Menu 和 Menu Accent。</UiCardDescription>
               </div>
             </div>
-            <UiButton type="button" variant="secondary" size="sm" :disabled="!displayReady" @click="resetDisplayPreferencesAndPersist">
+            <UiButton class="settings-reset-button" type="button" variant="secondary" size="sm" :disabled="!displayReady" @click="resetDisplayPreferencesAndPersist">
               <RotateCcw :size="16" />
               恢复初始值
             </UiButton>
@@ -452,16 +452,16 @@ function persistDisplayPreferences() {
             </UiNativeSelect>
           </PreferenceRow>
           <PreferenceRow title="基础色盘" description="对应 shadcn-vue baseColor，并影响亮色和暗色中性色 token。" :icon="SwatchBook" tone="icon-tone-gray">
-            <SettingsColorSelect label="基础色盘" :disabled="!displayReady" :model-value="display.baseColor.value" :options="baseOptions" @update:model-value="asBaseColor" />
+            <SettingsColorSelect class="preference-control-color" label="基础色盘" :disabled="!displayReady" :model-value="display.baseColor.value" :options="baseOptions" @update:model-value="asBaseColor" />
           </PreferenceRow>
           <PreferenceRow title="主题" description="对应 shadcn-vue create 的 Theme，控制主按钮、焦点环、选中态和高强调 token。" :icon="Paintbrush" tone="icon-tone-purple">
-            <SettingsColorSelect label="主题" :disabled="!displayReady" :model-value="display.themeColor.value" :options="themeColorOptions" @update:model-value="asThemeColor" />
+            <SettingsColorSelect class="preference-control-color" label="主题" :disabled="!displayReady" :model-value="display.themeColor.value" :options="themeColorOptions" @update:model-value="asThemeColor" />
           </PreferenceRow>
           <PreferenceRow title="强调色" description="用于主按钮、选中导航、更新图标、进度、开关和焦点环。" :icon="SwatchBook" tone="icon-tone-indigo">
-            <SettingsColorSelect label="强调色" :disabled="!displayReady" :model-value="display.accentColor.value" :options="accentOptions" @update:model-value="asAccentColor" />
+            <SettingsColorSelect class="preference-control-color" label="强调色" :disabled="!displayReady" :model-value="display.accentColor.value" :options="accentOptions" @update:model-value="asAccentColor" />
           </PreferenceRow>
           <PreferenceRow title="图表色" description="对应 chart token，不再偷用强调色；用于统计和可视化色板。" :icon="BarChart3" tone="icon-tone-green">
-            <SettingsColorSelect label="图表色" :disabled="!displayReady" :model-value="display.chartColor.value" :options="chartOptions" @update:model-value="asChartColor" />
+            <SettingsColorSelect class="preference-control-color" label="图表色" :disabled="!displayReady" :model-value="display.chartColor.value" :options="chartOptions" @update:model-value="asChartColor" />
           </PreferenceRow>
           <PreferenceRow title="圆角" description="通过 --radius 派生到卡片、按钮、输入框、弹窗和列表。" :icon="Settings2" tone="icon-tone-gray">
             <UiNativeSelect class="preference-native-select" :model-value="display.radius.value" :disabled="!displayReady" aria-label="圆角" @update:model-value="asRadius">
@@ -503,3 +503,5 @@ function persistDisplayPreferences() {
     </section>
   </div>
 </template>
+
+<style scoped src="./SettingsPage.css"></style>

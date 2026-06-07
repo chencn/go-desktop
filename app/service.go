@@ -50,7 +50,6 @@ type EnvironmentInfo struct {
 	Arch            string `json:"arch"`
 	GoVersion       string `json:"goVersion"`
 	WailsVersion    string `json:"wailsVersion"`
-	SettingsPath    string `json:"settingsPath"`
 	DatabasePath    string `json:"databasePath"`
 	DatabaseReady   bool   `json:"databaseReady"`
 	DatabaseStatus  string `json:"databaseStatus"`

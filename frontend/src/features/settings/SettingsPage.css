@@ -1,0 +1,161 @@
+.settings-layout {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-card-wide {
+  grid-column: 1 / -1;
+}
+
+.settings-display-header {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-display-header .section-title-row {
+  flex: 1 1 auto;
+}
+
+.settings-reset-button {
+  flex: 0 0 auto;
+}
+
+.preference-stack {
+  display: grid;
+  gap: 0;
+}
+
+.preference-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) minmax(220px, 280px);
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding: 12px 14px;
+}
+
+.preference-row:first-child {
+  border-top: 0;
+}
+
+.preference-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.preference-copy strong {
+  color: var(--foreground);
+  font-weight: 650;
+}
+
+.preference-copy small {
+  color: var(--muted-foreground);
+  font-size: var(--fs-caption);
+  line-height: 1.45;
+}
+
+.preference-control {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.preference-native-select {
+  width: 100%;
+}
+
+.settings-compact-list {
+  display: grid;
+  gap: 0;
+}
+
+.settings-compact-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) minmax(180px, 240px);
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding: 12px 14px;
+}
+
+.settings-compact-row:first-child {
+  border-top: 0;
+}
+
+.settings-compact-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.settings-compact-copy strong {
+  overflow: hidden;
+  color: var(--foreground);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-compact-copy small {
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: var(--fs-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-control-select {
+  width: 100%;
+}
+
+.settings-control-switch {
+  justify-self: end;
+}
+
+@media (max-width: 1260px) {
+  .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .settings-display-header,
+  .preference-row {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .settings-reset-button {
+    justify-self: start;
+  }
+
+  .preference-row,
+  .settings-compact-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .preference-control {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .preference-control > .preference-native-select,
+  .preference-control > .preference-control-color {
+    width: 100%;
+  }
+
+  .settings-compact-row > .settings-control-select,
+  .settings-compact-row > .settings-control-switch {
+    grid-column: 1 / -1;
+  }
+
+  .settings-control-switch {
+    justify-self: start;
+  }
+}

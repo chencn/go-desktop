@@ -3,7 +3,7 @@
 // 描述: 跨平台路径管理模块
 //
 // 功能概述:
-// - 提供各平台标准路径（配置、数据库、缓存）
+// - 提供各平台标准路径（数据库、缓存、日志）
 // - 自动适配 Windows、macOS、Linux 路径差异
 // - 统一的路径生成接口
 // ============================================================================
@@ -18,29 +18,6 @@ import (
 )
 
 const fallbackAppName = "go-desktop"
-
-// DefaultSettingsPath 生成设置文件的默认存储路径
-// 路径格式:
-//   - Windows: %APPDATA%/{appName}/settings.json
-//   - macOS:   ~/Library/Application Support/{appName}/settings.json
-//   - Linux:   ~/.config/{appName}/settings.json
-//
-// 参数:
-//   - appName: 应用名称，为空时使用默认名称
-//
-// 返回:
-//   - string: 设置文件完整路径，错误时返回空字符串
-func DefaultSettingsPath(appName string) string {
-	appName = strings.TrimSpace(appName)
-	if appName == "" {
-		appName = fallbackAppName
-	}
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(configDir, appName, "settings.json")
-}
 
 // DefaultDatabasePath 生成 SQLite 数据库文件的默认存储路径
 // 路径格式:
@@ -133,7 +110,7 @@ func DefaultLogFilePath(appName string) string {
 }
 
 // DefaultCrashLogPath 生成最早期崩溃日志路径。
-// 该路径优先放到用户配置目录，避免打包安装目录不可写时连 crash 日志都丢失。
+// 该路径与普通运行日志同目录，统一落到可执行文件所在目录的 data/logs。
 func DefaultCrashLogPath(appName string) string {
 	return filepath.Join(DefaultCrashDir(appName), "crash.log")
 }
@@ -146,14 +123,7 @@ func DefaultCrashStatePath(appName string) string {
 
 // DefaultCrashDir 返回 crash 日志目录。
 func DefaultCrashDir(appName string) string {
-	appName = strings.TrimSpace(appName)
-	if appName == "" {
-		appName = fallbackAppName
-	}
-	if configDir, err := os.UserConfigDir(); err == nil && strings.TrimSpace(configDir) != "" {
-		return filepath.Join(configDir, appName, "logs")
-	}
-	return filepath.Join(DefaultDataDir(appName), "logs")
+	return DefaultLogDirPath(appName)
 }
 
 // nowRFC3339 生成当前时间的 RFC3339 格式字符串

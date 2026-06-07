@@ -16,3 +16,14 @@ const delegatedAttrs = computed(() => {
     <slot />
   </label>
 </template>
+
+<style scoped>
+.ui-field {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--foreground);
+  font-size: var(--fs-caption);
+  font-weight: 650;
+}
+</style>
