@@ -258,7 +258,7 @@
   width: 100%;
   min-height: 18px;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  background: var(--chart-5);
+  background: var(--chart-1);
 }
 
 .demo-bar-column small {

@@ -61,6 +61,8 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 - `frontend/src/features/**` 放业务页面、页面私有组件和页面私有 CSS。
 - `frontend/src/lib/utils.ts` 是 `cn()` 唯一来源。
 - `frontend/src/main.ts` 必须注册 `shared/ui/plugin.ts`。
+- 本项目采用 shadcn-vue skill / CLI / docs 工作流：进入 UI 改造前先检查 `components.json`，再执行 `shadcn-vue info --json` 获取项目配置和已安装组件；新增或覆盖 primitive 前先用 `shadcn-vue docs <component>` 查询官方文档，再用 `shadcn-vue add <component>` 写入源码组件。
+- 全局 Ui* 只在 `frontend/src/shared/ui/plugin.ts` 注册，业务页默认组合全局 `UiButton`、`UiCard`、`UiDialog`、`UiTooltip` 等 primitive，不在页面里重复造基础控件。
 
 ## 3. 信息架构
 
@@ -94,7 +96,7 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 | `githubOwner` | `github.owner` | 元数据 owner | 当前不在设置页展示 |
 | `githubRepo` | `github.repo` | 元数据 repo | 当前不在设置页展示 |
 | `githubProxyBase` | `github.proxy_base` | 空 | 当前不在设置页展示 |
-| `updateCheckIntervalHours` | `update.check_interval_hours` | `3` | 检查间隔，`1 / 3 / 6 / 12` 小时 |
+| `updateCheckIntervalHours` | `update.check_interval_hours` | `3` | 检查间隔，`1 / 3 / 6 / 12 小时` |
 | `minimizeToTray` | `window.minimize_to_tray` | `true` | 关闭到系统托盘 |
 | `logRetentionDays` | `log.retention_days` | `30` | `7 / 30 / 60 / 90 / 180 / 365 / 永不清理` |
 | `logLevel` | `log.level` | `info` | `debug / info / warning / error` |
@@ -134,6 +136,14 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 
 `neutral`、`stone`、`zinc`、`mauve`、`olive`、`mist`、`taupe`、`amber`、`blue`、`cyan`、`emerald`、`fuchsia`、`green`、`indigo`、`lime`、`orange`、`pink`、`purple`、`red`、`rose`、`sky`、`teal`、`violet`、`yellow`。
 
+当前前端类型契约：
+
+```ts
+export type BaseColor = "neutral" | "stone" | "zinc" | "mauve" | "olive" | "mist" | "taupe"
+```
+
+Theme / Accent / Chart Color 是三条独立显示轴：Theme 控制主强调，Accent 控制辅助强调，Chart Color 只控制统计图表 token。Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
+
 显示偏好规则：
 
 - 切换后立即更新 DOM，再异步保存到 SQLite KV。
@@ -142,12 +152,12 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 - `themeColor` 控制主按钮、选中态、焦点环和关键进度。
 - `accentColor` 控制次级强调和 hover / focus 辅助强调。
 - `chartColor` 只服务图表和统计色，不偷用 Theme 或 Accent。
-- `Icon Library` 不作为设置项，未接入多图标包渲染前固定 Lucide。
+- Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
 - 禁止远程字体加载，字体族固定系统字体。
 
-## 5. 主题和 CSS 边界
+## 5. 主题和 CSS 归属规则
 
-`frontend/src/styles.css` 只允许承载：
+`frontend/src/styles.css` 只放 Tailwind import、主题 token、全局 reset、focus 和根级媒体变量，只允许承载：
 
 - Tailwind v4 import。
 - `@theme inline` token 映射。
@@ -303,9 +313,17 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 
 - 先读代码，先找根因，禁止未核对就下结论。
 - 精确修改，避免无关重写。
-- 测试只放独立 `tests/` 模块；生产目录旁边不放 Go `_test.go`。
-- `scripts/` 只放可执行工具和工具依赖代码。
-- 临时截图、调试日志、一次性输出只写 `.tmp/`。
+- 测试只能放在独立 `tests/` 模块；生产目录旁边不放 Go `_test.go`。
+- `scripts/` 只放可执行工具和工具依赖代码，不放测试用例、截图、临时日志或一次性调试脚本。
+- 临时截图、浏览器截图、调试日志、一次性输出必须写入 `.tmp/`。
+- PC 端 `1440×900` 和窄屏视口都要覆盖前端视觉验证。
+- 代码注释必须覆盖模块边界、导出 API、结构体字段、页面状态变量、测试用例意图、失败原因、复杂流程和工程约束。
+- 变量、结构体字段、测试用例只要承载业务语义或约束，就必须说明存在原因、影响范围和默认值。
+- 日志必须覆盖运行时、窗口、设置、更新、存储、单实例和进程级错误；`log`、`slog`、`stdout`、`stderr` 都必须接入统一日志框架并写每日 JSONL 文件。
+- 日志界面默认折叠筛选，日志表格优先保证内容列可读。
+- 设置页只放能修改状态的控件；只读信息、路径、Release 来源和技术栈放关于页或诊断弹窗。
+- 禁止只记录偏好但不改变实际界面/行为的假设置。
+- 禁止远程字体加载。
 - UI 调试优先 Browser / Chrome 插件，禁止把 Playwright 引入仓库依赖或脚本。
 - 未经确认不执行删除、覆盖、回滚、清理类危险操作。
 - 未经用户要求不自动运行测试。

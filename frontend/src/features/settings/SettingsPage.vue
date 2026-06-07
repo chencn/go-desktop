@@ -381,7 +381,7 @@ function persistDisplayPreferences() {
               <strong>开机自启时隐藏到托盘</strong>
               <small>仅对开机自启入口生效；手动启动仍显示界面。</small>
             </span>
-            <UiSwitch class="settings-control-switch" :checked="draft.launchHiddenToTray" :disabled="!settingsReady || !draft.autoLaunch" aria-label="开机自启时隐藏到托盘" @update:checked="persistSettingsPatch({ launchHiddenToTray: $event })" />
+            <UiSwitch class="settings-control-switch" :checked="draft.launchHiddenToTray" :disabled="!draft.autoLaunch" aria-label="开机自启时隐藏到托盘" @update:checked="persistSettingsPatch({ launchHiddenToTray: $event })" />
           </div>
           <div class="settings-compact-row">
             <span class="data-icon icon-tone-green" aria-hidden="true"><AppWindow :size="17" /></span>
