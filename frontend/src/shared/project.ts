@@ -60,11 +60,11 @@ export const projectMetadata = {
   // Windows 平台配置
   "windows": {
     // 单实例唯一标识
-    "singleInstanceId": "com.chencn.go-desktop",
+    "singleInstanceId": "com.github.chencn.go-desktop",
     // 产品标识符
-    "productIdentifier": "com.chencn.godesktop",
+    "productIdentifier": "com.github.chencn.godesktop",
     // 窗口类名
-    "windowClass": "GoDesktopWailsWindow",
+    "windowClass": "com.github.chencn.go-desktop-window",
     // 安装目录
     "installDir": "$LOCALAPPDATA\\Programs\\go-desktop",
     // 卸载注册表键名

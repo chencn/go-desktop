@@ -8,7 +8,7 @@
   IgnorableNamespaces="uap3">
 
   <Identity
-    Name="com.chencn.godesktop"
+    Name="com.github.chencn.godesktop"
     Publisher="CN=chencn"
     Version="0.0.1.0"
     ProcessorArchitecture="x64" />
@@ -29,7 +29,7 @@
   </Resources>
 
   <Applications>
-    <Application Id="com.chencn.godesktop" Executable="go-desktop.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="com.github.chencn.godesktop" Executable="go-desktop.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="go-desktop"
         Description="Wails3 中文桌面工具"

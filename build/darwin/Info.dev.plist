@@ -8,7 +8,7 @@
         <key>CFBundleExecutable</key>
             <string>go-desktop</string>
         <key>CFBundleIdentifier</key>
-            <string>com.chencn.godesktop.dev</string>
+            <string>com.github.chencn.godesktop.dev</string>
         <key>CFBundleVersion</key>
             <string>0.0.1</string>
         <key>CFBundleGetInfoString</key>

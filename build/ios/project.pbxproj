@@ -176,7 +176,7 @@
 			buildSettings = {
 				INFOPLIST_FILE = main/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.chencn.godesktop";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.github.chencn.godesktop";
 				PRODUCT_NAME = "go-desktop";
 				CODE_SIGNING_ALLOWED = NO;
 				SDKROOT = iphonesimulator;
@@ -188,7 +188,7 @@
 			buildSettings = {
 				INFOPLIST_FILE = main/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.chencn.godesktop";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.github.chencn.godesktop";
 				PRODUCT_NAME = "go-desktop";
 				CODE_SIGNING_ALLOWED = NO;
 				SDKROOT = iphonesimulator;

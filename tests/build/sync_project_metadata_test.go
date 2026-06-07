@@ -28,7 +28,9 @@ type projectMetadataFixture struct {
 		LaunchHiddenToTray       bool `json:"launchHiddenToTray"`       // LaunchHiddenToTray 保存 launchHiddenToTray 对应的数据，供当前实体的调用方读取或持久化。
 	} `json:"settingsDefaults"`
 	Windows struct { // Windows 保存 Windows 对应的数据，供当前实体的调用方读取或持久化。
-		WindowClass string `json:"windowClass"` // WindowClass 保存 windowClass 对应的数据，供当前实体的调用方读取或持久化。
+		SingleInstanceID  string `json:"singleInstanceId"`  // SingleInstanceID 保存 singleInstanceId 对应的数据，供当前实体的调用方读取或持久化。
+		ProductIdentifier string `json:"productIdentifier"` // ProductIdentifier 保存 productIdentifier 对应的数据，供当前实体的调用方读取或持久化。
+		WindowClass       string `json:"windowClass"`       // WindowClass 保存 windowClass 对应的数据，供当前实体的调用方读取或持久化。
 	} `json:"windows"`
 }
 
@@ -61,7 +63,7 @@ func TestSyncProjectMetadataPrintsCurrentDefaults(t *testing.T) {
 		"settings.autoLaunch":            "false",
 		"settings.createDesktopShortcut": "true",
 		"settings.launchHiddenToTray":    "false",
-		"windows.windowClass":            "GoDesktopWailsWindow",
+		"windows.windowClass":            "com.github.chencn.go-desktop-window",
 	} {
 		if got := runSyncProjectMetadata(t, "-print", key); got != want {
 			t.Fatalf("metadata print %s = %q, want %q", key, got, want)
@@ -79,6 +81,8 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 			`APP_VERSION: '{{env "APP_VERSION" | default "0.0.1"}}'`,
 		},
 		"frontend/src/shared/project.ts": {
+			`"singleInstanceId": "com.github.chencn.go-desktop"`,
+			`"productIdentifier": "com.github.chencn.godesktop"`,
 			`"updateCheckIntervalHours": 3`,
 			`"autoLaunch": false`,
 			`"createDesktopShortcut": true`,
@@ -89,8 +93,18 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 			`launchHiddenToTray: projectMetadata.settingsDefaults.launchHiddenToTray`,
 		},
 		"build/windows/nsis/project_metadata.nsh": {
-			`!define APP_WINDOW_CLASS    "GoDesktopWailsWindow"`,
+			`!define APP_WINDOW_CLASS    "com.github.chencn.go-desktop-window"`,
 			`!define APP_WINDOW_TITLE    "go-desktop"`,
+		},
+		"build/android/app/build.gradle": {
+			`applicationId "com.github.chencn.godesktop"`,
+		},
+		"build/ios/project.pbxproj": {
+			`PRODUCT_BUNDLE_IDENTIFIER = "com.github.chencn.godesktop";`,
+		},
+		"build/windows/msix/app_manifest.xml": {
+			`Name="com.github.chencn.godesktop"`,
+			`<Application Id="com.github.chencn.godesktop"`,
 		},
 	} {
 		source := readRootFile(t, path)
@@ -109,7 +123,9 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 		{"DefaultAutoLaunch", "false"},
 		{"DefaultCreateDesktopShortcut", "true"},
 		{"DefaultLaunchHiddenToTray", "false"},
-		{"WindowsWindowClass", `"GoDesktopWailsWindow"`},
+		{"WindowsSingleInstanceID", `"com.github.chencn.go-desktop"`},
+		{"WindowsProductID", `"com.github.chencn.godesktop"`},
+		{"WindowsWindowClass", `"com.github.chencn.go-desktop-window"`},
 	} {
 		requireLineContaining(t, "internal/desktopapp/metadata/metadata.go", projectSource, fields...)
 	}
@@ -125,7 +141,10 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 		meta.SettingsDefaults.LaunchHiddenToTray {
 		t.Fatalf("unexpected project settings defaults: %#v", meta.SettingsDefaults)
 	}
-	if meta.Windows.WindowClass != "GoDesktopWailsWindow" || meta.RepositoryURL != "https://github.com/chencn/go-desktop" {
+	if meta.Windows.SingleInstanceID != "com.github.chencn.go-desktop" ||
+		meta.Windows.ProductIdentifier != "com.github.chencn.godesktop" ||
+		meta.Windows.WindowClass != "com.github.chencn.go-desktop-window" ||
+		meta.RepositoryURL != "https://github.com/chencn/go-desktop" {
 		t.Fatalf("unexpected generated project integration metadata: %#v", meta)
 	}
 }

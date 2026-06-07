@@ -81,11 +81,11 @@ const (
 
 const (
 	// WindowsSingleInstanceID 单实例标识跨版本必须稳定，否则第二次启动无法找到已运行实例
-	WindowsSingleInstanceID = "com.chencn.go-desktop"
+	WindowsSingleInstanceID = "com.github.chencn.go-desktop"
 	// WindowsProductID Windows 产品标识用于构建产物和平台元信息
-	WindowsProductID = "com.chencn.godesktop"
+	WindowsProductID = "com.github.chencn.godesktop"
 	// WindowsWindowClass Windows 窗口类名同时被 NSIS 引用，用于安装前定位并关闭正在运行的窗口
-	WindowsWindowClass = "GoDesktopWailsWindow"
+	WindowsWindowClass = "com.github.chencn.go-desktop-window"
 	// WindowsInstallDir 当前用户安装目录由 NSIS 使用，避免写 Program Files 和触发管理员权限
 	WindowsInstallDir = "$LOCALAPPDATA\\Programs\\go-desktop"
 	// WindowsUninstallKeyName 卸载注册表项名必须稳定，否则升级和卸载记录会分裂

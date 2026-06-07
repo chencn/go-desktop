@@ -113,7 +113,7 @@ func main() {
 	mustWrite("build/android/Taskfile.yml", renderAndroidTaskfile(meta))
 	mustWrite("build/ios/Taskfile.yml", renderIOSTaskfile(meta))
 	mustWrite("build/ios/LaunchScreen.storyboard", renderIOSLaunchScreen(meta))
-	mustWrite("build/ios/metadata.pbxproj", renderIOSProjectPBXProj(meta))
+	mustWrite("build/ios/project.pbxproj", renderIOSProjectPBXProj(meta))
 	mustWrite(".github/workflows/release.yml", renderReleaseWorkflow(meta, wailsVersion))
 }
 
@@ -1838,7 +1838,7 @@ tasks:
     generates:
       - build/ios/xcode/main/main.m
       - build/ios/xcode/main/Assets.xcassets/**/*
-      - build/ios/xcode/metadata.pbxproj
+      - build/ios/xcode/project.pbxproj
     cmds:
       - wails3 ios xcode:gen -outdir build/ios/xcode -config build/config.yml
 

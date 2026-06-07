@@ -23,7 +23,7 @@ func TestMetadataDefinesStableProductDefaults(t *testing.T) {
 	if metadata.UserAgent != "go-desktop-updater" {
 		t.Fatalf("unexpected updater user agent: %q", metadata.UserAgent)
 	}
-	if metadata.WindowsWindowClass != "GoDesktopWailsWindow" {
+	if metadata.WindowsWindowClass != "com.github.chencn.go-desktop-window" {
 		t.Fatalf("unexpected window class: %q", metadata.WindowsWindowClass)
 	}
 	if metadata.WindowsSingleInstanceID == "" {

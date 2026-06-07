@@ -5,6 +5,6 @@
 !define INFO_COPYRIGHT      "© 2026, chencn"
 !define PRODUCT_EXECUTABLE  "go-desktop.exe"
 !define UNINST_KEY_NAME     "chencn-go-desktop"
-!define APP_WINDOW_CLASS    "GoDesktopWailsWindow"
+!define APP_WINDOW_CLASS    "com.github.chencn.go-desktop-window"
 !define APP_WINDOW_TITLE    "go-desktop"
 !define APP_INSTALL_DIR     "$LOCALAPPDATA\Programs\go-desktop"

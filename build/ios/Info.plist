@@ -5,7 +5,7 @@
     <key>CFBundleExecutable</key>
     <string>go-desktop</string>
     <key>CFBundleIdentifier</key>
-    <string>com.chencn.godesktop</string>
+    <string>com.github.chencn.godesktop</string>
     <key>CFBundleName</key>
     <string>go-desktop</string>
     <key>CFBundleDisplayName</key>

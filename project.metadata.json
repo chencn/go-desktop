@@ -24,9 +24,9 @@
     "launchHiddenToTray": false
   },
   "windows": {
-    "singleInstanceId": "com.chencn.go-desktop",
-    "productIdentifier": "com.chencn.godesktop",
-    "windowClass": "GoDesktopWailsWindow",
+    "singleInstanceId": "com.github.chencn.go-desktop",
+    "productIdentifier": "com.github.chencn.godesktop",
+    "windowClass": "com.github.chencn.go-desktop-window",
     "installDir": "$LOCALAPPDATA\\Programs\\go-desktop",
     "uninstallKeyName": "chencn-go-desktop"
   }

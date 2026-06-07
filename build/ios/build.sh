@@ -3,7 +3,7 @@ set -e
 
 # 由 scripts/sync_project_metadata.go 根据 project.metadata.json 生成；不要手工修改。
 APP_NAME="go-desktop"
-BUNDLE_ID="com.chencn.godesktop"
+BUNDLE_ID="com.github.chencn.godesktop"
 VERSION="0.0.1"
 BUILD_NUMBER="0.0.1"
 BUILD_DIR="build/ios"
