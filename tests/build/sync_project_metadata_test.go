@@ -242,6 +242,18 @@ func TestReleaseWorkflowGeneratesBindingsBeforeFrontendTypeCheck(t *testing.T) {
 	)
 }
 
+func TestReleaseWorkflowPublishesNsisPathBeforePackaging(t *testing.T) {
+	source := readRootFile(t, ".github/workflows/release.yml")
+	requireInOrder(t, ".github/workflows/release.yml", source,
+		`- name: 安装 NSIS`,
+		`choco install nsis -y --no-progress`,
+		`$nsisPath = "${env:ProgramFiles(x86)}\NSIS"`,
+		`$nsisPath >> $env:GITHUB_PATH`,
+		`makensis /VERSION`,
+		`- name: 打包 Windows 安装器`,
+	)
+}
+
 func TestStageLocalUpdateWritesGithubCompatibleStaticFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	payload := []byte("fake windows installer")

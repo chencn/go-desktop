@@ -56,7 +56,15 @@ jobs:
 
       - name: 安装 NSIS
         shell: pwsh
-        run: choco install nsis -y --no-progress
+        run: |
+          choco install nsis -y --no-progress
+          $nsisPath = "${env:ProgramFiles(x86)}\NSIS"
+          if (!(Test-Path (Join-Path $nsisPath "makensis.exe"))) {
+            throw "找不到 makensis.exe：$nsisPath"
+          }
+          $nsisPath >> $env:GITHUB_PATH
+          $env:PATH = "$nsisPath;$env:PATH"
+          makensis /VERSION
 
       - name: 安装 Wails3
         shell: pwsh
