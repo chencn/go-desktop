@@ -82,6 +82,8 @@ type ProgressFunc func(Progress)
 // InstallerRunner 是安装器运行函数类型
 type InstallerRunner = installer.Runner
 
+const maxUpdateDownloadBytes int64 = 2 * 1024 * 1024 * 1024
+
 // ChecksumMismatchError 是校验和不匹配错误
 type ChecksumMismatchError struct {
 	Expected string // 期望的 SHA256
@@ -156,6 +158,10 @@ func (m *Manager) DownloadAndVerify(ctx context.Context, asset ReleaseAsset, pro
 	if len(asset.Sha256) != 64 {
 		return DownloadResult{}, fmt.Errorf("SHA256 格式无效：%s", asset.Sha256)
 	}
+	downloadLimit, err := downloadSizeLimit(asset.AssetSizeBytes)
+	if err != nil {
+		return DownloadResult{}, err
+	}
 
 	// 解析版本号
 	version := asset.LatestVersion
@@ -191,13 +197,16 @@ func (m *Manager) DownloadAndVerify(ctx context.Context, asset ReleaseAsset, pro
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return DownloadResult{}, fmt.Errorf("下载安装包返回 HTTP %d", resp.StatusCode)
 	}
+	if resp.ContentLength > downloadLimit {
+		return DownloadResult{}, fmt.Errorf("安装包大小超过允许上限：%d > %d", resp.ContentLength, downloadLimit)
+	}
 
 	// 写入临时文件
 	file, err := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return DownloadResult{}, err
 	}
-	written, copyErr := copyWithProgress(file, resp.Body, resp.ContentLength, progress)
+	written, copyErr := copyWithProgress(file, resp.Body, resp.ContentLength, downloadLimit, progress)
 	closeErr := file.Close()
 	if copyErr != nil {
 		_ = os.Remove(tempPath)
@@ -325,22 +334,53 @@ func IsOfflineError(err error) bool {
 	return neterr.IsOfflineError(err)
 }
 
+func downloadSizeLimit(assetSizeBytes int64) (int64, error) {
+	if assetSizeBytes < 0 {
+		return 0, fmt.Errorf("安装包大小无效：%d", assetSizeBytes)
+	}
+	if assetSizeBytes > maxUpdateDownloadBytes {
+		return 0, fmt.Errorf("安装包大小超过允许上限：%d > %d", assetSizeBytes, maxUpdateDownloadBytes)
+	}
+	if assetSizeBytes > 0 {
+		return assetSizeBytes, nil
+	}
+	return maxUpdateDownloadBytes, nil
+}
+
 // copyWithProgress 带进度回调的文件复制
 // 参数:
 //   - dst: 目标写入器
 //   - src: 源读取器
 //   - total: 总字节数（可能为 -1 表示未知）
+//   - maxBytes: 最大允许写入字节数
 //   - progress: 进度回调函数
 //
 // 返回:
 //   - int64: 实际写入的字节数
 //   - error: 错误信息
-func copyWithProgress(dst io.Writer, src io.Reader, total int64, progress ProgressFunc) (int64, error) {
+func copyWithProgress(dst io.Writer, src io.Reader, total int64, maxBytes int64, progress ProgressFunc) (int64, error) {
 	buffer := make([]byte, 64*1024)
 	var written int64
 	for {
 		n, readErr := src.Read(buffer)
 		if n > 0 {
+			if maxBytes > 0 && written+int64(n) > maxBytes {
+				remaining := maxBytes - written
+				if remaining > 0 {
+					w, writeErr := dst.Write(buffer[:int(remaining)])
+					written += int64(w)
+					if progress != nil {
+						progress(Progress{Stage: "downloading", DownloadedBytes: written, TotalBytes: total})
+					}
+					if writeErr != nil {
+						return written, writeErr
+					}
+					if int64(w) != remaining {
+						return written, io.ErrShortWrite
+					}
+				}
+				return written, fmt.Errorf("下载安装包超过允许大小：%d 字节", maxBytes)
+			}
 			w, writeErr := dst.Write(buffer[:n])
 			written += int64(w)
 			if progress != nil {

@@ -35,6 +35,7 @@ type metadata struct {
 	RepositoryComment string         `json:"repositoryComment"` // RepositoryComment 保存 repositoryComment 对应的数据，供当前文件的生成或运行流程读取。
 	Copyright         string         `json:"copyright"`         // Copyright 保存 copyright 对应的数据，供当前文件的生成或运行流程读取。
 	GitHub            githubMetadata `json:"github"`            // GitHub 保存 github 对应的数据，供当前文件的生成或运行流程读取。
+	Update            updateMetadata `json:"update"`            // Update 保存 update 对应的数据，供当前文件的生成或运行流程读取。
 	SettingsDefaults  settingsMeta   `json:"settingsDefaults"`  // SettingsDefaults 保存 settingsDefaults 对应的数据，供当前文件的生成或运行流程读取。
 	Windows           windowsMeta    `json:"windows"`           // Windows 保存 windows 对应的数据，供当前文件的生成或运行流程读取。
 }
@@ -46,6 +47,13 @@ type githubMetadata struct {
 	APIBase    string `json:"apiBase"`    // APIBase 保存 apiBase 对应的数据，供当前文件的生成或运行流程读取。
 	APIVersion string `json:"apiVersion"` // APIVersion 保存 apiVersion 对应的数据，供当前文件的生成或运行流程读取。
 	UserAgent  string `json:"userAgent"`  // UserAgent 保存 userAgent 对应的数据，供当前文件的生成或运行流程读取。
+}
+
+// updateMetadata 定义更新源默认值和本地静态 manifest 位置。
+type updateMetadata struct {
+	DefaultSource     string `json:"defaultSource"`     // DefaultSource 保存默认更新源，允许 github 或 local。
+	LocalBaseURL      string `json:"localBaseUrl"`      // LocalBaseURL 保存本地静态升级根地址。
+	LocalManifestPath string `json:"localManifestPath"` // LocalManifestPath 保存本地 latest.json 相对路径。
 }
 
 // settingsMeta 定义读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 使用的数据实体，字段会直接参与校验、渲染或平台适配。
@@ -171,6 +179,9 @@ func validate(meta metadata) {
 		"github.apiBase":            meta.GitHub.APIBase,
 		"github.apiVersion":         meta.GitHub.APIVersion,
 		"github.userAgent":          meta.GitHub.UserAgent,
+		"update.defaultSource":      meta.Update.DefaultSource,
+		"update.localBaseUrl":       meta.Update.LocalBaseURL,
+		"update.localManifestPath":  meta.Update.LocalManifestPath,
 		"windows.singleInstanceId":  meta.Windows.SingleInstanceID,
 		"windows.productIdentifier": meta.Windows.ProductIdentifier,
 		"windows.windowClass":       meta.Windows.WindowClass,
@@ -184,6 +195,11 @@ func validate(meta metadata) {
 	}
 	if meta.SettingsDefaults.UpdateCheckIntervalHours <= 0 {
 		exitf("project.metadata.json 的 settingsDefaults.updateCheckIntervalHours 必须大于 0")
+	}
+	switch strings.ToLower(strings.TrimSpace(meta.Update.DefaultSource)) {
+	case "github", "local":
+	default:
+		exitf("project.metadata.json 的 update.defaultSource 必须为 github 或 local")
 	}
 	if !meta.SettingsDefaults.MinimizeToTray {
 		exitf("project.metadata.json 的 settingsDefaults.minimizeToTray 当前必须为 true，避免缺字段时静默关闭托盘策略")
@@ -218,6 +234,9 @@ func printValue(meta metadata, key string) {
 		"github.apiBase":                 meta.GitHub.APIBase,
 		"github.apiVersion":              meta.GitHub.APIVersion,
 		"github.userAgent":               meta.GitHub.UserAgent,
+		"update.defaultSource":           meta.Update.DefaultSource,
+		"update.localBaseUrl":            meta.Update.LocalBaseURL,
+		"update.localManifestPath":       meta.Update.LocalManifestPath,
 		"settings.githubProxyBase":       meta.SettingsDefaults.GitHubProxyBase,
 		"settings.updateInterval":        fmt.Sprintf("%d", meta.SettingsDefaults.UpdateCheckIntervalHours),
 		"settings.minimizeToTray":        fmt.Sprintf("%t", meta.SettingsDefaults.MinimizeToTray),
@@ -253,7 +272,8 @@ includes:
 
 vars:
   APP_NAME: %s
-  APP_VERSION: '{{env "APP_VERSION" | default %s}}'
+  APP_VERSION:
+    sh: go run ./scripts/resolve_app_version.go -mode '{{env "APP_VERSION_MODE" | default "local"}}' -config build/config.yml -version '{{env "APP_VERSION"}}' -tag '{{env "GITHUB_REF_NAME"}}'
   BIN_DIR: "bin"
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
 
@@ -264,9 +284,17 @@ tasks:
       - task: "{{OS}}:build"
 
   package:
-    summary: Packages a production build of the application
+    summary: Packages Windows installer and stages local static update files
     cmds:
-      - task: "{{OS}}:package"
+      - task: windows:package
+      - go build -o ".tmp/local-release-stage.exe" ./scripts/stage_local_update.go
+      - '.tmp/local-release-stage.exe -version "{{.APP_VERSION}}" -installer "{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe" -out "{{.BIN_DIR}}/{{.APP_NAME}}" -arch amd64'
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe','{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe','{{.BIN_DIR}}/local-release-stage.exe','.tmp/local-release-stage.exe' -Force -ErrorAction SilentlyContinue"
+
+  package:github:
+    summary: Packages a production build for GitHub Release
+    cmds:
+      - task: windows:package
 
   run:
     summary: Runs the application
@@ -290,9 +318,10 @@ tasks:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
   test:
-    summary: Runs the isolated test module
+    summary: Runs the isolated Go and frontend test modules
     cmds:
       - cd tests && go test ./...
+      - cd frontend && go run ../scripts/envrun npm test
 
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)
@@ -318,7 +347,7 @@ tasks:
     summary: Builds and runs the Docker image
     cmds:
       - task: common:run:docker
-`, yamlString(meta.AppName), yamlString(meta.DefaultVersion))
+`, yamlString(meta.AppName))
 }
 
 // renderFrontendIndex 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
@@ -377,6 +406,11 @@ const (
 	// 请求标识是 GitHub REST API 要求项，Release 列表和资产下载都复用它。
 	UserAgent        = %s
 
+	// 更新源默认值和本地静态升级 manifest 位置。
+	DefaultUpdateSource     = %s
+	LocalUpdateBaseURL      = %s
+	LocalUpdateManifestPath = %s
+
 	// 默认设置由同一份项目元数据派生，避免 Go、前端和脚本各写一份。
 	DefaultGitHubProxyBase          = %s
 	DefaultUpdateCheckIntervalHours = %d
@@ -431,6 +465,9 @@ func WindowsSetupAssetNameWithoutV(version string) string {
 		goString(meta.GitHub.APIBase),
 		goString(meta.GitHub.APIVersion),
 		goString(meta.GitHub.UserAgent),
+		goString(meta.Update.DefaultSource),
+		goString(meta.Update.LocalBaseURL),
+		goString(meta.Update.LocalManifestPath),
 		goString(meta.SettingsDefaults.GitHubProxyBase),
 		meta.SettingsDefaults.UpdateCheckIntervalHours,
 		meta.SettingsDefaults.MinimizeToTray,
@@ -458,6 +495,7 @@ export const projectMetadata = %s as const
 
 // defaultSettings 从完整元数据中提取运行期可编辑设置的默认值。
 export const defaultSettings = {
+  updateSource: projectMetadata.update.defaultSource,
   githubOwner: projectMetadata.github.owner,
   githubRepo: projectMetadata.github.repo,
   githubProxyBase: projectMetadata.settingsDefaults.githubProxyBase,
@@ -2237,7 +2275,7 @@ func renderReleaseWorkflow(meta metadata, wailsVersion string) string {
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v*"
 
 permissions:
   contents: write
@@ -2263,12 +2301,17 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
-            throw "发布标签必须符合 vX.Y.Z，当前是 $tag"
+          if ($tag -notmatch '^v\d+(\.\d+){0,2}$') {
+            throw "发布标签必须符合 vX、vX.Y 或 vX.Y.Z，当前是 $tag"
           }
-          $version = $tag.TrimStart('v')
+          $parts = $tag.TrimStart('v').Split('.')
+          while ($parts.Count -lt 3) {
+            $parts += '0'
+          }
+          $version = $parts -join '.'
           "version=$version" >> $env:GITHUB_OUTPUT
           "APP_VERSION=$version" >> $env:GITHUB_ENV
+          "APP_VERSION_MODE=github" >> $env:GITHUB_ENV
 
       - name: 设置 Go
         uses: actions/setup-go@v5
@@ -2300,6 +2343,10 @@ jobs:
         run: npm ci
         working-directory: frontend
 
+      - name: 生成 Wails 绑定
+        shell: pwsh
+        run: wails3 generate bindings -f '-tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui -X main.appVersion=${{ steps.version.outputs.version }}"' -clean=false -ts
+
       - name: 前端类型检查
         shell: pwsh
         run: npx vue-tsc --noEmit
@@ -2320,7 +2367,7 @@ jobs:
 
       - name: 打包 Windows 安装器
         shell: pwsh
-        run: wails3 task windows:package
+        run: wails3 task package:github
 
       - name: 生成 SHA256
         id: assets
@@ -2338,8 +2385,8 @@ jobs:
       - name: 创建 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: %s ${{ github.ref_name }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: %s v${{ steps.version.outputs.version }}
           draft: false
           prerelease: false
           generate_release_notes: true

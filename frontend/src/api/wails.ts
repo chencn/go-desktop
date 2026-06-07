@@ -67,9 +67,12 @@ export type EnvironmentInfo = {
 
 /** 更新检查结果状态 */
 export type UpdateCheckStatus = 'no_update' | 'update_available' | 'ignored' | 'error'
+export type UpdateSource = 'github' | 'local'
 
 /** 单次更新检查结果 */
 export type UpdateCheckResult = {
+  /** 更新源 */
+  source?: UpdateSource
   /** 检查状态 */
   status: UpdateCheckStatus
   /** 当前版本 */
@@ -114,6 +117,8 @@ export type LogLevel = 'debug' | 'info' | 'warning' | 'error'
 
 /** 应用设置 */
 export type Settings = {
+  /** 更新源 */
+  updateSource: UpdateSource
   /** GitHub 仓库所有者 */
   githubOwner: string
   /** GitHub 仓库名称 */
@@ -314,6 +319,8 @@ export type UpdateStatus = {
   verified: boolean
   /** 错误原因（内部错误码） */
   errorReason?: string
+  /** 更新源 */
+  source?: UpdateSource
   /** 状态更新时间 */
   updatedAt: string
 }
@@ -538,6 +545,7 @@ export async function checkUpdate(): Promise<UpdateCheckResult> {
     return await binding('CheckUpdate')()
   } catch (error) {
     return previewFallback(() => ({
+      source: defaultRuntimeSettings.updateSource,
       status: 'ignored',
       currentVersion: projectMetadata.defaultVersion,
       requestUrl: `${projectMetadata.github.apiBase}/repos/${projectMetadata.github.owner}/${projectMetadata.github.repo}/releases?per_page=30`,
@@ -558,6 +566,7 @@ export async function getUpdateStatus(): Promise<UpdateStatus> {
       status: 'idle',
       message: '前端预览模式下未连接更新服务。',
       verified: false,
+      source: defaultRuntimeSettings.updateSource,
       updatedAt: new Date().toISOString(),
     }), error)
   }
@@ -572,6 +581,7 @@ export async function downloadUpdate(): Promise<UpdateStatus> {
       status: 'skipped',
       message: '前端预览模式下已跳过下载和校验。',
       verified: false,
+      source: defaultRuntimeSettings.updateSource,
       errorReason: 'preview',
       updatedAt: new Date().toISOString(),
     }), error)
@@ -587,6 +597,7 @@ export async function installDownloadedUpdate(): Promise<UpdateStatus> {
       status: 'error',
       message: '前端预览模式下无法启动安装器。',
       verified: false,
+      source: defaultRuntimeSettings.updateSource,
       errorReason: 'preview',
       updatedAt: new Date().toISOString(),
     }), error)
@@ -602,6 +613,7 @@ export async function scheduleDownloadedUpdateOnStartup(): Promise<UpdateStatus>
       status: 'pending_install',
       message: '前端预览模式下已模拟安排下次启动更新。',
       verified: true,
+      source: defaultRuntimeSettings.updateSource,
       updatedAt: new Date().toISOString(),
     }), error)
   }

@@ -9,8 +9,9 @@ import type {LogResponse, UpdateCheckResult} from '../../frontend/src/api/wails'
 
 // checkResult 是最小更新检查样例；缺少 sha256 时必须进入受保护错误态。
 const checkResult: UpdateCheckResult = {
+  source: 'local',
   status: 'update_available',
-  currentVersion: '0.0.1',
+  currentVersion: '1.0.0',
   latestVersion: '0.0.2',
   tagName: 'v0.0.2',
   assetName: 'go-desktop.exe',
@@ -24,6 +25,7 @@ describe('app state reducer', () => {
       status: 'error',
       version: '0.0.2',
       errorReason: 'sha256_missing',
+      source: 'local',
       verified: false,
     })
   })
@@ -36,6 +38,7 @@ describe('app state reducer', () => {
 
     expect(next.latestUpdateCheck?.latestVersion).toBe('0.0.2')
     expect(next.updateStatus?.status).toBe('update_available')
+    expect(next.updateStatus?.source).toBe('local')
   })
 
   it('applies paged log responses as one immutable state update', () => {

@@ -4,9 +4,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 	"sync"
 )
+
+const maxCapturedLineBytes = 1024 * 1024
 
 type StreamCapture struct {
 	oldStdout    *os.File
@@ -52,19 +56,55 @@ func NewStreamCapture(onLine func(stream, line string), onError func(stream stri
 
 func (c *StreamCapture) copyLines(stream string, reader *os.File, mirror *os.File) {
 	defer c.wait.Done()
-	scanner := bufio.NewScanner(reader)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if mirror != nil {
-			_, _ = fmt.Fprintln(mirror, line)
+	buffered := bufio.NewReaderSize(reader, 64*1024)
+	line := make([]byte, 0, 64*1024)
+	truncated := false
+	for {
+		chunk, err := buffered.ReadSlice('\n')
+		if len(chunk) > 0 {
+			if len(line) < maxCapturedLineBytes {
+				remaining := maxCapturedLineBytes - len(line)
+				if len(chunk) > remaining {
+					line = append(line, chunk[:remaining]...)
+					truncated = true
+				} else {
+					line = append(line, chunk...)
+				}
+			} else {
+				truncated = true
+			}
+			if chunk[len(chunk)-1] == '\n' {
+				c.emitLine(stream, mirror, line, truncated)
+				line = line[:0]
+				truncated = false
+			}
 		}
-		if c.onLine != nil {
-			c.onLine(stream, line)
+		if err == nil || errors.Is(err, bufio.ErrBufferFull) {
+			continue
 		}
+		if errors.Is(err, io.EOF) {
+			if len(line) > 0 {
+				c.emitLine(stream, mirror, line, truncated)
+			}
+			return
+		}
+		if !errors.Is(err, os.ErrClosed) && c.onError != nil {
+			c.onError(stream, err)
+		}
+		return
 	}
-	if err := scanner.Err(); err != nil && !errors.Is(err, os.ErrClosed) && c.onError != nil {
-		c.onError(stream, err)
+}
+
+func (c *StreamCapture) emitLine(stream string, mirror *os.File, raw []byte, truncated bool) {
+	line := strings.TrimRight(string(raw), "\r\n")
+	if truncated {
+		line += " ...[truncated]"
+	}
+	if mirror != nil {
+		_, _ = fmt.Fprintln(mirror, line)
+	}
+	if c.onLine != nil {
+		c.onLine(stream, line)
 	}
 }
 

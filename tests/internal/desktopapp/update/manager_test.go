@@ -121,6 +121,32 @@ func TestDownloadAndVerifyDeletesFileOnChecksumMismatch(t *testing.T) {
 	}
 }
 
+func TestDownloadAndVerifyRejectsOversizedResponse(t *testing.T) {
+	payload := []byte("installer payload is larger than declared")
+	cacheDir := t.TempDir()
+
+	_, err := updater.NewManager(updater.Config{
+		CacheDir: cacheDir,
+		Client:   httpClient(http.StatusOK, payload),
+	}).DownloadAndVerify(context.Background(), updater.ReleaseAsset{
+		LatestVersion:    "1.2.3",
+		AssetName:        "go-desktop-v1.2.3-windows-amd64.exe",
+		AssetSizeBytes:   4,
+		AssetDownloadURL: "https://example.test/installer.exe",
+		Sha256:           sha256Hex(payload),
+	}, nil)
+	if err == nil {
+		t.Fatal("expected oversized response to be rejected")
+	}
+	target := filepath.Join(cacheDir, "1.2.3", "go-desktop-v1.2.3-windows-amd64.exe")
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Fatalf("expected oversized download target to be absent, stat err=%v", err)
+	}
+	if _, err := os.Stat(target + ".download"); !os.IsNotExist(err) {
+		t.Fatalf("expected oversized download temp file to be deleted, stat err=%v", err)
+	}
+}
+
 // TestInstallRequiresVerifiedFilePath 验证 管理更新包下载、校验、待安装状态和安装器启动 的关键行为，避免后续重构破坏既有约束。
 func TestInstallRequiresVerifiedFilePath(t *testing.T) {
 	manager := updater.NewManager(updater.Config{

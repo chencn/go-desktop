@@ -80,6 +80,23 @@ func TestQueryLogsDefaultsAndHasMore(t *testing.T) {
 	}
 }
 
+func TestQueryLogsClampsHugePageWithoutPanic(t *testing.T) {
+	runtime := app.NewRuntime(app.ServiceOptions{})
+	runtime.RecordLog("update", "第一条")
+
+	maxInt := int(^uint(0) >> 1)
+	response := runtime.QueryLogs(app.LogQuery{Page: maxInt, PageSize: 200})
+	if response.Total != 1 {
+		t.Fatalf("expected total 1, got %d", response.Total)
+	}
+	if len(response.Logs) != 0 {
+		t.Fatalf("expected oversized page to return no logs, got %#v", response.Logs)
+	}
+	if response.HasMore {
+		t.Fatal("expected oversized page to have no next page")
+	}
+}
+
 // TestClearLogsByScopeAndAll 验证日志清理不会误删其他作用域。
 // 设置页的日志保留和日志页的手动清理都依赖这个作用域边界。
 func TestClearLogsByScopeAndAll(t *testing.T) {

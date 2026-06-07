@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/chencn/go-desktop/internal/common/semver"
 )
 
 // main 是命令入口，负责解析启动上下文、装配依赖并启动核心流程。
@@ -22,6 +24,10 @@ func main() {
 
 	if strings.TrimSpace(*version) == "" {
 		exitf("version is required")
+	}
+	normalisedVersion := semver.Normalize(*version)
+	if normalisedVersion == "" {
+		exitf("invalid version: %s", *version)
 	}
 	if strings.TrimSpace(*input) == "" || strings.TrimSpace(*output) == "" {
 		exitf("input and output paths are required")
@@ -38,12 +44,12 @@ func main() {
 	}
 
 	fixed := objectAt(document, "fixed")
-	fixed["file_version"] = *version
+	fixed["file_version"] = normalisedVersion
 
 	info := objectAt(document, "info")
 	lang := objectAt(info, "0000")
-	lang["ProductVersion"] = *version
-	lang["FileVersion"] = *version
+	lang["ProductVersion"] = normalisedVersion
+	lang["FileVersion"] = normalisedVersion
 
 	rendered, err := json.MarshalIndent(document, "", "\t")
 	if err != nil {

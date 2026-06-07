@@ -18,6 +18,7 @@ type API struct {
 }
 
 type CheckResult struct {
+	Source           string `json:"source,omitempty"`
 	Status           string `json:"status"`
 	CurrentVersion   string `json:"currentVersion"`
 	RequestURL       string `json:"requestUrl,omitempty"`
@@ -59,6 +60,7 @@ type EnvironmentInfo struct {
 }
 
 type Settings struct {
+	UpdateSource             string `json:"updateSource"`
 	GitHubOwner              string `json:"githubOwner"`
 	GitHubRepo               string `json:"githubRepo"`
 	GitHubProxyBase          string `json:"githubProxyBase"`
@@ -144,6 +146,7 @@ type UpdateStatus struct {
 	Sha256          string  `json:"sha256,omitempty"`
 	Verified        bool    `json:"verified"`
 	ErrorReason     string  `json:"errorReason,omitempty"`
+	Source          string  `json:"source,omitempty"`
 	UpdatedAt       string  `json:"updatedAt"`
 }
 

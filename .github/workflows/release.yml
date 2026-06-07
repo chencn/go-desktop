@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v*"
 
 permissions:
   contents: write
@@ -29,12 +29,17 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
-            throw "发布标签必须符合 vX.Y.Z，当前是 $tag"
+          if ($tag -notmatch '^v\d+(\.\d+){0,2}$') {
+            throw "发布标签必须符合 vX、vX.Y 或 vX.Y.Z，当前是 $tag"
           }
-          $version = $tag.TrimStart('v')
+          $parts = $tag.TrimStart('v').Split('.')
+          while ($parts.Count -lt 3) {
+            $parts += '0'
+          }
+          $version = $parts -join '.'
           "version=$version" >> $env:GITHUB_OUTPUT
           "APP_VERSION=$version" >> $env:GITHUB_ENV
+          "APP_VERSION_MODE=github" >> $env:GITHUB_ENV
 
       - name: 设置 Go
         uses: actions/setup-go@v5
@@ -66,6 +71,10 @@ jobs:
         run: npm ci
         working-directory: frontend
 
+      - name: 生成 Wails 绑定
+        shell: pwsh
+        run: wails3 generate bindings -f '-tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui -X main.appVersion=${{ steps.version.outputs.version }}"' -clean=false -ts
+
       - name: 前端类型检查
         shell: pwsh
         run: npx vue-tsc --noEmit
@@ -86,7 +95,7 @@ jobs:
 
       - name: 打包 Windows 安装器
         shell: pwsh
-        run: wails3 task windows:package
+        run: wails3 task package:github
 
       - name: 生成 SHA256
         id: assets
@@ -104,8 +113,8 @@ jobs:
       - name: 创建 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: go-desktop ${{ github.ref_name }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: go-desktop v${{ steps.version.outputs.version }}
           draft: false
           prerelease: false
           generate_release_notes: true

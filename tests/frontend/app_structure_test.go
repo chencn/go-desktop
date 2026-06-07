@@ -291,6 +291,17 @@ func TestUpdateIsGlobalIconNotStandalonePage(t *testing.T) {
 	}
 }
 
+func TestUpdateDialogDoesNotInstallWhenOpened(t *testing.T) {
+	updateDialog := readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.vue")
+
+	if !strings.Contains(updateDialog, `@click="installNow"`) {
+		t.Fatalf("update dialog should keep explicit install action on the install button")
+	}
+	if strings.Contains(updateDialog, "await installNow()") {
+		t.Fatalf("opening the update dialog must not start installation automatically")
+	}
+}
+
 // TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
 func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")

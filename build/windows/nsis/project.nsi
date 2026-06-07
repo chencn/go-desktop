@@ -22,7 +22,7 @@ Unicode true
 !ifdef ARG_PRODUCT_VERSION
 !define INFO_PRODUCTVERSION "${ARG_PRODUCT_VERSION}"
 !else
-!define INFO_PRODUCTVERSION "0.0.1"
+!define INFO_PRODUCTVERSION "1.0.0"
 !endif
 ###
 ####

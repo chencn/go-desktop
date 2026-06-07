@@ -90,6 +90,37 @@ func TestCheckStaticSelectsNewestStableVersion(t *testing.T) {
 	}
 }
 
+func TestCheckStaticNormalizesShortReleaseTags(t *testing.T) {
+	checker := githubrelease.NewChecker(githubrelease.Config{
+		Owner:          "chencn",
+		Repo:           "go-desktop",
+		AssetNames:     testAssetNames,
+		CurrentVersion: "0.9.9",
+		Now:            fixedNow,
+	})
+	result := checker.CheckStatic([]byte(`[
+		{
+			"tag_name": "v1.2",
+			"draft": false,
+			"prerelease": false,
+			"assets": [
+				{
+					"name": "go-desktop-v1.2.0-windows-amd64.exe",
+					"digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+					"browser_download_url": "https://example.test/primary.exe"
+				}
+			]
+		}
+	]`))
+
+	if result.Status != githubrelease.StatusUpdateAvailable {
+		t.Fatalf("expected update_available, got %s: %s", result.Status, result.Message)
+	}
+	if result.LatestVersion != "1.2.0" {
+		t.Fatalf("expected normalized latest version, got %q", result.LatestVersion)
+	}
+}
+
 // TestCheckStaticRejectsInvalidReleaseTags 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
 func TestCheckStaticRejectsInvalidReleaseTags(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
@@ -101,8 +132,8 @@ func TestCheckStaticRejectsInvalidReleaseTags(t *testing.T) {
 	})
 	result := checker.CheckStatic([]byte(`[
 		{"tag_name": "release-1.0.0", "draft": false, "prerelease": false, "assets": []},
-		{"tag_name": "1.0", "draft": false, "prerelease": false, "assets": []},
-		{"tag_name": "1.2.3.4", "draft": false, "prerelease": false, "assets": []}
+		{"tag_name": "1.2.3.4", "draft": false, "prerelease": false, "assets": []},
+		{"tag_name": "v1.-2.3", "draft": false, "prerelease": false, "assets": []}
 	]`))
 
 	if result.Status != githubrelease.StatusError {
@@ -329,6 +360,51 @@ func TestCheckFetchesSha256AssetFallback(t *testing.T) {
 	}
 	if len(requested) != 2 {
 		t.Fatalf("expected release and sha256 requests, got %d", len(requested))
+	}
+}
+
+func TestCheckReadsLocalManifestURL(t *testing.T) {
+	sha := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	var requested []string
+	checker := githubrelease.NewChecker(githubrelease.Config{
+		ManifestURL:    "https://updates.example/releases/latest.json",
+		Source:         "local",
+		AssetNames:     testAssetNames,
+		CurrentVersion: "1.0.0",
+		Now:            fixedNow,
+		HTTPClient: &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			requested = append(requested, req.URL.String())
+			if req.Header.Get("Accept") != "application/json" {
+				t.Fatalf("unexpected accept header: %s", req.Header.Get("Accept"))
+			}
+			return jsonResponse(`[
+				{
+					"tag_name": "v1.2.3",
+					"html_url": "https://updates.example/releases/download/v1.2.3/",
+					"draft": false,
+					"prerelease": false,
+					"assets": [
+						{
+							"name": "go-desktop-v1.2.3-windows-amd64.exe",
+							"size": 123,
+							"digest": "sha256:` + sha + `",
+							"browser_download_url": "https://updates.example/releases/download/v1.2.3/go-desktop-v1.2.3-windows-amd64.exe"
+						}
+					]
+				}
+			]`), nil
+		})},
+	})
+
+	result := checker.Check(context.Background())
+	if result.Status != githubrelease.StatusUpdateAvailable {
+		t.Fatalf("expected update_available, got %s: %s", result.Status, result.Message)
+	}
+	if result.Source != "local" {
+		t.Fatalf("expected local source, got %#v", result)
+	}
+	if result.RequestURL != "https://updates.example/releases/latest.json" || len(requested) != 1 {
+		t.Fatalf("expected one manifest request, got url=%q requested=%v", result.RequestURL, requested)
 	}
 }
 

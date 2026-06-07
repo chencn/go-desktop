@@ -207,6 +207,7 @@ func main() {
 	})
 
 	appRuntime.RecordLog("app", "应用启动")
+	appRuntime.StartUpdateBackgroundTasks()
 
 	crashReporter.Phase("运行 Wails")
 	if err := wailsApp.Run(); err != nil {

@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	KeyUpdateSource             = "update.source"
 	KeyGitHubOwner              = "github.owner"
 	KeyGitHubRepo               = "github.repo"
 	KeyGitHubProxyBase          = "github.proxy_base"
@@ -24,6 +25,7 @@ const (
 const defaultLogLevel = "info"
 
 type Settings struct {
+	UpdateSource             string
 	GitHubOwner              string
 	GitHubRepo               string
 	GitHubProxyBase          string
@@ -38,6 +40,7 @@ type Settings struct {
 
 func Default() Settings {
 	return Settings{
+		UpdateSource:             metadata.DefaultUpdateSource,
 		GitHubOwner:              metadata.GitHubOwner,
 		GitHubRepo:               metadata.GitHubRepo,
 		GitHubProxyBase:          metadata.DefaultGitHubProxyBase,
@@ -52,6 +55,7 @@ func Default() Settings {
 }
 
 func Normalize(value Settings) Settings {
+	value.UpdateSource = NormalizeUpdateSource(value.UpdateSource)
 	if value.GitHubOwner == "" {
 		value.GitHubOwner = metadata.GitHubOwner
 	}
@@ -64,6 +68,15 @@ func Normalize(value Settings) Settings {
 	}
 	value.LogLevel = NormalizeLogLevel(value.LogLevel)
 	return value
+}
+
+func NormalizeUpdateSource(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "local":
+		return "local"
+	default:
+		return "github"
+	}
 }
 
 func NormalizeUpdateCheckIntervalHours(value int) int {
@@ -89,6 +102,7 @@ func NormalizeLogLevel(level string) string {
 }
 
 func FromConfigItems(items map[string]configstore.ConfigItem, base Settings) Settings {
+	base.UpdateSource = configString(items, KeyUpdateSource, base.UpdateSource)
 	base.GitHubOwner = configString(items, KeyGitHubOwner, base.GitHubOwner)
 	base.GitHubRepo = configString(items, KeyGitHubRepo, base.GitHubRepo)
 	base.GitHubProxyBase = configString(items, KeyGitHubProxyBase, base.GitHubProxyBase)
@@ -105,6 +119,7 @@ func FromConfigItems(items map[string]configstore.ConfigItem, base Settings) Set
 func Values(value Settings) map[string]string {
 	value = Normalize(value)
 	return map[string]string{
+		KeyUpdateSource:             value.UpdateSource,
 		KeyGitHubOwner:              value.GitHubOwner,
 		KeyGitHubRepo:               value.GitHubRepo,
 		KeyGitHubProxyBase:          value.GitHubProxyBase,
@@ -121,6 +136,7 @@ func Values(value Settings) map[string]string {
 func Definitions() []configstore.ConfigItem {
 	defaults := Default()
 	return []configstore.ConfigItem{
+		{Key: KeyUpdateSource, Category: "update", Title: "更新源", Description: "选择 GitHub Release 或本地静态 manifest 作为唯一更新检查来源。", ValueType: "string", DefaultValue: defaults.UpdateSource, Value: defaults.UpdateSource, SortOrder: 90},
 		{Key: KeyGitHubOwner, Category: "github", Title: "GitHub Owner", Description: "用于 Release 更新检查的仓库所有者。", ValueType: "string", DefaultValue: defaults.GitHubOwner, Value: defaults.GitHubOwner, SortOrder: 10},
 		{Key: KeyGitHubRepo, Category: "github", Title: "GitHub Repo", Description: "用于 Release 更新检查的仓库名称。", ValueType: "string", DefaultValue: defaults.GitHubRepo, Value: defaults.GitHubRepo, SortOrder: 20},
 		{Key: KeyGitHubProxyBase, Category: "github", Title: "GitHub API 代理", Description: "为空时直接使用 GitHub 官方 API。", ValueType: "string", DefaultValue: defaults.GitHubProxyBase, Value: defaults.GitHubProxyBase, SortOrder: 30},

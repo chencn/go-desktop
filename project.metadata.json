@@ -2,7 +2,7 @@
   "companyName": "chencn",
   "appName": "go-desktop",
   "modulePath": "github.com/chencn/go-desktop",
-  "defaultVersion": "0.0.1",
+  "defaultVersion": "1.0.0",
   "description": "Wails3 中文桌面工具",
   "repositoryUrl": "https://github.com/chencn/go-desktop",
   "repositoryComment": "github.com/chencn/go-desktop",
@@ -13,6 +13,11 @@
     "apiBase": "https://api.github.com",
     "apiVersion": "2026-03-10",
     "userAgent": "go-desktop-updater"
+  },
+  "update": {
+    "defaultSource": "github",
+    "localBaseUrl": "http://www.xqchen.shop/exe/go-desktop",
+    "localManifestPath": "releases/latest.json"
   },
   "settingsDefaults": {
     "githubProxyBase": "",
@@ -28,6 +33,6 @@
     "productIdentifier": "com.github.chencn.godesktop",
     "windowClass": "com.github.chencn.go-desktop-window",
     "installDir": "$LOCALAPPDATA\\Programs\\go-desktop",
-    "uninstallKeyName": "chencn-go-desktop"
+    "uninstallKeyName": "com.github.chencn.go-desktop"
   }
 }

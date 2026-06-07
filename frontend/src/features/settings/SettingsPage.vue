@@ -8,7 +8,7 @@ import { computed, defineComponent, h, ref, watch, type Component, type PropType
 import { AppWindow, BarChart3, Menu as MenuIcon, Paintbrush, Power, RefreshCw, RotateCcw, Settings2, SwatchBook, Terminal, Type } from '@lucide/vue'
 import { exportDisplayPreferences, useDisplayPreferences, type AccentColor, type BaseColor, type CardBorder, type ChartColor, type Density, type IconTone, type Menu as MenuPreference, type MenuAccent, type Radius, type TextSize, type ThemeColor, type ThemeMode, type UIStyle } from '@/app/display'
 import { useAppStore } from '@/stores/app'
-import { defaultRuntimeSettings, type LogLevel, type Settings } from '@/api/wails'
+import { defaultRuntimeSettings, type LogLevel, type Settings, type UpdateSource } from '@/api/wails'
 import SettingsColorSelect from './SettingsColorSelect.vue'
 
 // appStore 保存 Pinia store 实例，集中访问应用共享状态和动作。
@@ -102,6 +102,7 @@ const densityOptions: Array<[Density, string]> = [['compact', '紧凑'], ['comfo
 const cardBorderOptions: Array<[CardBorder, string]> = [['visible', '清晰'], ['soft', '柔和'], ['hidden', '隐藏']]
 // updateIntervalOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
 const updateIntervalOptions = [1, 3, 6, 12]
+const updateSourceOptions: Array<[UpdateSource, string]> = [['github', 'GitHub Release'], ['local', '本地静态服务']]
 const logLevelOptions: Array<[LogLevel, string]> = [['debug', 'debug'], ['info', 'info'], ['warning', 'warning'], ['error', 'error']]
 
 // PreferenceRow 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
@@ -174,6 +175,7 @@ function persistSettingsPatch(patch: Partial<Settings>) {
 // normaliseSettingsDraft 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function normaliseSettingsDraft(settings: Settings): Settings {
   return {
+    updateSource: normaliseUpdateSource(settings.updateSource),
     githubOwner: settings.githubOwner.trim() || defaultRuntimeSettings.githubOwner,
     githubRepo: settings.githubRepo.trim() || defaultRuntimeSettings.githubRepo,
     githubProxyBase: settings.githubProxyBase.trim(),
@@ -185,6 +187,10 @@ function normaliseSettingsDraft(settings: Settings): Settings {
     createDesktopShortcut: Boolean(settings.createDesktopShortcut),
     launchHiddenToTray: Boolean(settings.launchHiddenToTray),
   }
+}
+
+function normaliseUpdateSource(value: string): UpdateSource {
+  return updateSourceOptions.some(([source]) => source === value) ? value as UpdateSource : defaultRuntimeSettings.updateSource
 }
 
 // normaliseUpdateCheckIntervalHours 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
@@ -384,6 +390,16 @@ function persistDisplayPreferences() {
               <small>在当前用户桌面创建应用启动快捷方式。</small>
             </span>
             <UiSwitch class="settings-control-switch" :checked="draft.createDesktopShortcut" :disabled="!settingsReady" aria-label="创建桌面快捷图标" @update:checked="persistSettingsPatch({ createDesktopShortcut: $event })" />
+          </div>
+          <div class="settings-compact-row">
+            <span class="data-icon icon-tone-indigo" aria-hidden="true"><RefreshCw :size="17" /></span>
+            <span class="settings-compact-copy">
+              <strong>更新源</strong>
+              <small>选择唯一的更新检查来源。</small>
+            </span>
+            <UiNativeSelect class="settings-control-select" :model-value="draft.updateSource" :disabled="!settingsReady" aria-label="更新源" @update:model-value="persistSettingsPatch({ updateSource: normaliseUpdateSource(String($event)) })">
+              <option v-for="[source, label] in updateSourceOptions" :key="source" :value="source">{{ label }}</option>
+            </UiNativeSelect>
           </div>
           <div class="settings-compact-row">
             <span class="data-icon icon-tone-indigo" aria-hidden="true"><RefreshCw :size="17" /></span>

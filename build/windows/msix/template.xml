@@ -17,7 +17,7 @@
         PackageDisplayName="go-desktop"
         PublisherName="CN=chencn"
         PublisherDisplayName="chencn"
-        Version="0.0.1.0"
+        Version="1.0.0.0"
         PackageDescription="Wails3 中文桌面工具">
         <Capabilities>
             <Capability Name="runFullTrust" />

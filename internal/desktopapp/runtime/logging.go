@@ -364,7 +364,10 @@ func (s *Runtime) filterSortAndPageLogs(logs []LogEntry, query LogQuery, honorVi
 
 	stats := calculateLogStats(filtered)
 	total := len(filtered)
-	start := (query.Page - 1) * query.PageSize
+	start := total
+	if pageIndex := query.Page - 1; pageIndex <= total/query.PageSize {
+		start = pageIndex * query.PageSize
+	}
 	if start > total {
 		start = total
 	}

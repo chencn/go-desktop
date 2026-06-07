@@ -16,7 +16,7 @@ import type { LogResponse, UpdateCheckResult } from '../api/wails'
 // checkResult 保存 定义前端纯状态模型、默认值、归一化和派生选择器 使用的配置、引用或中间结果。
 const checkResult: UpdateCheckResult = {
   status: 'update_available',
-  currentVersion: '0.0.1',
+  currentVersion: '1.0.0',
   latestVersion: '0.0.2',
   tagName: 'v0.0.2',
   assetName: 'go-desktop.exe',

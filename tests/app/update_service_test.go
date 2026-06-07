@@ -12,11 +12,15 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/chencn/go-desktop/app"
 	"github.com/chencn/go-desktop/internal/adapters/githubrelease"
@@ -71,6 +75,102 @@ func TestDownloadUpdateVerifiesAndWaitsForUserInstall(t *testing.T) {
 	}
 }
 
+func TestGetUpdateStatusRestoresVerifiedDownloadFromDisk(t *testing.T) {
+	payload := []byte("installer")
+	cacheDir := t.TempDir()
+	firstRuntime := app.NewRuntime(app.ServiceOptions{
+		Version:   "1.0.0",
+		CachePath: cacheDir,
+		UpdateManager: updater.NewManager(updater.Config{
+			CacheDir: cacheDir,
+			Client:   updateHTTPClient(http.StatusOK, payload),
+		}),
+	})
+	firstRuntime.RecordUpdateCheckResult(githubrelease.CheckResult{
+		Status:           githubrelease.StatusUpdateAvailable,
+		CurrentVersion:   "1.0.0",
+		LatestVersion:    "1.2.3",
+		TagName:          "v1.2.3",
+		AssetName:        "go-desktop-v1.2.3-windows-amd64.exe",
+		AssetDownloadURL: "https://example.test/installer.exe",
+		Sha256:           sha256Text(payload),
+		Source:           "github",
+		CheckedAt:        "2026-06-03T00:00:00Z",
+		Message:          "发现新版本。",
+	})
+	if status := firstRuntime.DownloadUpdate(); status.Status != "verified" || !status.Verified {
+		t.Fatalf("expected verified download before restart, got %#v", status)
+	}
+	firstRuntime.Shutdown()
+
+	restarted := app.NewRuntime(app.ServiceOptions{
+		Version:   "1.0.0",
+		CachePath: cacheDir,
+		UpdateManager: updater.NewManager(updater.Config{
+			CacheDir: cacheDir,
+			Runner: func(ctx context.Context, installerPath string) error {
+				t.Fatalf("installer should not run while restoring status: %s", installerPath)
+				return nil
+			},
+		}),
+	})
+	defer restarted.Shutdown()
+
+	status := restarted.GetUpdateStatus()
+	if status.Status != "verified" || !status.Verified || status.Source != "github" {
+		t.Fatalf("expected verified status restored from disk, got %#v", status)
+	}
+	if status.FilePath == "" || status.Sha256 != sha256Text(payload) {
+		t.Fatalf("expected restored file path and sha256, got %#v", status)
+	}
+}
+
+func TestGetUpdateStatusClearsStaleVerifiedDownloadForCurrentVersion(t *testing.T) {
+	payload := []byte("installer")
+	cacheDir := t.TempDir()
+	firstRuntime := app.NewRuntime(app.ServiceOptions{
+		Version:   "1.0.0",
+		CachePath: cacheDir,
+		UpdateManager: updater.NewManager(updater.Config{
+			CacheDir: cacheDir,
+			Client:   updateHTTPClient(http.StatusOK, payload),
+		}),
+	})
+	firstRuntime.RecordUpdateCheckResult(githubrelease.CheckResult{
+		Status:           githubrelease.StatusUpdateAvailable,
+		CurrentVersion:   "1.0.0",
+		LatestVersion:    "1.2.3",
+		TagName:          "v1.2.3",
+		AssetName:        "go-desktop-v1.2.3-windows-amd64.exe",
+		AssetDownloadURL: "https://example.test/installer.exe",
+		Sha256:           sha256Text(payload),
+		Source:           "github",
+		CheckedAt:        "2026-06-03T00:00:00Z",
+		Message:          "发现新版本。",
+	})
+	if status := firstRuntime.DownloadUpdate(); status.Status != "verified" {
+		t.Fatalf("expected verified download before restart, got %#v", status)
+	}
+	firstRuntime.Shutdown()
+
+	restarted := app.NewRuntime(app.ServiceOptions{
+		Version:   "1.2.3",
+		CachePath: cacheDir,
+		UpdateManager: updater.NewManager(updater.Config{
+			CacheDir: cacheDir,
+		}),
+	})
+	defer restarted.Shutdown()
+
+	status := restarted.GetUpdateStatus()
+	if status.Status == "verified" || status.Verified {
+		t.Fatalf("expected stale verified package to be ignored for current version, got %#v", status)
+	}
+	if _, err := os.Stat(filepath.Join(cacheDir, "verified.json")); !os.IsNotExist(err) {
+		t.Fatalf("expected stale verified cache to be cleared, stat err=%v", err)
+	}
+}
+
 // TestCheckUpdateAutoDownloadsButDoesNotInstall 验证检查更新会自动下载校验但不会直接安装。
 func TestCheckUpdateAutoDownloadsButDoesNotInstall(t *testing.T) {
 	payload := []byte("installer")
@@ -122,6 +222,80 @@ func TestCheckUpdateAutoDownloadsButDoesNotInstall(t *testing.T) {
 	}
 	if installedPath != "" {
 		t.Fatalf("expected installer runner not to be called before explicit install, got %s", installedPath)
+	}
+}
+
+func TestCheckUpdateUsesLocalManifestWhenSourceIsLocal(t *testing.T) {
+	payload := []byte("installer")
+	sha := sha256Text(payload)
+	var manifestRequests int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/exe/go-desktop/releases/latest.json":
+			manifestRequests++
+			downloadURL := "http://" + r.Host + "/exe/go-desktop/releases/download/v1.2.3/go-desktop-v1.2.3-windows-amd64.exe"
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[
+				{
+					"tag_name": "v1.2.3",
+					"draft": false,
+					"prerelease": false,
+					"assets": [
+						{
+							"name": "go-desktop-v1.2.3-windows-amd64.exe",
+							"size": 9,
+							"digest": "sha256:` + sha + `",
+							"browser_download_url": "` + downloadURL + `"
+						}
+					]
+				}
+			]`))
+		case "/exe/go-desktop/releases/download/v1.2.3/go-desktop-v1.2.3-windows-amd64.exe":
+			_, _ = w.Write(payload)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	cacheDir := t.TempDir()
+
+	runtime := app.NewRuntime(app.ServiceOptions{
+		Version:                 "1.0.0",
+		CachePath:               cacheDir,
+		DatabasePath:            filepath.Join(t.TempDir(), "go-desktop.db"),
+		LocalUpdateBaseURL:      server.URL + "/exe/go-desktop",
+		LocalUpdateManifestPath: "releases/latest.json",
+		UpdateManager: updater.NewManager(updater.Config{
+			CacheDir: cacheDir,
+			Runner: func(ctx context.Context, installerPath string) error {
+				t.Fatalf("installer should not run during local check: %s", installerPath)
+				return nil
+			},
+		}),
+	})
+	defer runtime.Shutdown()
+	if _, err := runtime.SaveSettings(app.Settings{
+		UpdateSource:             "local",
+		GitHubOwner:              "chencn",
+		GitHubRepo:               "go-desktop",
+		UpdateCheckIntervalHours: 3,
+		MinimizeToTray:           true,
+		LogRetentionDays:         30,
+		CreateDesktopShortcut:    true,
+	}); err != nil {
+		t.Fatalf("save local update source: %v", err)
+	}
+
+	result := runtime.CheckUpdate()
+	if result.Status != githubrelease.StatusUpdateAvailable || result.Source != "local" {
+		t.Fatalf("expected local update_available, got %#v", result)
+	}
+	if manifestRequests != 1 {
+		t.Fatalf("expected one local manifest request, got %d", manifestRequests)
+	}
+	status := runtime.GetUpdateStatus()
+	if status.Status != "verified" || status.Source != "local" {
+		t.Fatalf("expected local verified status after auto download, got %#v", status)
 	}
 }
 
@@ -289,6 +463,64 @@ func TestDownloadUpdateSkipsOfflineDownload(t *testing.T) {
 	}
 	if installedPath != "" {
 		t.Fatalf("expected installer runner not to be called, got %s", installedPath)
+	}
+}
+
+func TestDownloadUpdateSerialisesConcurrentRequests(t *testing.T) {
+	payload := []byte("installer")
+	var activeRequests int32
+	var maxActiveRequests int32
+	cacheDir := t.TempDir()
+	manager := updater.NewManager(updater.Config{
+		CacheDir: cacheDir,
+		Client: &http.Client{Transport: updateRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+			active := atomic.AddInt32(&activeRequests, 1)
+			for {
+				maximum := atomic.LoadInt32(&maxActiveRequests)
+				if active <= maximum || atomic.CompareAndSwapInt32(&maxActiveRequests, maximum, active) {
+					break
+				}
+			}
+			time.Sleep(50 * time.Millisecond)
+			atomic.AddInt32(&activeRequests, -1)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Length": []string{strconv.Itoa(len(payload))}},
+				Body:       io.NopCloser(bytes.NewReader(payload)),
+				Request:    req,
+			}, nil
+		})},
+	})
+	runtime := app.NewRuntime(app.ServiceOptions{CachePath: cacheDir, UpdateManager: manager})
+	runtime.RecordUpdateCheckResult(githubrelease.CheckResult{
+		Status:           githubrelease.StatusUpdateAvailable,
+		CurrentVersion:   "1.0.0",
+		LatestVersion:    "1.2.3",
+		TagName:          "v1.2.3",
+		AssetName:        "go-desktop-v1.2.3-windows-amd64.exe",
+		AssetDownloadURL: "https://example.test/installer.exe",
+		Sha256:           sha256Text(payload),
+		CheckedAt:        "2026-06-03T00:00:00Z",
+		Message:          "发现新版本。",
+	})
+
+	var wait sync.WaitGroup
+	start := make(chan struct{})
+	wait.Add(2)
+	for range 2 {
+		go func() {
+			defer wait.Done()
+			<-start
+			if status := runtime.DownloadUpdate(); status.Status != "verified" {
+				t.Errorf("expected verified status, got %#v", status)
+			}
+		}()
+	}
+	close(start)
+	wait.Wait()
+
+	if maxActiveRequests > 1 {
+		t.Fatalf("expected download requests to be serialised, max active requests=%d", maxActiveRequests)
 	}
 }
 

@@ -26,6 +26,7 @@ func TestSaveSettingsPersistsAndLoadsFromSQLiteConfig(t *testing.T) {
 	defer runtimeService.Shutdown()
 
 	if _, err := runtimeService.SaveSettings(app.Settings{
+		UpdateSource:             "local",
 		GitHubOwner:              "example",
 		GitHubRepo:               "desktop",
 		GitHubProxyBase:          "https://proxy.example",
@@ -43,6 +44,9 @@ func TestSaveSettingsPersistsAndLoadsFromSQLiteConfig(t *testing.T) {
 	reloaded := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
 	defer reloaded.Shutdown()
 	settings := reloaded.SettingsSnapshot()
+	if settings.UpdateSource != "local" {
+		t.Fatalf("expected update source to persist, got %#v", settings)
+	}
 	if settings.GitHubOwner != "example" || settings.GitHubRepo != "desktop" {
 		t.Fatalf("expected github settings to persist, got %#v", settings)
 	}
@@ -69,6 +73,9 @@ func TestLoadSettingsWritesSQLiteDefaults(t *testing.T) {
 	defer runtimeService.Shutdown()
 
 	settings := runtimeService.SettingsSnapshot()
+	if settings.UpdateSource != "github" {
+		t.Fatalf("expected default update source github, got %#v", settings)
+	}
 	if !settings.MinimizeToTray {
 		t.Fatalf("expected default minimizeToTray=true, got %#v", settings)
 	}
@@ -84,6 +91,7 @@ func TestSaveSettingsAllowsNeverCleanLogRetention(t *testing.T) {
 	defer runtimeService.Shutdown()
 
 	if _, err := runtimeService.SaveSettings(app.Settings{
+		UpdateSource:             "ftp",
 		GitHubOwner:              "chencn",
 		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 12,
@@ -120,6 +128,9 @@ func TestSaveSettingsNormalisesUnsupportedUpdateInterval(t *testing.T) {
 
 	if runtimeService.SettingsSnapshot().UpdateCheckIntervalHours != 3 {
 		t.Fatalf("expected unsupported update interval to fall back to 3, got %#v", runtimeService.SettingsSnapshot())
+	}
+	if runtimeService.SettingsSnapshot().UpdateSource != "github" {
+		t.Fatalf("expected unsupported update source to fall back to github, got %#v", runtimeService.SettingsSnapshot())
 	}
 	if runtimeService.SettingsSnapshot().LogLevel != "info" {
 		t.Fatalf("expected unsupported log level to fall back to info, got %#v", runtimeService.SettingsSnapshot())

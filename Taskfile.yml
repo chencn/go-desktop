@@ -11,7 +11,8 @@ includes:
 
 vars:
   APP_NAME: "go-desktop"
-  APP_VERSION: '{{env "APP_VERSION" | default "0.0.1"}}'
+  APP_VERSION:
+    sh: go run ./scripts/resolve_app_version.go -mode '{{env "APP_VERSION_MODE" | default "local"}}' -config build/config.yml -version '{{env "APP_VERSION"}}' -tag '{{env "GITHUB_REF_NAME"}}'
   BIN_DIR: "bin"
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
 
@@ -22,9 +23,17 @@ tasks:
       - task: "{{OS}}:build"
 
   package:
-    summary: Packages a production build of the application
+    summary: Packages Windows installer and stages local static update files
     cmds:
-      - task: "{{OS}}:package"
+      - task: windows:package
+      - go build -o ".tmp/local-release-stage.exe" ./scripts/stage_local_update.go
+      - '.tmp/local-release-stage.exe -version "{{.APP_VERSION}}" -installer "{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe" -out "{{.BIN_DIR}}/{{.APP_NAME}}" -arch amd64'
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe','{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe','{{.BIN_DIR}}/local-release-stage.exe','.tmp/local-release-stage.exe' -Force -ErrorAction SilentlyContinue"
+
+  package:github:
+    summary: Packages a production build for GitHub Release
+    cmds:
+      - task: windows:package
 
   run:
     summary: Runs the application

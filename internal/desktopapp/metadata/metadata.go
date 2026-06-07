@@ -26,7 +26,7 @@ const (
 	// ModulePath Go 模块路径用于校验绑定导入路径和生成脚本
 	ModulePath = "github.com/chencn/go-desktop"
 	// DefaultVersion 默认版本只作为开发兜底；正式构建通过 ldflags 覆盖
-	DefaultVersion = "0.0.1"
+	DefaultVersion = "1.0.0"
 	// Description 应用描述会展示在 Wails 运行时信息和前端"关于"页面
 	Description = "Wails3 中文桌面工具"
 	// RepositoryURL 仓库地址是给用户看的项目地址，不是 GitHub API 端点
@@ -52,6 +52,19 @@ const (
 	GitHubAPIVersion = "2026-03-10"
 	// UserAgent 请求标识是 GitHub REST API 要求项，Release 列表和资产下载都复用它
 	UserAgent = "go-desktop-updater"
+)
+
+// ============================================================================
+// 更新配置常量
+// ============================================================================
+
+const (
+	// DefaultUpdateSource 默认更新源，允许 github 或 local
+	DefaultUpdateSource = "github"
+	// LocalUpdateBaseURL 本地静态升级根地址
+	LocalUpdateBaseURL = "http://www.xqchen.shop/exe/go-desktop"
+	// LocalUpdateManifestPath 本地 GitHub 兼容 latest.json 相对路径
+	LocalUpdateManifestPath = "releases/latest.json"
 )
 
 // ============================================================================
@@ -89,7 +102,7 @@ const (
 	// WindowsInstallDir 当前用户安装目录由 NSIS 使用，避免写 Program Files 和触发管理员权限
 	WindowsInstallDir = "$LOCALAPPDATA\\Programs\\go-desktop"
 	// WindowsUninstallKeyName 卸载注册表项名必须稳定，否则升级和卸载记录会分裂
-	WindowsUninstallKeyName = "chencn-go-desktop"
+	WindowsUninstallKeyName = "com.github.chencn.go-desktop"
 )
 
 // ============================================================================

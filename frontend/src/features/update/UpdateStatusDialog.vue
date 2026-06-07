@@ -4,7 +4,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, defineComponent, h } from 'vue'
+import { computed, defineComponent, h, watch } from 'vue'
 import { Download, ExternalLink, Loader2, RefreshCw, ShieldAlert, ShieldCheck, X } from '@lucide/vue'
 import { openExternalURL, type UpdateStatus } from '@/api/wails'
 import { useAppStore } from '@/stores/app'
@@ -35,6 +35,7 @@ const canInstall = computed(() => Boolean(appStore.updateStatus?.verified && app
 const message = computed(() => displayMessage(appStore.updateStatus?.message ?? appStore.latestUpdateCheck?.message ?? '尚未执行更新检查。'))
 // safety 保存由响应式状态推导出的只读结果，模板直接消费该值。
 const safety = computed(() => updateSafety(appStore.latestUpdateCheck?.sha256 ?? appStore.updateStatus?.sha256, appStore.updateStatus?.verified))
+let openRevision = 0
 
 // Detail 保存 渲染更新状态弹窗并驱动检查、下载、安装动作 使用的配置、引用或中间结果。
 const Detail = defineComponent({
@@ -69,6 +70,17 @@ async function scheduleOnStartup() {
 function closeDialog() {
   emit('close')
 }
+
+watch(() => props.open, async (open) => {
+  if (!open) return
+  const revision = ++openRevision
+  try {
+    await appStore.refreshUpdateStatus()
+    if (revision !== openRevision || !props.open) return
+  } catch (error) {
+    appStore.applyAction({ type: 'errorSet', payload: error instanceof Error ? error.message : '读取更新状态失败' })
+  }
+})
 
 // isTransferState 处理 渲染更新状态弹窗并驱动检查、下载、安装动作 中的用户动作、生命周期动作或数据转换。
 function isTransferState(status?: string) {
@@ -114,6 +126,12 @@ function updateStatusLabel(status?: string) {
     error: '更新失败',
   }
   return labels[String(status ?? '')] ?? '未检查'
+}
+
+function sourceLabel(source?: string) {
+  if (source === 'local') return '本地静态服务'
+  if (source === 'github') return 'GitHub Release'
+  return '未获取'
 }
 </script>
 
@@ -174,6 +192,7 @@ function updateStatusLabel(status?: string) {
         <Detail label="安装包" :value="appStore.updateStatus?.assetName ?? appStore.latestUpdateCheck?.assetName ?? '未匹配'" />
         <Detail label="安装包大小" :value="formatBytes(appStore.latestUpdateCheck?.assetSizeBytes)" />
         <Detail label="SHA256" :value="shortSha(appStore.updateStatus?.sha256 ?? appStore.latestUpdateCheck?.sha256)" />
+        <Detail label="更新源" :value="sourceLabel(appStore.updateStatus?.source ?? appStore.latestUpdateCheck?.source)" />
         <Detail label="缓存路径" :value="appStore.updateStatus?.filePath ?? '未下载'" />
         <Detail label="错误原因" :value="reasonLabel(appStore.updateStatus?.errorReason ?? appStore.latestUpdateCheck?.errorReason ?? appStore.latestUpdateCheck?.skipReason)" />
         <Detail label="最近检查" :value="formatDateTime(appStore.latestUpdateCheck?.checkedAt)" />

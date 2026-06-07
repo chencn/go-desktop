@@ -83,9 +83,20 @@ type ServiceOptions struct {
 	// 如果为空，会自动创建默认实例
 	ReleaseChecker *githubrelease.Checker // ReleaseChecker 保存 ReleaseChecker 对应的数据，供当前实体的调用方读取或持久化。
 
+	// LocalUpdateBaseURL 本地静态升级根地址
+	// 为空时使用项目元数据默认值
+	LocalUpdateBaseURL string
+
+	// LocalUpdateManifestPath 本地 latest.json 相对路径
+	// 为空时使用项目元数据默认值
+	LocalUpdateManifestPath string
+
 	// UpdateManager 更新管理器实例
 	// 如果为空，会自动创建默认实例
 	UpdateManager *updater.Manager // UpdateManager 保存 UpdateManager 对应的数据，供当前实体的调用方读取或持久化。
+
+	// StartupIntegrationApplier 可选的启动集成同步函数，用于替换默认平台集成实现。
+	StartupIntegrationApplier func(previous Settings, next Settings) error
 }
 
 // ============================================================================
@@ -156,6 +167,9 @@ type Runtime struct {
 	// 处理更新下载、安装等操作
 	updateManager *updater.Manager // updateManager 保存 updateManager 对应的数据，供当前实体的调用方读取或持久化。
 
+	// updateOperationLock 串行化下载、安排和安装，避免同一安装包临时文件并发写入。
+	updateOperationLock sync.Mutex
+
 	// lock 读写锁，保护并发访问
 	// 读操作使用 RLock，写操作使用 Lock
 	lock sync.RWMutex // lock 保存 lock 对应的数据，供当前实体的调用方读取或持久化。
@@ -171,6 +185,9 @@ type Runtime struct {
 	// settings 当前应用设置
 	// 包含 GitHub 配置、更新间隔、日志保留等
 	settings Settings // settings 保存 settings 对应的数据，供当前实体的调用方读取或持久化。
+
+	// updateSchedulerStop 停止后台更新检查任务。
+	updateSchedulerStop context.CancelFunc
 
 	// displayPreferences 当前显示偏好
 	// 由 SQLite KV 配置项加载，前端只通过 typed facade 读取和保存
@@ -277,6 +294,10 @@ type EnvironmentInfo struct {
 // Settings 应用设置
 // 所有字段都可通过前端修改并持久化
 type Settings struct {
+	// UpdateSource 更新源：github 或 local
+	// 决定检查更新时只访问 GitHub Release 还是本地静态 manifest
+	UpdateSource string `json:"updateSource"` // UpdateSource 保存 updateSource 对应的数据，供当前实体的调用方读取或持久化。
+
 	// GitHubOwner GitHub 仓库所有者（用户名或组织名）
 	// 用于检查更新时的 API 请求
 	GitHubOwner string `json:"githubOwner"` // GitHubOwner 保存 githubOwner 对应的数据，供当前实体的调用方读取或持久化。
@@ -470,6 +491,9 @@ type UpdateStatus struct {
 	// ErrorReason 错误原因（状态为 error 时）
 	ErrorReason string `json:"errorReason,omitempty"` // ErrorReason 保存 errorReason 对应的数据，供当前实体的调用方读取或持久化。
 
+	// Source 更新源：github 或 local
+	Source string `json:"source,omitempty"` // Source 保存 source 对应的数据，供当前实体的调用方读取或持久化。
+
 	// UpdatedAt 状态更新时间（ISO 8601 格式）
 	UpdatedAt string `json:"updatedAt"` // UpdatedAt 保存 updatedAt 对应的数据，供当前实体的调用方读取或持久化。
 }
@@ -532,6 +556,12 @@ func NewRuntime(options ServiceOptions) *Runtime {
 	}
 	if options.Repository == "" {
 		options.Repository = metadata.RepositoryURL
+	}
+	if strings.TrimSpace(options.LocalUpdateBaseURL) == "" {
+		options.LocalUpdateBaseURL = metadata.LocalUpdateBaseURL
+	}
+	if strings.TrimSpace(options.LocalUpdateManifestPath) == "" {
+		options.LocalUpdateManifestPath = metadata.LocalUpdateManifestPath
 	}
 	logDirPath := strings.TrimSpace(options.LogDirPath)
 	if logDirPath == "" && strings.TrimSpace(options.LogFilePath) != "" {
@@ -623,9 +653,14 @@ func (s *Runtime) Shutdown() {
 	s.shuttingDown = true
 	stopCleanup := s.logCleanupStop
 	s.logCleanupStop = nil
+	stopUpdateScheduler := s.updateSchedulerStop
+	s.updateSchedulerStop = nil
 	s.lock.Unlock()
 	if stopCleanup != nil {
 		stopCleanup()
+	}
+	if stopUpdateScheduler != nil {
+		stopUpdateScheduler()
 	}
 
 	s.closeProcessLogCapture()

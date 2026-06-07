@@ -1,16 +1,16 @@
 {
 	"fixed": {
-		"file_version": "0.0.1"
+		"file_version": "1.0.0"
 	},
 	"info": {
 		"0000": {
 			"Comments": "github.com/chencn/go-desktop",
 			"CompanyName": "chencn",
 			"FileDescription": "go-desktop",
-			"FileVersion": "0.0.1",
+			"FileVersion": "1.0.0",
 			"LegalCopyright": "© 2026, chencn",
 			"ProductName": "go-desktop",
-			"ProductVersion": "0.0.1"
+			"ProductVersion": "1.0.0"
 		}
 	}
 }

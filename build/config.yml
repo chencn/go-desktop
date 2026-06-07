@@ -9,7 +9,7 @@ info:
   description: "Wails3 中文桌面工具"
   copyright: "© 2026, chencn"
   comments: "github.com/chencn/go-desktop"
-  version: "0.0.1"
+  version: "1.0.0"
 
 dev_mode:
   root_path: .

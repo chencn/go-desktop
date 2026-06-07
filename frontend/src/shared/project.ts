@@ -18,7 +18,7 @@ export const projectMetadata = {
   // Go 模块路径
   "modulePath": "github.com/chencn/go-desktop",
   // 默认版本号
-  "defaultVersion": "0.0.1",
+  "defaultVersion": "1.0.0",
   // 应用描述
   "description": "Wails3 中文桌面工具",
   // 仓库地址
@@ -39,6 +39,15 @@ export const projectMetadata = {
     "apiVersion": "2026-03-10",
     // 请求头 User-Agent
     "userAgent": "go-desktop-updater"
+  },
+  // 更新配置
+  "update": {
+    // 默认更新源
+    "defaultSource": "github",
+    // 本地静态升级根地址
+    "localBaseUrl": "http://www.xqchen.shop/exe/go-desktop",
+    // 本地 manifest 相对路径
+    "localManifestPath": "releases/latest.json"
   },
   // 默认设置值
   "settingsDefaults": {
@@ -68,13 +77,15 @@ export const projectMetadata = {
     // 安装目录
     "installDir": "$LOCALAPPDATA\\Programs\\go-desktop",
     // 卸载注册表键名
-    "uninstallKeyName": "chencn-go-desktop"
+    "uninstallKeyName": "com.github.chencn.go-desktop"
   }
 } as const
 
 // 默认设置对象
 // 从 projectMetadata 中提取默认设置值
 export const defaultSettings = {
+  // 更新源
+  updateSource: projectMetadata.update.defaultSource,
   // GitHub 仓库所有者
   githubOwner: projectMetadata.github.owner,
   // GitHub 仓库名称

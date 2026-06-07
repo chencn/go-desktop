@@ -62,6 +62,9 @@ func (s *Runtime) applyStartupIntegrations(force bool) error {
 
 // applyChangedStartupIntegrations 只同步实际变化的启动集成，避免普通设置保存触发注册表或桌面快捷方式副作用。
 func (s *Runtime) applyChangedStartupIntegrations(previous Settings, next Settings) error {
+	if s.options.StartupIntegrationApplier != nil {
+		return s.options.StartupIntegrationApplier(previous, next)
+	}
 	s.lock.RLock()
 	wailsApp := s.wailsApp
 	s.lock.RUnlock()

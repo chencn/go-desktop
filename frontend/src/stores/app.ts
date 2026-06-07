@@ -179,6 +179,10 @@ export const useAppStore = defineStore('app', {
       }
     },
 
+    async refreshUpdateStatus() {
+      this.applyAction({ type: 'updateStatusApplied', payload: await getUpdateStatus() })
+    },
+
     async downloadLatestUpdate() {
       this.applyAction({ type: 'downloadingSet', payload: true })
       this.applyAction({ type: 'errorSet', payload: '' })

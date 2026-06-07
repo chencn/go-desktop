@@ -13,7 +13,8 @@ package runtime
 
 import (
 	"context" // 上下文包，用于数据库操作
-	"fmt"     // 格式化字符串
+	"errors"
+	"fmt" // 格式化字符串
 
 	appsettings "github.com/chencn/go-desktop/internal/desktopapp/settings"
 )
@@ -24,7 +25,8 @@ func (api *API) GetSettings() (settings Settings, err error) {
 	defer api.recoverError("读取设置", &err)
 	api.runtime.RecordLogWithSeverity("settings-trace", "GetSettings：后端收到读取请求", "info")
 	settings = api.runtime.SettingsSnapshot()
-	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("GetSettings：后端返回 owner=%q repo=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
+	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("GetSettings：后端返回 source=%q owner=%q repo=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
+		settings.UpdateSource,
 		settings.GitHubOwner,
 		settings.GitHubRepo,
 		settings.AutoLaunch,
@@ -45,7 +47,8 @@ func (api *API) GetSettings() (settings Settings, err error) {
 //   - Settings: 保存后的设置（经过标准化处理）
 func (api *API) SaveSettings(settings Settings) (saved Settings, err error) {
 	defer api.recoverError("保存设置", &err)
-	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("SaveSettings：后端收到保存请求 owner=%q repo=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
+	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("SaveSettings：后端收到保存请求 source=%q owner=%q repo=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
+		settings.UpdateSource,
 		settings.GitHubOwner,
 		settings.GitHubRepo,
 		settings.AutoLaunch,
@@ -79,15 +82,32 @@ func (s *Runtime) SaveSettings(settings Settings) (Settings, error) {
 		s.logLevel.Set(SlogLevelFromLogLevel(settings.LogLevel))
 	}
 
+	if err := s.applyChangedStartupIntegrations(previousSettings, settings); err != nil {
+		rollbackErr := s.rollbackSettingsAfterIntegrationFailure(previousSettings)
+		return previousSettings, fmt.Errorf("同步设置系统集成失败：%w", errors.Join(err, rollbackErr))
+	}
 	if previousSettings.LogRetentionDays != settings.LogRetentionDays {
 		go s.cleanupExpiredLogFiles(context.Background(), settings.LogRetentionDays)
-	}
-	if err := s.applyChangedStartupIntegrations(previousSettings, settings); err != nil {
-		return settings, fmt.Errorf("同步设置系统集成失败：%w", err)
 	}
 	s.RecordLogWithSeverity("settings", "保存设置：系统集成同步完成", "debug")
 	s.RecordLog("settings", "保存设置：配置已保存")
 	return settings, nil
+}
+
+func (s *Runtime) rollbackSettingsAfterIntegrationFailure(previous Settings) error {
+	var rollbackErr error
+	if err := s.saveConfigValues(context.Background(), appsettings.Values(toDomainSettings(previous))); err != nil {
+		rollbackErr = fmt.Errorf("回滚设置持久化失败：%w", err)
+		s.RecordLogWithSeverity("settings", rollbackErr.Error(), "error")
+	}
+	s.lock.Lock()
+	s.settings = previous
+	s.lock.Unlock()
+	if s.logLevel != nil {
+		s.logLevel.Set(SlogLevelFromLogLevel(previous.LogLevel))
+	}
+	s.RecordLogWithSeverity("settings", "保存设置失败：已回滚内存设置和 SQLite 配置", "warning")
+	return rollbackErr
 }
 
 // loadSettings 读取、解析或归一化 读写用户设置并同步自启动、快捷方式等桌面副作用 需要的数据，并把结果返回给调用方。
@@ -127,6 +147,7 @@ func (s *Runtime) SettingsSnapshot() Settings {
 // settingsFromConfigItems 修改 读写用户设置并同步自启动、快捷方式等桌面副作用 管理的状态、文件或外部副作用，并把失败原因向上返回。
 func toDomainSettings(value Settings) appsettings.Settings {
 	return appsettings.Settings{
+		UpdateSource:             value.UpdateSource,
 		GitHubOwner:              value.GitHubOwner,
 		GitHubRepo:               value.GitHubRepo,
 		GitHubProxyBase:          value.GitHubProxyBase,
@@ -142,6 +163,7 @@ func toDomainSettings(value Settings) appsettings.Settings {
 
 func fromDomainSettings(value appsettings.Settings) Settings {
 	return Settings{
+		UpdateSource:             value.UpdateSource,
 		GitHubOwner:              value.GitHubOwner,
 		GitHubRepo:               value.GitHubRepo,
 		GitHubProxyBase:          value.GitHubProxyBase,

@@ -13,6 +13,7 @@ package semver
 import (
 	"strconv" // 字符串转整数
 	"strings" // 字符串处理
+	"unicode" // Unicode 字符判断
 )
 
 // semanticVersion 是语义化版本的整数切片表示
@@ -35,20 +36,28 @@ func Parse(value string) (Version, bool) {
 	}
 
 	parts := strings.Split(value, ".")
-	if len(parts) != 3 {
+	if len(parts) == 0 || len(parts) > 3 {
 		return nil, false
 	}
 
-	result := make([]int, 0, len(parts))
+	result := make([]int, 0, 3)
 	for _, part := range parts {
 		if part == "" {
 			return nil, false
+		}
+		for _, char := range part {
+			if !unicode.IsDigit(char) {
+				return nil, false
+			}
 		}
 		n, err := strconv.Atoi(part)
 		if err != nil || n < 0 {
 			return nil, false
 		}
 		result = append(result, n)
+	}
+	for len(result) < 3 {
+		result = append(result, 0)
 	}
 	return result, true
 }
@@ -102,6 +111,13 @@ func Compare(left, right string) int {
 // 返回:
 //   - string: 标准化后的版本号
 func Normalize(value string) string {
-	value = strings.TrimSpace(value)
-	return strings.TrimPrefix(strings.TrimPrefix(value, "v"), "V")
+	version, ok := Parse(value)
+	if !ok {
+		return ""
+	}
+	parts := make([]string, 0, 3)
+	for _, part := range version {
+		parts = append(parts, strconv.Itoa(part))
+	}
+	return strings.Join(parts, ".")
 }

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/chencn/go-desktop/internal/adapters/githubrelease"
+	"github.com/chencn/go-desktop/internal/common/semver"
 	"github.com/chencn/go-desktop/internal/desktopapp/metadata"
 	updater "github.com/chencn/go-desktop/internal/desktopapp/update"
 )
@@ -24,25 +25,14 @@ func (api *API) CheckUpdate() (result githubrelease.CheckResult, err error) {
 // CheckUpdate 检查更新并记录当前进程最近一次检查结果。
 func (s *Runtime) CheckUpdate() githubrelease.CheckResult {
 	settings := s.SettingsSnapshot()
-	checker := s.releaseChecker
-	if checker == nil || settings.GitHubOwner != metadata.GitHubOwner || settings.GitHubRepo != metadata.GitHubRepo || settings.GitHubProxyBase != "" {
-		checker = githubrelease.NewChecker(githubrelease.Config{
-			Owner:          settings.GitHubOwner,
-			Repo:           settings.GitHubRepo,
-			ProxyBase:      settings.GitHubProxyBase,
-			CurrentVersion: s.options.Version,
-			UserAgent:      metadata.UserAgent,
-			APIVersion:     metadata.GitHubAPIVersion,
-			AssetNames:     releaseAssetNames,
-		})
-	}
+	checker := s.updateChecker(settings)
 
 	result := checker.Check(context.Background())
 	s.RecordUpdateCheckResult(result)
 	s.RecordLog("update", result.Message)
 	if result.Status == githubrelease.StatusUpdateAvailable && strings.TrimSpace(result.Sha256) != "" {
 		s.RecordLog("update", "发现可更新版本，开始自动下载并校验")
-		s.DownloadUpdate()
+		s.downloadUpdateForCheck(result, true)
 	}
 	return result
 }
@@ -54,6 +44,45 @@ func releaseAssetNames(version string) []string {
 		metadata.WindowsSetupAssetName(version),
 		metadata.WindowsSetupAssetNameWithoutV(version),
 	}
+}
+
+func (s *Runtime) updateChecker(settings Settings) *githubrelease.Checker {
+	if settings.UpdateSource == "local" {
+		return githubrelease.NewChecker(githubrelease.Config{
+			ManifestURL:    localUpdateManifestURL(s.options.LocalUpdateBaseURL, s.options.LocalUpdateManifestPath),
+			Source:         "local",
+			CurrentVersion: s.options.Version,
+			UserAgent:      metadata.UserAgent,
+			APIVersion:     metadata.GitHubAPIVersion,
+			AssetNames:     releaseAssetNames,
+		})
+	}
+	checker := s.releaseChecker
+	if checker != nil && settings.GitHubOwner == metadata.GitHubOwner && settings.GitHubRepo == metadata.GitHubRepo && settings.GitHubProxyBase == "" {
+		return checker
+	}
+	return githubrelease.NewChecker(githubrelease.Config{
+		Owner:          settings.GitHubOwner,
+		Repo:           settings.GitHubRepo,
+		ProxyBase:      settings.GitHubProxyBase,
+		Source:         "github",
+		CurrentVersion: s.options.Version,
+		UserAgent:      metadata.UserAgent,
+		APIVersion:     metadata.GitHubAPIVersion,
+		AssetNames:     releaseAssetNames,
+	})
+}
+
+func localUpdateManifestURL(baseURL, manifestPath string) string {
+	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	manifestPath = strings.TrimLeft(strings.TrimSpace(manifestPath), "/")
+	if baseURL == "" {
+		return manifestPath
+	}
+	if manifestPath == "" {
+		return baseURL
+	}
+	return baseURL + "/" + manifestPath
 }
 
 // RecordUpdateCheckResult 保存当前进程最近一次更新检查结果。
@@ -77,8 +106,32 @@ func (api *API) GetUpdateStatus() (status UpdateStatus, err error) {
 // GetUpdateStatus 返回当前更新状态。
 func (s *Runtime) GetUpdateStatus() UpdateStatus {
 	s.lock.RLock()
-	defer s.lock.RUnlock()
-	return s.updateState
+	state := s.updateState
+	s.lock.RUnlock()
+	if shouldReturnMemoryUpdateStatus(state) {
+		return state
+	}
+	verified, found, err := s.loadVerifiedUpdate()
+	if err != nil {
+		if found {
+			s.clearVerifiedUpdate()
+		}
+		s.RecordLogWithSeverity("update", fmt.Sprintf("读取已校验更新状态失败：%s", err), "warning")
+		return state
+	}
+	if !found {
+		return state
+	}
+	settings := s.SettingsSnapshot()
+	if verified.Source != "" && settings.UpdateSource != "" && verified.Source != settings.UpdateSource {
+		return state
+	}
+	if semver.Compare(verified.Version, s.options.Version) <= 0 {
+		s.clearVerifiedUpdate()
+		return state
+	}
+	s.setUpdateStatus(verified)
+	return verified
 }
 
 // DownloadUpdate API 方法，下载并校验最近一次检查发现的更新包。
@@ -90,6 +143,13 @@ func (api *API) DownloadUpdate() (status UpdateStatus, err error) {
 // DownloadUpdate 下载并校验更新包。
 func (s *Runtime) DownloadUpdate() UpdateStatus {
 	check, ok := s.latestCheckResult()
+	return s.downloadUpdateForCheck(check, ok)
+}
+
+func (s *Runtime) downloadUpdateForCheck(check githubrelease.CheckResult, ok bool) UpdateStatus {
+	s.updateOperationLock.Lock()
+	defer s.updateOperationLock.Unlock()
+
 	if !ok {
 		return s.failUpdate("missing_update_check", "请先检查更新。")
 	}
@@ -116,6 +176,7 @@ func (s *Runtime) DownloadUpdate() UpdateStatus {
 		Version:   check.LatestVersion,
 		AssetName: check.AssetName,
 		Sha256:    check.Sha256,
+		Source:    check.Source,
 		UpdatedAt: nowRFC3339(),
 	})
 	s.RecordLog("update", fmt.Sprintf("开始下载更新：%s", check.AssetName))
@@ -143,6 +204,7 @@ func (s *Runtime) DownloadUpdate() UpdateStatus {
 			TotalBytes:      progress.TotalBytes,
 			ProgressPercent: progressPercent(progress.DownloadedBytes, progress.TotalBytes),
 			Sha256:          check.Sha256,
+			Source:          check.Source,
 			UpdatedAt:       nowRFC3339(),
 		})
 	})
@@ -158,6 +220,7 @@ func (s *Runtime) DownloadUpdate() UpdateStatus {
 				Version:     check.LatestVersion,
 				AssetName:   check.AssetName,
 				Sha256:      check.Sha256,
+				Source:      check.Source,
 				ErrorReason: githubrelease.SkipReasonOffline,
 				UpdatedAt:   nowRFC3339(),
 			}
@@ -179,9 +242,13 @@ func (s *Runtime) DownloadUpdate() UpdateStatus {
 		ProgressPercent: 100,
 		Sha256:          result.Sha256,
 		Verified:        true,
+		Source:          check.Source,
 		UpdatedAt:       result.CompletedAt,
 	}
 	s.setUpdateStatus(verified)
+	if err := s.saveVerifiedUpdate(verified); err != nil {
+		s.RecordLogWithSeverity("update", fmt.Sprintf("保存已校验更新状态失败：%s", err), "warning")
+	}
 	s.RecordLog("update", "安装包已通过 SHA256 校验，等待用户选择安装时机")
 	return verified
 }
@@ -194,6 +261,9 @@ func (api *API) ScheduleDownloadedUpdateOnStartup() (status UpdateStatus, err er
 
 // ScheduleDownloadedUpdateOnStartup 把当前已校验更新包标记为下次启动安装。
 func (s *Runtime) ScheduleDownloadedUpdateOnStartup() UpdateStatus {
+	s.updateOperationLock.Lock()
+	defer s.updateOperationLock.Unlock()
+
 	state := s.GetUpdateStatus()
 	if !state.Verified || strings.TrimSpace(state.FilePath) == "" {
 		return s.failUpdate("not_verified", "没有可安排下次启动安装的已校验更新包。")
@@ -218,6 +288,9 @@ func (api *API) InstallDownloadedUpdate() (status UpdateStatus, err error) {
 
 // InstallDownloadedUpdate 启动静默安装器。
 func (s *Runtime) InstallDownloadedUpdate() UpdateStatus {
+	s.updateOperationLock.Lock()
+	defer s.updateOperationLock.Unlock()
+
 	state := s.GetUpdateStatus()
 	if !state.Verified || strings.TrimSpace(state.FilePath) == "" {
 		return s.failUpdate("not_verified", "没有可安装的已校验更新包。")
@@ -225,11 +298,13 @@ func (s *Runtime) InstallDownloadedUpdate() UpdateStatus {
 	actual, err := updater.FileSHA256(state.FilePath)
 	if err != nil {
 		s.clearPendingUpdate()
+		s.clearVerifiedUpdate()
 		return s.failUpdateFromStatus(state, "verified_file_missing", localisedErrorMessage("读取已校验安装包", err))
 	}
 	if !strings.EqualFold(actual, state.Sha256) {
 		_ = os.Remove(state.FilePath)
 		s.clearPendingUpdate()
+		s.clearVerifiedUpdate()
 		return s.failUpdateFromStatus(state, "sha256_mismatch", "已校验安装包的 SHA256 发生变化，已删除该文件。")
 	}
 
@@ -242,9 +317,11 @@ func (s *Runtime) InstallDownloadedUpdate() UpdateStatus {
 
 	if err := s.updateManager.Install(context.Background(), state.FilePath); err != nil {
 		s.clearPendingUpdate()
+		s.clearVerifiedUpdate()
 		return s.failUpdateFromStatus(state, "install_failed", localisedErrorMessage("启动静默安装器", err))
 	}
 	s.clearPendingUpdate()
+	s.clearVerifiedUpdate()
 
 	started := installing
 	started.Status = "install_started"
@@ -295,6 +372,15 @@ func idleUpdateStatus() UpdateStatus {
 	}
 }
 
+func shouldReturnMemoryUpdateStatus(status UpdateStatus) bool {
+	switch status.Status {
+	case "downloading", "verifying", "verified", "pending_install", "installing", "install_started":
+		return true
+	default:
+		return false
+	}
+}
+
 func (s *Runtime) setUpdateStatus(status UpdateStatus) {
 	if status.UpdatedAt == "" {
 		status.UpdatedAt = nowRFC3339()
@@ -341,6 +427,7 @@ func statusFromCheckResult(result githubrelease.CheckResult) UpdateStatus {
 		Version:     result.LatestVersion,
 		AssetName:   result.AssetName,
 		Sha256:      result.Sha256,
+		Source:      result.Source,
 		ErrorReason: result.ErrorReason,
 		UpdatedAt:   result.CheckedAt,
 	}

@@ -163,6 +163,7 @@ export function statusFromCheckResult(result: UpdateCheckResult): UpdateStatus {
     assetName: result.assetName,
     sha256: result.sha256,
     verified: false,
+    source: result.source,
     errorReason,
     updatedAt: result.checkedAt,
   }

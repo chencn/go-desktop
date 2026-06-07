@@ -65,6 +65,10 @@ type Config struct {
 	CurrentVersion string // CurrentVersion 保存 CurrentVersion 对应的数据，供当前实体的调用方读取或持久化。
 	// GitHub API 基础地址
 	APIBase string // APIBase 保存 APIBase 对应的数据，供当前实体的调用方读取或持久化。
+	// 本地静态 manifest 地址；非空时直接读取该 GitHub 兼容 JSON 数组。
+	ManifestURL string
+	// 更新源标识，用于向前端和日志说明本次检查来自 github 还是 local。
+	Source string
 	// 代理地址
 	ProxyBase string // ProxyBase 保存 ProxyBase 对应的数据，供当前实体的调用方读取或持久化。
 	// 请求 User-Agent
@@ -87,6 +91,8 @@ type Checker struct {
 
 // CheckResult 表示一次更新检查结果。
 type CheckResult struct {
+	// 更新源：github 或 local
+	Source string `json:"source,omitempty"`
 	// 检查状态
 	Status string `json:"status"` // Status 保存 status 对应的数据，供当前实体的调用方读取或持久化。
 	// 当前版本
@@ -157,6 +163,13 @@ func NewChecker(config Config) *Checker {
 	if config.APIBase == "" {
 		config.APIBase = "https://api.github.com"
 	}
+	if config.Source == "" {
+		if strings.TrimSpace(config.ManifestURL) != "" {
+			config.Source = "local"
+		} else {
+			config.Source = "github"
+		}
+	}
 	if config.UserAgent == "" {
 		config.UserAgent = "go-desktop-updater"
 	}
@@ -188,6 +201,9 @@ func NewChecker(config Config) *Checker {
 //   - CheckResult: 检查结果
 func (c *Checker) Check(ctx context.Context) CheckResult {
 	checkedAt := c.config.Now().UTC().Format(time.RFC3339)
+	if strings.TrimSpace(c.config.ManifestURL) != "" {
+		return c.checkManifest(ctx, checkedAt)
+	}
 	if strings.TrimSpace(c.config.Owner) == "" || strings.TrimSpace(c.config.Repo) == "" {
 		return c.errorResult(checkedAt, "", 0, "repository_missing", "GitHub Release 仓库配置为空。")
 	}
@@ -216,6 +232,7 @@ func (c *Checker) Check(ctx context.Context) CheckResult {
 	// 处理速率限制
 	if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests {
 		return CheckResult{
+			Source:         c.config.Source,
 			Status:         StatusIgnored,
 			CurrentVersion: c.config.CurrentVersion,
 			RequestURL:     requestURL,
@@ -259,16 +276,53 @@ func (c *Checker) CheckStatic(releasesJSON []byte) CheckResult {
 // 内部方法
 // ============================================================================
 
+// checkManifest 从本地静态 HTTP manifest 读取 GitHub 兼容 Release 数组。
+func (c *Checker) checkManifest(ctx context.Context, checkedAt string) CheckResult {
+	requestURL := strings.TrimSpace(c.config.ManifestURL)
+	if requestURL == "" {
+		return c.errorResult(checkedAt, "", 0, "manifest_missing", "本地更新 manifest 地址为空。")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
+	if err != nil {
+		return c.errorResult(checkedAt, requestURL, 0, "request_create_failed", fmt.Sprintf("本地更新 manifest 请求创建失败：%s", err))
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.config.UserAgent)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		if neterr.IsOfflineError(err) {
+			return c.ignoredOfflineResult(checkedAt, requestURL)
+		}
+		return c.errorResult(checkedAt, requestURL, 0, "request_failed", fmt.Sprintf("本地更新 manifest 请求失败：%s", err))
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return c.errorResult(checkedAt, requestURL, resp.StatusCode, "http_error", fmt.Sprintf("本地更新 manifest 返回 HTTP %d。", resp.StatusCode))
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 2*1024*1024))
+	if err != nil {
+		return c.errorResult(checkedAt, requestURL, resp.StatusCode, "response_read_failed", fmt.Sprintf("读取本地更新 manifest 失败：%s", err))
+	}
+	var releases []githubRelease
+	if err := json.Unmarshal(body, &releases); err != nil {
+		return c.errorResult(checkedAt, requestURL, resp.StatusCode, "response_parse_failed", fmt.Sprintf("解析本地更新 manifest 失败：%s", err))
+	}
+	return c.checkReleases(ctx, releases, checkedAt, true, requestURL, resp.StatusCode)
+}
+
 // checkReleases 检查 Release 列表并返回当前检查结果。
 func (c *Checker) checkReleases(ctx context.Context, releases []githubRelease, checkedAt string, resolveShaAsset bool, requestURL string, httpStatus int) CheckResult {
 	// 选择最新 Release
 	release, ok := selectLatestRelease(releases)
 	if !ok {
-		return c.errorResult(checkedAt, requestURL, httpStatus, "no_available_release", "没有找到可用的 GitHub Release。")
+		return c.errorResult(checkedAt, requestURL, httpStatus, "no_available_release", "没有找到可用的更新发布。")
 	}
 
 	latestVersion := semver.Normalize(release.TagName)
 	base := CheckResult{
+		Source:         c.config.Source,
 		CurrentVersion: c.config.CurrentVersion,
 		RequestURL:     requestURL,
 		HTTPStatus:     httpStatus,
@@ -374,6 +428,7 @@ func (c *Checker) releaseAPIURL() string {
 // 返回离线跳过结果
 func (c *Checker) ignoredOfflineResult(checkedAt, requestURL string) CheckResult {
 	return CheckResult{
+		Source:         c.config.Source,
 		Status:         StatusIgnored,
 		CurrentVersion: c.config.CurrentVersion,
 		RequestURL:     requestURL,
@@ -387,6 +442,7 @@ func (c *Checker) ignoredOfflineResult(checkedAt, requestURL string) CheckResult
 // 返回错误结果
 func (c *Checker) errorResult(checkedAt, requestURL string, httpStatus int, reason, message string) CheckResult {
 	return CheckResult{
+		Source:         c.config.Source,
 		Status:         StatusError,
 		CurrentVersion: c.config.CurrentVersion,
 		RequestURL:     requestURL,
