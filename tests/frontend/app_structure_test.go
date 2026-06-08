@@ -940,7 +940,10 @@ func TestLogsPageKeepsFileSelectorInsideFilterPanel(t *testing.T) {
 	for _, required := range []string{
 		".log-toolbar",
 		".log-file-field",
-		"grid-template-columns: minmax(260px, 2fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(260px, 2fr)",
+		"grid-template-columns: minmax(220px, 1.35fr) minmax(140px, 0.85fr) minmax(120px, 0.75fr) minmax(240px, 1.4fr)",
+		"@container (max-width: 820px)",
+		"grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)",
+		"@container (max-width: 560px)",
 	} {
 		if !strings.Contains(logStyles, required) {
 			t.Fatalf("logs page layout should define %q", required)
