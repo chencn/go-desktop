@@ -1,0 +1,98 @@
+name: Cleanup GitHub History
+
+on:
+  workflow_dispatch:
+    inputs:
+      keep_count:
+        description: "保留最近多少个 Release 和 workflow run 日志"
+        required: false
+        default: "5"
+      delete_release_tags:
+        description: "删除 Release 对应的 Git tag"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  cleanup:
+    name: Cleanup old releases and workflow logs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 清理旧 Release 和 workflow 日志
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const keepCountInput = context.payload.inputs?.keep_count ?? '5'
+            const keepCount = Number.parseInt(keepCountInput, 10)
+            if (!Number.isInteger(keepCount) || keepCount < 1) {
+              throw new Error(`keep_count 必须是正整数，当前为 ${JSON.stringify(keepCountInput)}`)
+            }
+
+            const deleteReleaseTagsInput = context.payload.inputs?.delete_release_tags
+            const deleteReleaseTags = deleteReleaseTagsInput === true || deleteReleaseTagsInput === 'true'
+            const { owner, repo } = context.repo
+
+            const releaseResponse = await github.paginate(github.rest.repos.listReleases, {
+              owner,
+              repo,
+              per_page: 100,
+            })
+            const releases = releaseResponse
+              .sort((left, right) => new Date(right.created_at) - new Date(left.created_at))
+            const staleReleases = releases.slice(keepCount)
+
+            core.info(`Release 总数 ${releases.length}，保留最近 ${keepCount} 个，准备删除 ${staleReleases.length} 个。`)
+            for (const release of staleReleases) {
+              core.info(`删除 Release: ${release.tag_name} / ${release.name || '(no name)'} / ${release.id}`)
+              await github.rest.repos.deleteRelease({
+                owner,
+                repo,
+                release_id: release.id,
+              })
+
+              if (deleteReleaseTags && release.tag_name) {
+                try {
+                  core.info(`删除 Git tag: ${release.tag_name}`)
+                  await github.rest.git.deleteRef({
+                    owner,
+                    repo,
+                    ref: `tags/${release.tag_name}`,
+                  })
+                } catch (error) {
+                  core.warning(`删除 Git tag ${release.tag_name} 失败：${error.message}`)
+                }
+              }
+            }
+
+            const runResponse = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              owner,
+              repo,
+              per_page: 100,
+            })
+            const currentRunId = context.runId
+            const runs = runResponse
+              .sort((left, right) => new Date(right.created_at) - new Date(left.created_at))
+            const staleRuns = runs.slice(keepCount)
+
+            core.info(`Workflow run 总数 ${runs.length}，保留最近 ${keepCount} 个 run 的日志，当前 run ${currentRunId} 不会被处理，准备检查 ${staleRuns.length} 个旧 run。`)
+            for (const run of staleRuns) {
+              if (run.id === currentRunId) {
+                core.info(`跳过当前 workflow run: ${run.id}`)
+                continue
+              }
+              try {
+                core.info(`删除 workflow 日志: ${run.name || '(no name)'} / #${run.run_number} / ${run.id} / ${run.created_at}`)
+                await github.rest.actions.deleteWorkflowRunLogs({
+                  owner,
+                  repo,
+                  run_id: run.id,
+                })
+              } catch (error) {
+                core.warning(`删除 workflow 日志 ${run.id} 失败：${error.message}`)
+              }
+            }

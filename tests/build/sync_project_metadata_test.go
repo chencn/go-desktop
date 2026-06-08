@@ -257,6 +257,38 @@ func TestReleaseWorkflowPublishesNsisPathBeforePackaging(t *testing.T) {
 	)
 }
 
+func TestCleanupWorkflowKeepsRecentReleasesAndWorkflowLogs(t *testing.T) {
+	source := readRootFile(t, ".github/workflows/cleanup.yml")
+	for _, forbidden := range []string{
+		"schedule:",
+		"deleteWorkflowRun({",
+	} {
+		if strings.Contains(source, forbidden) {
+			t.Fatalf(".github/workflows/cleanup.yml should not contain %q", forbidden)
+		}
+	}
+	for _, required := range []string{
+		"name: Cleanup GitHub History",
+		"workflow_dispatch:",
+		"description: \"保留最近多少个 Release 和 workflow run 日志\"",
+		"default: \"5\"",
+		"actions: write",
+		"contents: write",
+		"github.rest.repos.listReleases",
+		"github.rest.repos.deleteRelease",
+		"github.rest.actions.listWorkflowRunsForRepo",
+		"github.rest.actions.deleteWorkflowRunLogs",
+		"const staleReleases = releases.slice(keepCount)",
+		"const staleRuns = runs.slice(keepCount)",
+		"if (run.id === currentRunId)",
+		"deleteReleaseTagsInput === true || deleteReleaseTagsInput === 'true'",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf(".github/workflows/cleanup.yml should contain %q", required)
+		}
+	}
+}
+
 func TestStageLocalUpdateWritesGithubCompatibleStaticFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	payload := []byte("fake windows installer")

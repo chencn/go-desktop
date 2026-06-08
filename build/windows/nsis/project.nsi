@@ -79,6 +79,7 @@ Name "${INFO_PRODUCTNAME}"
 OutFile "..\..\..\bin\${INFO_PROJECTNAME}-v${INFO_PRODUCTVERSION}-windows-${ARCH}.exe" # 安装器输出文件名。
 InstallDir "${APP_INSTALL_DIR}"
 
+## .onInit 安装器初始化时按架构检查、请求旧实例退出并清理仍存活的窗口/进程。
 Function .onInit
    !insertmacro wails.checkArchitecture
    Call RequestRunningApplicationExit
@@ -86,6 +87,7 @@ Function .onInit
    Call ForceTerminateRunningApplication
 FunctionEnd
 
+## .onInstSuccess 安装成功后启动已安装的主程序，保持更新安装后的用户连续性。
 Function .onInstSuccess
     IfFileExists "$INSTDIR\${PRODUCT_EXECUTABLE}" 0 done
         DetailPrint "正在启动 ${INFO_PRODUCTNAME}..."
@@ -93,6 +95,7 @@ Function .onInstSuccess
     done:
 FunctionEnd
 
+## RequestRunningApplicationExit 通过 --installer-exit 请求已运行应用主动退出。
 Function RequestRunningApplicationExit
     IfFileExists "$INSTDIR\${PRODUCT_EXECUTABLE}" 0 done
         DetailPrint "正在请求已运行的 ${INFO_PRODUCTNAME} 退出..."
@@ -101,6 +104,7 @@ Function RequestRunningApplicationExit
     done:
 FunctionEnd
 
+## CloseRunningApplicationWindow 通过窗口类名和标题定位主窗口并发送关闭消息。
 Function CloseRunningApplicationWindow
     FindWindow $0 "${APP_WINDOW_CLASS}" "${APP_WINDOW_TITLE}"
     ${If} $0 != 0
@@ -110,6 +114,7 @@ Function CloseRunningApplicationWindow
     ${EndIf}
 FunctionEnd
 
+## ForceTerminateRunningApplication 在正常关闭失败后按窗口进程号强制结束旧实例。
 Function ForceTerminateRunningApplication
     FindWindow $0 "${APP_WINDOW_CLASS}" "${APP_WINDOW_TITLE}"
     ${If} $0 != 0
@@ -123,6 +128,7 @@ Function ForceTerminateRunningApplication
     ${EndIf}
 FunctionEnd
 
+## WriteCurrentUserUninstaller 写入当前用户范围卸载器和注册表卸载信息。
 Function WriteCurrentUserUninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
@@ -139,6 +145,7 @@ Function WriteCurrentUserUninstaller
     WriteRegDWORD HKCU "${UNINST_KEY_CURRENT_USER}" "EstimatedSize" "$0"
 FunctionEnd
 
+## un.RequestRunningApplicationExit 卸载前请求已运行应用主动退出，避免删除占用文件。
 Function un.RequestRunningApplicationExit
     IfFileExists "$INSTDIR\${PRODUCT_EXECUTABLE}" 0 done
         DetailPrint "正在请求已运行的 ${INFO_PRODUCTNAME} 退出..."
@@ -147,6 +154,7 @@ Function un.RequestRunningApplicationExit
     done:
 FunctionEnd
 
+## un.CloseRunningApplicationWindow 卸载阶段通过窗口句柄关闭仍在运行的主窗口。
 Function un.CloseRunningApplicationWindow
     FindWindow $0 "${APP_WINDOW_CLASS}" "${APP_WINDOW_TITLE}"
     ${If} $0 != 0
@@ -156,6 +164,7 @@ Function un.CloseRunningApplicationWindow
     ${EndIf}
 FunctionEnd
 
+## un.ForceTerminateRunningApplication 卸载阶段兜底结束仍占用安装目录的旧进程。
 Function un.ForceTerminateRunningApplication
     FindWindow $0 "${APP_WINDOW_CLASS}" "${APP_WINDOW_TITLE}"
     ${If} $0 != 0
@@ -169,6 +178,7 @@ Function un.ForceTerminateRunningApplication
     ${EndIf}
 FunctionEnd
 
+## un.DeleteCurrentUserUninstaller 删除当前用户范围卸载器和对应注册表项。
 Function un.DeleteCurrentUserUninstaller
     Delete "$INSTDIR\uninstall.exe"
 

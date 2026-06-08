@@ -1,0 +1,19 @@
+{
+  "extends": "../../frontend/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "../../frontend",
+    "paths": {
+      "@/*": ["./src/*"],
+      "vitest": ["./node_modules/vitest/dist/index.d.ts"]
+    }
+  },
+  "include": [
+    "*.test.ts",
+    "../../frontend/src/**/*.ts",
+    "../../frontend/src/**/*.d.ts",
+    "../../frontend/bindings/**/*.ts"
+  ],
+  "exclude": [
+    "../../frontend/src/components/ui/**/*.vue"
+  ]
+}
