@@ -280,9 +280,9 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
               </UiField>
               <div class="log-filter-actions">
                 <UiButton :disabled="activeFilterCount === 0" variant="secondary" @click="clearFilters">重置筛选</UiButton>
-                <UiButton :disabled="appStore.logSource !== 'memory' || appStore.logTotal === 0" variant="destructive" @click="clearDialogOpen = true">
+                <UiButton :disabled="appStore.logTotal === 0" variant="destructive" @click="clearDialogOpen = true">
                   <Trash2 :size="18" />
-                  清空内存视图
+                  清空当前视图
                 </UiButton>
               </div>
             </div>
@@ -347,8 +347,8 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
 
       <UiAlertDialog
         :open="clearDialogOpen"
-        title="清空内存视图"
-        description="只清空内存临时日志，每日文件日志不会被删除。"
+        title="清空当前视图"
+        description="只隐藏当前视图中的匹配日志，每日文件日志不会被删除。"
         confirm-text="清空"
         @close="clearDialogOpen = false"
         @confirm="confirmClearLogs"

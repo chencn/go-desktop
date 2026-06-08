@@ -170,7 +170,7 @@ function sourceLabel(source?: string) {
       </div>
 
       <div class="dialog-actions">
-        <UiButton :disabled="isBusy" @click="checkAndDownload">
+        <UiButton class="antd-primary-action" :disabled="isBusy" @click="checkAndDownload">
           <Loader2 v-if="appStore.checking || appStore.downloading" class="animate-spin" :size="18" />
           <RefreshCw v-else :size="18" />
           检查更新

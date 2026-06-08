@@ -204,6 +204,188 @@ func TestDisplayPreferencesNormaliseInvalidValues(t *testing.T) {
 	}
 }
 
+// TestDisplayPreferencesJSONPersistsProfilesAcrossRestart 验证显示偏好按方案 profile 写入单个 JSON 配置项，并在重启后保持当前方案。
+func TestDisplayPreferencesJSONPersistsProfilesAcrossRestart(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "go-desktop.db")
+	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
+
+	_, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
+		DisplayScheme: "shadcn",
+		UIStyle:       "nova",
+		ThemeMode:     "dark",
+		BaseColor:     "mauve",
+		ThemeColor:    "red",
+		AccentColor:   "emerald",
+		ChartColor:    "yellow",
+		IconTone:      "colorful",
+		Menu:          "inverted",
+		MenuAccent:    "bold",
+		Radius:        "large",
+		Density:       "compact",
+		TextSize:      "large",
+		CardBorder:    "soft",
+	})
+	if err != nil {
+		t.Fatalf("保存 shadcn 显示偏好失败：%v", err)
+	}
+
+	antd, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
+		DisplayScheme: "antd",
+		ThemeMode:     "dark",
+		ChartColor:    "blue",
+		Menu:          "default",
+		MenuAccent:    "subtle",
+		Radius:        "medium",
+		Density:       "comfortable",
+		TextSize:      "normal",
+		CardBorder:    "visible",
+	})
+	if err != nil {
+		t.Fatalf("保存 antd 显示偏好失败：%v", err)
+	}
+	if antd.DisplayScheme != "antd" || antd.ThemeColor != "blue" || antd.AccentColor != "blue" || antd.IconTone != "default" {
+		t.Fatalf("期望 AntD 生效偏好包含托管默认值，实际为 %#v", antd)
+	}
+	runtimeService.Shutdown()
+
+	reloaded := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
+	defer reloaded.Shutdown()
+	loadedAntD := reloaded.DisplayPreferencesSnapshot()
+	if loadedAntD.DisplayScheme != "antd" || loadedAntD.ThemeMode != "dark" || loadedAntD.ThemeColor != "blue" || loadedAntD.Menu != "default" {
+		t.Fatalf("期望重启后恢复 AntD 生效偏好，实际为 %#v", loadedAntD)
+	}
+
+	shadcn, err := reloaded.SaveDisplayPreferences(app.DisplayPreferences{
+		DisplayScheme: "shadcn",
+		ThemeMode:     "dark",
+	})
+	if err != nil {
+		t.Fatalf("切回 shadcn 失败：%v", err)
+	}
+	if shadcn.UIStyle != "nova" || shadcn.BaseColor != "mauve" || shadcn.ThemeColor != "red" || shadcn.AccentColor != "emerald" || shadcn.IconTone != "colorful" {
+		t.Fatalf("期望 shadcn profile 未被 AntD 覆盖，实际为 %#v", shadcn)
+	}
+}
+
+// TestDisplayPreferencesSnapshotsIncludeProfilesAcrossRestart 验证 API 快照携带全部 profile，前端重启后切换方案不会用默认值覆盖数据库。
+func TestDisplayPreferencesSnapshotsIncludeProfilesAcrossRestart(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "go-desktop.db")
+	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
+
+	saved, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
+		DisplayScheme: "antd",
+		ThemeMode:     "dark",
+		Profiles: app.DisplayProfiles{
+			Shadcn: app.DisplayProfile{
+				UIStyle:     "nova",
+				BaseColor:   "mauve",
+				ThemeColor:  "red",
+				AccentColor: "emerald",
+				ChartColor:  "yellow",
+				IconTone:    "colorful",
+				Menu:        "inverted-translucent",
+				MenuAccent:  "bold",
+				Radius:      "large",
+				Density:     "compact",
+				TextSize:    "large",
+				CardBorder:  "soft",
+			},
+			AntD: app.DisplayProfile{
+				ChartColor: "blue",
+				Menu:       "inverted",
+				MenuAccent: "bold",
+				Radius:     "small",
+				Density:    "comfortable",
+				TextSize:   "medium",
+				CardBorder: "visible",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("保存带 profiles 的显示偏好失败：%v", err)
+	}
+	if saved.DisplayScheme != "antd" || saved.Menu != "inverted" || saved.MenuAccent != "bold" || saved.Radius != "small" {
+		t.Fatalf("期望 AntD 生效值来自 AntD profile，实际为 %#v", saved)
+	}
+	if saved.Profiles.Shadcn.UIStyle != "nova" || saved.Profiles.Shadcn.AccentColor != "emerald" {
+		t.Fatalf("期望保存响应带回 shadcn profile，实际为 %#v", saved.Profiles)
+	}
+	runtimeService.Shutdown()
+
+	reloaded := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
+	defer reloaded.Shutdown()
+	snapshot := reloaded.DisplayPreferencesSnapshot()
+	if snapshot.DisplayScheme != "antd" || snapshot.Profiles.Shadcn.ThemeColor != "red" || snapshot.Profiles.AntD.Menu != "inverted" {
+		t.Fatalf("期望重启后快照保留两套 profile，实际为 %#v", snapshot)
+	}
+
+	switched, err := reloaded.SaveDisplayPreferences(app.DisplayPreferences{
+		DisplayScheme: "shadcn",
+		ThemeMode:     snapshot.ThemeMode,
+		Profiles:      snapshot.Profiles,
+	})
+	if err != nil {
+		t.Fatalf("前端式切回 shadcn 失败：%v", err)
+	}
+	if switched.UIStyle != "nova" || switched.ThemeColor != "red" || switched.AccentColor != "emerald" || switched.Menu != "inverted-translucent" {
+		t.Fatalf("期望切回 shadcn 后恢复原 profile，实际为 %#v", switched)
+	}
+}
+
+// TestDisplayPreferencesJSONDefaultsWhenDatabaseIsEmpty 验证空数据库只需要 JSON 默认项即可得到 shadcn 默认生效偏好。
+func TestDisplayPreferencesJSONDefaultsWhenDatabaseIsEmpty(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "go-desktop.db")
+	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
+	defer runtimeService.Shutdown()
+
+	preferences := runtimeService.DisplayPreferencesSnapshot()
+	if preferences.DisplayScheme != "shadcn" {
+		t.Fatalf("期望空数据库默认显示方案为 shadcn，实际为 %#v", preferences)
+	}
+}
+
+// TestDisplayPreferencesAntDNormalisesManagedAndUnsupportedValues 验证后端裁决 AntD 托管项和 AntD 不支持的菜单、圆角值。
+func TestDisplayPreferencesAntDNormalisesManagedAndUnsupportedValues(t *testing.T) {
+	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: filepath.Join(t.TempDir(), "go-desktop.db")})
+	defer runtimeService.Shutdown()
+
+	if _, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
+		DisplayScheme: "antd",
+		ThemeMode:     "dark",
+	}); err != nil {
+		t.Fatalf("切换到 antd 显示方案失败：%v", err)
+	}
+
+	saved, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
+		DisplayScheme: "antd",
+		UIStyle:       "nova",
+		ThemeMode:     "dark",
+		BaseColor:     "mauve",
+		ThemeColor:    "red",
+		AccentColor:   "emerald",
+		ChartColor:    "yellow",
+		IconTone:      "colorful",
+		Menu:          "default-translucent",
+		MenuAccent:    "bold",
+		Radius:        "none",
+		Density:       "compact",
+		TextSize:      "large",
+		CardBorder:    "soft",
+	})
+	if err != nil {
+		t.Fatalf("保存 antd 显示偏好失败：%v", err)
+	}
+	if saved.DisplayScheme != "antd" || saved.UIStyle != "vega" || saved.BaseColor != "neutral" || saved.ThemeColor != "blue" || saved.AccentColor != "blue" {
+		t.Fatalf("期望 AntD 托管项被后端标准化，实际为 %#v", saved)
+	}
+	if saved.Menu != "default" || saved.Radius != "medium" {
+		t.Fatalf("期望 AntD 不支持值回退到方案默认值，实际为 %#v", saved)
+	}
+	if saved.ChartColor != "yellow" || saved.IconTone != "colorful" || saved.MenuAccent != "bold" || saved.Density != "compact" || saved.TextSize != "large" || saved.CardBorder != "soft" {
+		t.Fatalf("期望 AntD 可编辑项保留合法输入，实际为 %#v", saved)
+	}
+}
+
 // TestDefaultRuntimePathsUseExecutableDataDirectory 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
 func TestDefaultRuntimePathsUseExecutableDataDirectory(t *testing.T) {
 	databasePath := filepath.ToSlash(app.DefaultDatabasePath("go-desktop"))

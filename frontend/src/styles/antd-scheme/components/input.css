@@ -1,0 +1,41 @@
+/* AntD Input：覆盖 shadcn Input primitive。 */
+
+:root[data-display-scheme="antd"] [data-slot="input"] {
+  height: var(--antd-control-height) !important;
+  min-height: var(--antd-control-height) !important;
+  border-width: var(--antd-line-width) !important;
+  border-style: var(--antd-line-type) !important;
+  border-color: var(--antd-color-border) !important;
+  border-radius: var(--antd-border-radius) !important;
+  background: var(--antd-color-bg-container) !important;
+  box-shadow: none !important;
+  color: var(--antd-color-text) !important;
+  font-size: var(--antd-font-size);
+  font-weight: 400;
+  line-height: var(--antd-font-line-height);
+  padding: 4px var(--antd-control-padding-horizontal) !important;
+  transition: border-color var(--antd-motion-duration-mid) var(--antd-motion-ease-in-out), box-shadow var(--antd-motion-duration-mid) var(--antd-motion-ease-in-out), background var(--antd-motion-duration-mid) var(--antd-motion-ease-in-out);
+}
+
+:root[data-display-scheme="antd"] [data-slot="input"]:hover {
+  border-color: var(--antd-color-primary-hover) !important;
+}
+
+:root[data-display-scheme="antd"] [data-slot="input"]:focus-visible {
+  border-color: var(--antd-color-primary) !important;
+  box-shadow: var(--antd-control-outline) !important;
+  outline: 0;
+}
+
+:root[data-display-scheme="antd"] [data-slot="input"]:disabled {
+  border-color: var(--antd-color-border) !important;
+  background: var(--antd-color-bg-container-disabled) !important;
+  color: var(--antd-color-text-disabled) !important;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+:root[data-display-scheme="antd"] [data-slot="input"]::placeholder {
+  color: var(--antd-color-text-placeholder);
+  user-select: none;
+}

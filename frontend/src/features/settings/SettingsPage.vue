@@ -5,8 +5,8 @@
 
 <script setup lang="ts">
 import { computed, defineComponent, h, ref, watch, type Component, type PropType } from 'vue'
-import { AppWindow, BarChart3, Menu as MenuIcon, Paintbrush, Power, RefreshCw, RotateCcw, Settings2, SwatchBook, Terminal, Type } from '@lucide/vue'
-import { exportDisplayPreferences, useDisplayPreferences, type AccentColor, type BaseColor, type CardBorder, type ChartColor, type Density, type IconTone, type Menu as MenuPreference, type MenuAccent, type Radius, type TextSize, type ThemeColor, type ThemeMode, type UIStyle } from '@/app/display'
+import { Archive, BadgeCheck, CalendarClock, ChartColumn, CloudDownload, Component as ComponentIcon, EyeOff, ListFilter, MonitorUp, MousePointerClick, Paintbrush, Palette, PanelBottomClose, PanelLeft, PanelsTopLeft, Rocket, RotateCcw, Rows3, Sparkles, Square, SquareRoundCorner, SunMoon, Type, Wrench } from '@lucide/vue'
+import { exportDisplayPreferences, useDisplayPreferences, type AccentColor, type BaseColor, type CardBorder, type ChartColor, type Density, type DisplayPreferences, type DisplayScheme, type IconTone, type Menu as MenuPreference, type MenuAccent, type Radius, type TextSize, type ThemeColor, type ThemeMode, type UIStyle } from '@/app/display'
 import { useAppStore } from '@/stores/app'
 import { defaultRuntimeSettings, type LogLevel, type Settings, type UpdateSource } from '@/api/wails'
 import SettingsColorSelect from './SettingsColorSelect.vue'
@@ -33,22 +33,13 @@ let displaySaveRevision = 0
 let displaySaveQueue = Promise.resolve()
 // displaySaveTimer 保存显示偏好防抖计时器。
 let displaySaveTimer: ReturnType<typeof window.setTimeout> | undefined
-
-watch([settingsReady, displayReady], ([nextSettingsReady, nextDisplayReady]) => {
-  console.info('[settings-trace] SettingsPage：disabled 来源变化', {
-    settingsReady: nextSettingsReady,
-    displayReady: nextDisplayReady,
-    settingsDisabled: !nextSettingsReady,
-    displayDisabled: !nextDisplayReady,
-    hasStoreSettings: Boolean(appStore.settings),
-    hasStoreDisplayPreferences: Boolean(appStore.displayPreferences),
-    settings: appStore.settings,
-    displayPreferences: appStore.displayPreferences,
-  })
-}, { immediate: true })
+// resetDisplayDialogOpen 控制恢复当前显示方案默认值的二次确认弹窗。
+const resetDisplayDialogOpen = ref(false)
 
 // styleOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
 const styleOptions: Array<[UIStyle, string]> = [['reka', 'Reka'], ['vega', 'Vega'], ['nova', 'Nova'], ['maia', 'Maia'], ['lyra', 'Lyra'], ['mira', 'Mira'], ['luma', 'Luma'], ['sera', 'Sera']]
+// displaySchemeOptions 保存显示偏好方案选项。
+const displaySchemeOptions: Array<[DisplayScheme, string]> = [['shadcn', 'shadcn'], ['antd', 'Ant Design']]
 // themeOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
 const themeOptions: Array<[ThemeMode, string]> = [['light', '亮色'], ['dark', '暗色']]
 // baseOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
@@ -100,6 +91,10 @@ const radiusOptions: Array<[Radius, string]> = [['default', '默认'], ['none', 
 const densityOptions: Array<[Density, string]> = [['compact', '紧凑'], ['comfortable', '舒展']]
 // cardBorderOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
 const cardBorderOptions: Array<[CardBorder, string]> = [['visible', '清晰'], ['soft', '柔和'], ['hidden', '隐藏']]
+const antDesignManagedKeys: Array<keyof DisplayPreferences> = ['uiStyle', 'baseColor', 'themeColor', 'accentColor']
+const isAntDesign = computed(() => display.displayScheme.value === 'antd')
+const visibleMenuOptions = computed(() => isAntDesign.value ? menuOptions.filter(([value]) => value === 'default' || value === 'inverted') : menuOptions)
+const visibleRadiusOptions = computed(() => isAntDesign.value ? radiusOptions.filter(([value]) => value !== 'none') : radiusOptions)
 // updateIntervalOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
 const updateIntervalOptions = [1, 3, 6, 12]
 const updateSourceOptions: Array<[UpdateSource, string]> = [['github', 'GitHub Release'], ['local', '本地静态服务']]
@@ -212,6 +207,17 @@ function ensureDisplayReady() {
   return false
 }
 
+function isManagedByAntDesign(key: keyof DisplayPreferences) {
+  return isAntDesign.value && antDesignManagedKeys.includes(key)
+}
+
+function asDisplayScheme(value: string) {
+  if (!ensureDisplayReady()) return
+  const scheme = value as DisplayScheme
+  display.setDisplayScheme(scheme)
+  persistDisplayPreferences({ immediate: true })
+}
+
 // asStyle 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asStyle(value: string) {
   if (!ensureDisplayReady()) return
@@ -306,12 +312,17 @@ function asCardBorder(value: string) {
 // resetDisplayPreferencesAndPersist 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function resetDisplayPreferencesAndPersist() {
   if (!ensureDisplayReady()) return
-  display.resetDisplayPreferences()
+  display.resetDisplayPreferencesForCurrentScheme()
   persistDisplayPreferences()
 }
 
+function confirmResetDisplayPreferences() {
+  resetDisplayDialogOpen.value = false
+  resetDisplayPreferencesAndPersist()
+}
+
 // persistDisplayPreferences 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
-function persistDisplayPreferences() {
+function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
   if (!ensureDisplayReady()) {
     return displaySaveQueue
   }
@@ -322,8 +333,9 @@ function persistDisplayPreferences() {
 
   if (displaySaveTimer) {
     window.clearTimeout(displaySaveTimer)
+    displaySaveTimer = undefined
   }
-  displaySaveTimer = window.setTimeout(() => {
+  const runSave = () => {
     displaySaveQueue = displaySaveQueue
       .catch(() => undefined)
       .then(async () => {
@@ -338,7 +350,14 @@ function persistDisplayPreferences() {
           }
         }
       })
-  }, settingsSaveDelayMs)
+  }
+
+  if (options.immediate) {
+    runSave()
+    return displaySaveQueue
+  }
+
+  displaySaveTimer = window.setTimeout(runSave, settingsSaveDelayMs)
 
   return displaySaveQueue
 }
@@ -351,7 +370,7 @@ function persistDisplayPreferences() {
       <UiCard class="settings-card-wide">
         <UiCardHeader>
           <div class="section-title-row">
-            <span class="nav-icon icon-tone-indigo" aria-hidden="true"><Settings2 :size="19" /></span>
+            <span class="nav-icon icon-tone-indigo" aria-hidden="true"><Wrench :size="19" /></span>
             <div>
               <UiCardTitle>业务设置</UiCardTitle>
               <UiCardDescription>关闭窗口行为、检查间隔和日志保留周期。</UiCardDescription>
@@ -360,7 +379,7 @@ function persistDisplayPreferences() {
         </UiCardHeader>
         <UiCardContent class="settings-compact-list">
           <div class="settings-compact-row">
-            <span class="data-icon icon-tone-gray" aria-hidden="true"><AppWindow :size="17" /></span>
+            <span class="data-icon icon-tone-cyan" aria-hidden="true"><PanelBottomClose :size="17" /></span>
             <span class="settings-compact-copy">
               <strong>关闭到系统托盘</strong>
               <small>点击关闭按钮时隐藏窗口；点击最小化仍进任务栏。</small>
@@ -368,7 +387,7 @@ function persistDisplayPreferences() {
             <UiSwitch class="settings-control-switch" :checked="draft.minimizeToTray" :disabled="!settingsReady" aria-label="关闭到系统托盘" @update:checked="persistSettingsPatch({ minimizeToTray: $event })" />
           </div>
           <div class="settings-compact-row">
-            <span class="data-icon icon-tone-indigo" aria-hidden="true"><Power :size="17" /></span>
+            <span class="data-icon icon-tone-green" aria-hidden="true"><Rocket :size="17" /></span>
             <span class="settings-compact-copy">
               <strong>开机自启</strong>
               <small>登录 Windows 后自动启动应用。</small>
@@ -376,7 +395,7 @@ function persistDisplayPreferences() {
             <UiSwitch class="settings-control-switch" :checked="draft.autoLaunch" :disabled="!settingsReady" aria-label="开机自启" @update:checked="persistSettingsPatch({ autoLaunch: $event })" />
           </div>
           <div class="settings-compact-row">
-            <span class="data-icon icon-tone-purple" aria-hidden="true"><AppWindow :size="17" /></span>
+            <span class="data-icon icon-tone-purple" aria-hidden="true"><EyeOff :size="17" /></span>
             <span class="settings-compact-copy">
               <strong>开机自启时隐藏到托盘</strong>
               <small>仅对开机自启入口生效；手动启动仍显示界面。</small>
@@ -384,7 +403,7 @@ function persistDisplayPreferences() {
             <UiSwitch class="settings-control-switch" :checked="draft.launchHiddenToTray" :disabled="!draft.autoLaunch" aria-label="开机自启时隐藏到托盘" @update:checked="persistSettingsPatch({ launchHiddenToTray: $event })" />
           </div>
           <div class="settings-compact-row">
-            <span class="data-icon icon-tone-green" aria-hidden="true"><AppWindow :size="17" /></span>
+            <span class="data-icon icon-tone-blue" aria-hidden="true"><MonitorUp :size="17" /></span>
             <span class="settings-compact-copy">
               <strong>创建桌面快捷图标</strong>
               <small>在当前用户桌面创建应用启动快捷方式。</small>
@@ -392,7 +411,7 @@ function persistDisplayPreferences() {
             <UiSwitch class="settings-control-switch" :checked="draft.createDesktopShortcut" :disabled="!settingsReady" aria-label="创建桌面快捷图标" @update:checked="persistSettingsPatch({ createDesktopShortcut: $event })" />
           </div>
           <div class="settings-compact-row">
-            <span class="data-icon icon-tone-indigo" aria-hidden="true"><RefreshCw :size="17" /></span>
+            <span class="data-icon icon-tone-blue" aria-hidden="true"><CloudDownload :size="17" /></span>
             <span class="settings-compact-copy">
               <strong>更新源</strong>
               <small>选择唯一的更新检查来源。</small>
@@ -402,7 +421,7 @@ function persistDisplayPreferences() {
             </UiNativeSelect>
           </div>
           <div class="settings-compact-row">
-            <span class="data-icon icon-tone-indigo" aria-hidden="true"><RefreshCw :size="17" /></span>
+            <span class="data-icon icon-tone-amber" aria-hidden="true"><CalendarClock :size="17" /></span>
             <span class="settings-compact-copy">
               <strong>检查间隔</strong>
               <small>自动检查 Release 的时间间隔。</small>
@@ -412,7 +431,7 @@ function persistDisplayPreferences() {
             </UiNativeSelect>
           </div>
           <div class="settings-compact-row">
-            <span class="data-icon icon-tone-orange" aria-hidden="true"><Terminal :size="17" /></span>
+            <span class="data-icon icon-tone-orange" aria-hidden="true"><Archive :size="17" /></span>
             <span class="settings-compact-copy">
               <strong>保留周期</strong>
               <small>每日文件日志自动清理周期。</small>
@@ -428,7 +447,7 @@ function persistDisplayPreferences() {
             </UiNativeSelect>
           </div>
           <div class="settings-compact-row">
-            <span class="data-icon icon-tone-indigo" aria-hidden="true"><Terminal :size="17" /></span>
+            <span class="data-icon icon-tone-red" aria-hidden="true"><ListFilter :size="17" /></span>
             <span class="settings-compact-copy">
               <strong>日志级别</strong>
               <small>调试级别会记录更详细的后端保存和异常定位信息。</small>
@@ -444,62 +463,67 @@ function persistDisplayPreferences() {
         <UiCardHeader>
           <div class="settings-display-header">
             <div class="section-title-row">
-              <span class="nav-icon icon-tone-purple" aria-hidden="true"><Paintbrush :size="19" /></span>
+              <span class="nav-icon icon-tone-purple" aria-hidden="true"><Palette :size="19" /></span>
               <div>
                 <UiCardTitle>显示偏好</UiCardTitle>
-                <UiCardDescription>参考 shadcn-vue create 参数，覆盖 Style、Base Color、Theme、Chart Color、图标、Radius、Menu 和 Menu Accent。</UiCardDescription>
+                <UiCardDescription>选择显示方案；shadcn 保留全部自定义，Ant Design 使用方案托管色彩和图标基线。</UiCardDescription>
               </div>
             </div>
-            <UiButton class="settings-reset-button" type="button" variant="secondary" size="sm" :disabled="!displayReady" @click="resetDisplayPreferencesAndPersist">
+            <UiButton class="settings-reset-button" type="button" variant="destructive" size="sm" :disabled="!displayReady" @click="resetDisplayDialogOpen = true">
               <RotateCcw :size="16" />
-              恢复初始值
+              恢复当前方案默认值
             </UiButton>
           </div>
         </UiCardHeader>
         <UiCardContent class="preference-stack">
-          <PreferenceRow title="组件风格" description="对应 shadcn-vue create 的 style，影响组件密度和默认视觉基线。" :icon="Settings2" tone="icon-tone-indigo">
-            <UiNativeSelect class="preference-native-select" :model-value="display.uiStyle.value" :disabled="!displayReady" aria-label="组件风格" @update:model-value="asStyle">
+          <PreferenceRow title="显示方案" description="shadcn 与 Ant Design 平级；切换后按当前方案保存独立偏好。" :icon="PanelsTopLeft" tone="icon-tone-purple">
+            <UiNativeSelect class="preference-native-select" :model-value="display.displayScheme.value" :disabled="!displayReady" aria-label="显示方案" @update:model-value="asDisplayScheme">
+              <option v-for="[value, label] in displaySchemeOptions" :key="value" :value="value">{{ label }}</option>
+            </UiNativeSelect>
+          </PreferenceRow>
+          <PreferenceRow title="组件风格" :description="isAntDesign ? 'Ant Design 下由方案托管；切回 shadcn 可继续自定义。' : '对应 shadcn-vue create 的 style，影响组件密度和默认视觉基线。'" :icon="ComponentIcon" tone="icon-tone-blue">
+            <UiNativeSelect class="preference-native-select" :model-value="display.uiStyle.value" :disabled="!displayReady || isManagedByAntDesign('uiStyle')" aria-label="组件风格" @update:model-value="asStyle">
               <option v-for="[value, label] in styleOptions" :key="value" :value="value">{{ label }}</option>
             </UiNativeSelect>
           </PreferenceRow>
-          <PreferenceRow title="主题模式" description="右上角保留快捷切换；这里提供完整设置入口。" :icon="Paintbrush" tone="icon-tone-purple">
+          <PreferenceRow title="主题模式" description="右上角保留快捷切换；这里提供完整设置入口。" :icon="SunMoon" tone="icon-tone-amber">
             <UiNativeSelect class="preference-native-select" :model-value="display.themeMode.value" :disabled="!displayReady" aria-label="主题模式" @update:model-value="asThemeMode">
               <option v-for="[value, label] in themeOptions" :key="value" :value="value">{{ label }}</option>
             </UiNativeSelect>
           </PreferenceRow>
-          <PreferenceRow title="基础色盘" description="对应 shadcn-vue baseColor，并影响亮色和暗色中性色 token。" :icon="SwatchBook" tone="icon-tone-gray">
-            <SettingsColorSelect class="preference-control-color" label="基础色盘" :disabled="!displayReady" :model-value="display.baseColor.value" :options="baseOptions" @update:model-value="asBaseColor" />
+          <PreferenceRow title="基础色盘" :description="isAntDesign ? 'Ant Design 下固定使用中性色体系，避免破坏组件识别度。' : '对应 shadcn-vue baseColor，并影响亮色和暗色中性色 token。'" :icon="Palette" tone="icon-tone-cyan">
+            <SettingsColorSelect class="preference-control-color" label="基础色盘" :disabled="!displayReady || isManagedByAntDesign('baseColor')" :model-value="display.baseColor.value" :options="baseOptions" @update:model-value="asBaseColor" />
           </PreferenceRow>
-          <PreferenceRow title="主题" description="对应 shadcn-vue create 的 Theme，控制主按钮、焦点环、选中态和高强调 token。" :icon="Paintbrush" tone="icon-tone-purple">
-            <SettingsColorSelect class="preference-control-color" label="主题" :disabled="!displayReady" :model-value="display.themeColor.value" :options="themeColorOptions" @update:model-value="asThemeColor" />
+          <PreferenceRow title="主题" :description="isAntDesign ? 'Ant Design 下固定使用官方蓝色主色；图表色仍可单独调整。' : '对应 shadcn-vue create 的 Theme，控制主按钮、焦点环、选中态和高强调 token。'" :icon="Paintbrush" tone="icon-tone-purple">
+            <SettingsColorSelect class="preference-control-color" label="主题" :disabled="!displayReady || isManagedByAntDesign('themeColor')" :model-value="display.themeColor.value" :options="themeColorOptions" @update:model-value="asThemeColor" />
           </PreferenceRow>
-          <PreferenceRow title="强调色" description="用于主按钮、选中导航、更新图标、进度、开关和焦点环。" :icon="SwatchBook" tone="icon-tone-indigo">
-            <SettingsColorSelect class="preference-control-color" label="强调色" :disabled="!displayReady" :model-value="display.accentColor.value" :options="accentOptions" @update:model-value="asAccentColor" />
+          <PreferenceRow title="强调色" :description="isAntDesign ? 'Ant Design 下强调色由官方蓝色派生，保持按钮、焦点和选中态一致。' : '用于主按钮、选中导航、更新图标、进度、开关和焦点环。'" :icon="Sparkles" tone="icon-tone-pink">
+            <SettingsColorSelect class="preference-control-color" label="强调色" :disabled="!displayReady || isManagedByAntDesign('accentColor')" :model-value="display.accentColor.value" :options="accentOptions" @update:model-value="asAccentColor" />
           </PreferenceRow>
-          <PreferenceRow title="图表色" description="对应 chart token，不再偷用强调色；用于统计和可视化色板。" :icon="BarChart3" tone="icon-tone-green">
+          <PreferenceRow title="图表色" description="对应 chart token，不再偷用强调色；用于统计和可视化色板。" :icon="ChartColumn" tone="icon-tone-green">
             <SettingsColorSelect class="preference-control-color" label="图表色" :disabled="!displayReady" :model-value="display.chartColor.value" :options="chartOptions" @update:model-value="asChartColor" />
           </PreferenceRow>
-          <PreferenceRow title="圆角" description="通过 --radius 派生到卡片、按钮、输入框、弹窗和列表。" :icon="Settings2" tone="icon-tone-gray">
+          <PreferenceRow title="圆角" description="通过 --radius 派生到卡片、按钮、输入框、弹窗和列表。" :icon="SquareRoundCorner" tone="icon-tone-gray">
             <UiNativeSelect class="preference-native-select" :model-value="display.radius.value" :disabled="!displayReady" aria-label="圆角" @update:model-value="asRadius">
-              <option v-for="[value, label] in radiusOptions" :key="value" :value="value">{{ label }}</option>
+              <option v-for="[value, label] in visibleRadiusOptions" :key="value" :value="value">{{ label }}</option>
             </UiNativeSelect>
           </PreferenceRow>
-          <PreferenceRow title="图标颜色" description="默认使用单色语义图标；需要按含义着色时切到彩色图标。" :icon="SwatchBook" tone="icon-tone-purple">
+          <PreferenceRow title="图标颜色" description="控制语义图标是否使用彩色状态；Ant Design 下仍保留可切换。" :icon="BadgeCheck" tone="icon-tone-purple">
             <UiNativeSelect class="preference-native-select" :model-value="display.iconTone.value" :disabled="!displayReady" aria-label="图标颜色" @update:model-value="asIconTone">
               <option v-for="[value, label] in iconToneOptions" :key="value" :value="value">{{ label }}</option>
             </UiNativeSelect>
           </PreferenceRow>
-          <PreferenceRow title="菜单" description="对应 create 页 Menu，支持 Default、Inverted 和透明变体。" :icon="MenuIcon" tone="icon-tone-gray">
+          <PreferenceRow title="菜单" description="对应 create 页 Menu，支持 Default、Inverted 和透明变体。" :icon="PanelLeft" tone="icon-tone-blue">
             <UiNativeSelect class="preference-native-select" :model-value="display.menu.value" :disabled="!displayReady" aria-label="菜单" @update:model-value="asMenu">
-              <option v-for="[value, label] in menuOptions" :key="value" :value="value">{{ label }}</option>
+              <option v-for="[value, label] in visibleMenuOptions" :key="value" :value="value">{{ label }}</option>
             </UiNativeSelect>
           </PreferenceRow>
-          <PreferenceRow title="菜单强调" description="对应 create 页 Menu Accent，例如 Subtle，控制菜单 hover 和 active 背景强度。" :icon="MenuIcon" tone="icon-tone-indigo">
+          <PreferenceRow title="菜单强调" description="对应 create 页 Menu Accent，例如 Subtle，控制菜单 hover 和 active 背景强度。" :icon="MousePointerClick" tone="icon-tone-indigo">
             <UiNativeSelect class="preference-native-select" :model-value="display.menuAccent.value" :disabled="!displayReady" aria-label="菜单强调" @update:model-value="asMenuAccent">
               <option v-for="[value, label] in menuAccentOptions" :key="value" :value="value">{{ label }}</option>
             </UiNativeSelect>
           </PreferenceRow>
-          <PreferenceRow title="密度" description="影响页面留白、工具栏高度和控件最小高度。" :icon="Settings2" tone="icon-tone-gray">
+          <PreferenceRow title="密度" description="影响页面留白、工具栏高度和控件最小高度。" :icon="Rows3" tone="icon-tone-cyan">
             <UiNativeSelect class="preference-native-select" :model-value="display.density.value" :disabled="!displayReady" aria-label="密度" @update:model-value="asDensity">
               <option v-for="[value, label] in densityOptions" :key="value" :value="value">{{ label }}</option>
             </UiNativeSelect>
@@ -509,7 +533,7 @@ function persistDisplayPreferences() {
               <option v-for="[value, label] in textOptions" :key="value" :value="value">{{ label }}</option>
             </UiNativeSelect>
           </PreferenceRow>
-          <PreferenceRow title="卡片边框" description="统一控制 Card、列表、日志表和弹窗边框强度。" :icon="Settings2" tone="icon-tone-gray">
+          <PreferenceRow title="卡片边框" description="控制卡片、表格、弹窗等容器边框的显示强度。" :icon="Square" tone="icon-tone-gray">
             <UiNativeSelect class="preference-native-select" :model-value="display.cardBorder.value" :disabled="!displayReady" aria-label="卡片边框" @update:model-value="asCardBorder">
               <option v-for="[value, label] in cardBorderOptions" :key="value" :value="value">{{ label }}</option>
             </UiNativeSelect>
@@ -517,6 +541,14 @@ function persistDisplayPreferences() {
         </UiCardContent>
       </UiCard>
     </section>
+    <UiAlertDialog
+      :open="resetDisplayDialogOpen"
+      title="恢复当前方案默认值"
+      description="将当前显示方案恢复为默认偏好，当前方案下的自定义显示偏好会被覆盖。"
+      confirm-text="恢复"
+      @close="resetDisplayDialogOpen = false"
+      @confirm="confirmResetDisplayPreferences"
+    />
   </div>
 </template>
 

@@ -97,9 +97,9 @@ func (s *Runtime) RecordUpdateCheckResult(result githubrelease.CheckResult) {
 // GetUpdateStatus API 方法，返回当前更新状态。
 func (api *API) GetUpdateStatus() (status UpdateStatus, err error) {
 	defer api.recoverError("读取更新状态", &err)
-	api.runtime.RecordLogWithSeverity("api-trace", "GetUpdateStatus：后端收到请求", "info")
+	api.runtime.RecordLogWithSeverity("api-trace", "GetUpdateStatus：后端收到请求", "debug")
 	status = api.runtime.GetUpdateStatus()
-	api.runtime.RecordLogWithSeverity("api-trace", fmt.Sprintf("GetUpdateStatus：后端返回成功 status=%q", status.Status), "info")
+	api.runtime.RecordLogWithSeverity("api-trace", fmt.Sprintf("GetUpdateStatus：后端返回成功 status=%q", status.Status), "debug")
 	return status, nil
 }
 

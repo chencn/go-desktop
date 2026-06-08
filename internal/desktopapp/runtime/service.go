@@ -26,6 +26,7 @@ import (
 	"github.com/chencn/go-desktop/internal/adapters/configstore"      // 存储层（SQLite）
 	"github.com/chencn/go-desktop/internal/adapters/filelog"          // 文件日志适配层
 	"github.com/chencn/go-desktop/internal/adapters/githubrelease"    // GitHub 版本检查模块
+	"github.com/chencn/go-desktop/internal/desktopapp/display"        // 显示偏好模型
 	"github.com/chencn/go-desktop/internal/desktopapp/metadata"       // 项目元数据常量
 	updater "github.com/chencn/go-desktop/internal/desktopapp/update" // 更新管理器
 	"github.com/chencn/go-desktop/internal/platform/paths"
@@ -191,7 +192,8 @@ type Runtime struct {
 
 	// displayPreferences 当前显示偏好
 	// 由 SQLite KV 配置项加载，前端只通过 typed facade 读取和保存
-	displayPreferences DisplayPreferences // displayPreferences 保存 displayPreferences 对应的数据，供当前实体的调用方读取或持久化。
+	displayPreferencesV2 display.PreferencesV2 // displayPreferencesV2 保存完整显示偏好 JSON profile。
+	displayPreferences   DisplayPreferences    // displayPreferences 保存当前方案生效偏好，供前端读取。
 
 	// logs 内存中的日志条目
 	// 用于当前前端视图和文件不可读时兜底
@@ -574,18 +576,19 @@ func NewRuntime(options ServiceOptions) *Runtime {
 
 	// 创建运行时实例
 	runtime := &Runtime{
-		options:            options,
-		releaseChecker:     options.ReleaseChecker,
-		startedAt:          time.Now().UTC(),
-		databasePath:       options.DatabasePath,
-		logDirPath:         logDirPath,
-		logFilePattern:     logFilePattern,
-		crashReporter:      options.CrashReporter,
-		cachePath:          options.CachePath,
-		settings:           defaultSettings(),
-		displayPreferences: defaultDisplayPreferences(),
-		logViewClearedAt:   map[string]time.Time{},
-		updateState:        idleUpdateStatus(),
+		options:              options,
+		releaseChecker:       options.ReleaseChecker,
+		startedAt:            time.Now().UTC(),
+		databasePath:         options.DatabasePath,
+		logDirPath:           logDirPath,
+		logFilePattern:       logFilePattern,
+		crashReporter:        options.CrashReporter,
+		cachePath:            options.CachePath,
+		settings:             defaultSettings(),
+		displayPreferencesV2: display.DefaultV2(),
+		displayPreferences:   defaultDisplayPreferences(),
+		logViewClearedAt:     map[string]time.Time{},
+		updateState:          idleUpdateStatus(),
 	}
 
 	// 设置默认缓存路径
@@ -683,9 +686,9 @@ func (s *Runtime) Shutdown() {
 // 前端调用: wails.App.GetAppInfo()
 func (api *API) GetAppInfo() (info AppInfo, err error) {
 	defer api.recoverError("读取应用信息", &err)
-	api.runtime.RecordLogWithSeverity("api-trace", "GetAppInfo：后端收到请求", "info")
+	api.runtime.RecordLogWithSeverity("api-trace", "GetAppInfo：后端收到请求", "debug")
 	info = api.runtime.GetAppInfo()
-	api.runtime.RecordLogWithSeverity("api-trace", "GetAppInfo：后端返回成功", "info")
+	api.runtime.RecordLogWithSeverity("api-trace", "GetAppInfo：后端返回成功", "debug")
 	return info, nil
 }
 
@@ -706,9 +709,9 @@ func (s *Runtime) GetAppInfo() AppInfo {
 // 前端调用: wails.App.GetEnvironmentInfo()
 func (api *API) GetEnvironmentInfo() (info EnvironmentInfo, err error) {
 	defer api.recoverError("读取运行环境", &err)
-	api.runtime.RecordLogWithSeverity("api-trace", "GetEnvironmentInfo：后端收到请求", "info")
+	api.runtime.RecordLogWithSeverity("api-trace", "GetEnvironmentInfo：后端收到请求", "debug")
 	info = api.runtime.GetEnvironmentInfo()
-	api.runtime.RecordLogWithSeverity("api-trace", "GetEnvironmentInfo：后端返回成功", "info")
+	api.runtime.RecordLogWithSeverity("api-trace", "GetEnvironmentInfo：后端返回成功", "debug")
 	return info, nil
 }
 

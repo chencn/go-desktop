@@ -1,0 +1,19 @@
+/* AntD Form：覆盖项目 UiField / UiLabel 轻量表单包装。 */
+
+:root[data-display-scheme="antd"] .ui-field {
+  gap: var(--antd-padding-xs);
+  color: var(--antd-color-text);
+  font-size: var(--antd-font-size);
+  font-weight: 400;
+  line-height: var(--antd-font-line-height);
+  vertical-align: top;
+}
+
+:root[data-display-scheme="antd"] .ui-label {
+  display: inline-flex;
+  align-items: center;
+  color: var(--antd-color-text-heading);
+  font-size: var(--antd-font-size);
+  font-weight: 400;
+  line-height: var(--antd-font-line-height);
+}

@@ -61,8 +61,7 @@ func TestFrontendFeatureBoundariesExist(t *testing.T) {
 }
 
 // TestGoTestFilesStayInDedicatedTestsModule 验证 Go 测试不散落在生产模块。
-func TestGoTestFilesStayInDedicatedTestsModule(t *testing.T) {
-	// 本仓库的独立 tests/ 模块约束针对 Go _test.go；前端 .test.ts 由前端工具链管理。
+func TestTestFilesStayInDedicatedTestsModule(t *testing.T) {
 	var misplaced []string
 	for _, root := range []string{
 		filepath.Join("frontend", "src"),
@@ -76,7 +75,9 @@ func TestGoTestFilesStayInDedicatedTestsModule(t *testing.T) {
 				return nil
 			}
 			name := entry.Name()
-			if strings.HasSuffix(name, "_test.go") {
+			if strings.HasSuffix(name, "_test.go") ||
+				strings.Contains(name, ".test.") ||
+				strings.Contains(name, ".spec.") {
 				rel, relErr := filepath.Rel(rootPath("."), path)
 				if relErr != nil {
 					rel = path
@@ -283,10 +284,58 @@ func TestUpdateIsGlobalIconNotStandalonePage(t *testing.T) {
 		"UpdateStatusDialog",
 		"setThemeMode",
 		"themeMode",
-		"Bell",
+		"RefreshCw",
 	} {
 		if !strings.Contains(chrome, required) {
 			t.Fatalf("frontend/src/features/layout/AppChrome.vue should own global theme and update entries, missing %q", required)
+		}
+	}
+	if strings.Contains(chrome, "Bell") {
+		t.Fatal("frontend/src/features/layout/AppChrome.vue should use a refresh/update icon for update status, not Bell")
+	}
+}
+
+// TestUpdateHeaderIconReflectsLifecycleAndMotion 验证右上角更新图标按生命周期显示颜色和动效。
+func TestUpdateHeaderIconReflectsLifecycleAndMotion(t *testing.T) {
+	chrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
+	chromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
+	appStore := readRootFile(t, "frontend", "src", "stores", "app.ts")
+
+	for _, required := range []string{
+		`if (value === 'error') return 'is-danger'`,
+		`if (['downloading', 'verifying', 'installing'].includes(value)) return 'is-busy'`,
+		`if (['update_available', 'verified', 'pending_install'].includes(value)) return 'is-ready'`,
+		`RefreshCw :class="cn(updateTone === 'is-danger' ? 'icon-tone-red' : updateTone === 'is-ready' ? 'icon-tone-green' : 'icon-tone-blue')"`,
+	} {
+		if !strings.Contains(chrome, required) {
+			t.Fatalf("AppChrome.vue should keep update icon lifecycle mapping %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`@keyframes update-hover-spin`,
+		`transform: rotate(360deg)`,
+		`.update-icon-button.is-busy svg`,
+		`animation: spin 1.2s linear infinite`,
+		`animation-iteration-count: infinite !important`,
+		`.update-icon-button:not(.is-busy):hover svg`,
+		`animation: update-hover-spin 0.6s linear`,
+		`animation-iteration-count: 1 !important`,
+	} {
+		if !strings.Contains(chromeStyles, required) {
+			t.Fatalf("AppChrome.css should keep update icon motion rule %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`Events.On('update:status:changed'`,
+		`updateStatusFromEventData(event.data)`,
+		`isUpdateTerminalStatus(updateStatus?.status)`,
+		`this.applyAction({ type: 'checkingSet', payload: false })`,
+		`this.applyAction({ type: 'downloadingSet', payload: false })`,
+	} {
+		if !strings.Contains(appStore, required) {
+			t.Fatalf("stores/app.ts should clear busy flags when update reaches terminal status: missing %q", required)
 		}
 	}
 }
@@ -311,7 +360,7 @@ func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T
 
 	for _, required := range []string{
 		"显示偏好",
-		"恢复初始值",
+		"恢复当前方案默认值",
 		"setThemeMode",
 		"setBaseColor",
 		"setAccentColor",
@@ -337,9 +386,15 @@ func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T
 
 	for _, required := range []string{
 		"displayPreferenceDefaults",
+		"displayScheme",
 		"resetDisplayPreferences",
+		"resetDisplayPreferencesForCurrentScheme",
 		"hydrateDisplayPreferences",
 		"exportDisplayPreferences",
+		"profiles",
+		"normaliseProfiles",
+		"rememberCurrentProfile(displayScheme.value)",
+		"dataset.displayScheme",
 	} {
 		if !strings.Contains(displayState, required) {
 			t.Fatalf("frontend/src/app/display.ts should own display preference facade %q", required)
@@ -347,6 +402,10 @@ func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T
 	}
 
 	for _, required := range []string{
+		"显示方案",
+		"asDisplayScheme",
+		"isManagedByAntDesign",
+		"immediate: true",
 		"settingsSaveDelayMs",
 		"displaySaveTimer",
 		"window.setTimeout",
@@ -387,6 +446,11 @@ func TestGeneratedBindingsExposeSettingsLogLevelAndDebugStats(t *testing.T) {
 	models := readRootFile(t, "frontend", "bindings", "github.com", "chencn", "go-desktop", "app", "models.ts")
 
 	for _, required := range []string{
+		`"displayScheme": string;`,
+		`this["displayScheme"] = "";`,
+		`"profiles": DisplayProfiles;`,
+		`export class DisplayProfile`,
+		`export class DisplayProfiles`,
 		`"logLevel": string;`,
 		`this["logLevel"] = "";`,
 		`"debug": number;`,
@@ -819,7 +883,7 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		`.log-table [data-slot="table-cell"]`,
 		".log-message-cell",
 		".log-col-message",
-		":global(:root.is-log-fullscreen) .app-shell",
+		":global(:root.is-log-fullscreen .app-shell)",
 		":global(:root.is-log-fullscreen) .log-fullscreen",
 		".page-stack.log-fullscreen",
 		`.log-fullscreen > [data-slot="card"]`,
@@ -876,7 +940,7 @@ func TestLogsPageKeepsFileSelectorInsideFilterPanel(t *testing.T) {
 	for _, required := range []string{
 		".log-toolbar",
 		".log-file-field",
-		"grid-template-columns: repeat(5, minmax(0, 1fr))",
+		"grid-template-columns: minmax(260px, 2fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(260px, 2fr)",
 	} {
 		if !strings.Contains(logStyles, required) {
 			t.Fatalf("logs page layout should define %q", required)
@@ -900,14 +964,16 @@ func TestMenuAccentCssOnlyUsesSupportedValues(t *testing.T) {
 	displayState := readRootFile(t, "frontend", "src", "app", "display.ts")
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
+	antDSchemeStyles := readAntDesignSchemeStyles(t)
 
 	for _, required := range []string{
 		"export type MenuAccent = 'subtle' | 'bold'",
 		"['subtle', 'Subtle']",
 		"['bold', 'Bold']",
 		`:root[data-menu-accent="bold"]`,
+		`:root[data-display-scheme="antd"][data-menu-accent="bold"][data-menu="default"]`,
 	} {
-		if !strings.Contains(displayState+settingsPage+appChromeStyles, required) {
+		if !strings.Contains(displayState+settingsPage+appChromeStyles+antDSchemeStyles, required) {
 			t.Fatalf("menu accent should expose and style the supported values only: missing %q", required)
 		}
 	}
@@ -918,7 +984,7 @@ func TestMenuAccentCssOnlyUsesSupportedValues(t *testing.T) {
 		"['solid',",
 		"['outline',",
 	} {
-		if strings.Contains(displayState+settingsPage+appChromeStyles, forbidden) {
+		if strings.Contains(displayState+settingsPage+appChromeStyles+antDSchemeStyles, forbidden) {
 			t.Fatalf("menu accent should not keep unsupported legacy value %q", forbidden)
 		}
 	}
@@ -974,6 +1040,8 @@ func TestTopbarUsesSharedNavigationAndResponsiveUtilityRow(t *testing.T) {
 func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 	mainTS := readRootFile(t, "frontend", "src", "main.ts")
 	styles := readRootFile(t, "frontend", "src", "styles.css")
+	antDSchemeEntry := readRootFile(t, "frontend", "src", "styles", "antd-scheme.css")
+	antDSchemeStyles := readAntDesignSchemeStyles(t)
 	layoutStyles := readRootFile(t, "frontend", "src", "styles", "layout.css")
 	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
 	aboutPage := readRootFile(t, "frontend", "src", "features", "about", "AboutPage.vue")
@@ -1019,6 +1087,8 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 		".status-pill",
 		".ui-dialog-content",
 		".ui-switch",
+		`data-display-scheme="antd"`,
+		`[data-slot="button"]`,
 	} {
 		if strings.Contains(styles, forbidden) {
 			t.Fatalf("styles.css should not own page/component selector %q", forbidden)
@@ -1027,9 +1097,10 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 
 	for _, forbidden := range []string{
 		".ui-",
-		`[data-slot="button"]`,
 		".ui-dialog-layer",
 		".ui-dialog-content",
+		`data-display-scheme="antd"`,
+		"--antd-",
 	} {
 		if strings.Contains(featureStyles, forbidden) {
 			t.Fatalf("feature CSS should not reach into component implementation selector %q", forbidden)
@@ -1061,6 +1132,7 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 
 	for _, required := range []string{
 		`import './styles/layout.css'`,
+		`import './styles/antd-scheme.css'`,
 		`<style scoped src="./HomePage.css">`,
 		`<style scoped src="./AboutPage.css">`,
 		`<style scoped src="./SettingsPage.css">`,
@@ -1077,6 +1149,325 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 	} {
 		if !strings.Contains(mainTS+homePage+aboutPage+settingsPage+logsPage+updateDialog+sharedCard+sharedCardTitle+uiPlugin+design, required) {
 			t.Fatalf("frontend CSS ownership should be documented and wired: missing %q", required)
+		}
+	}
+
+	if strings.Index(mainTS, `import './styles/layout.css'`) > strings.Index(mainTS, `import './styles/antd-scheme.css'`) {
+		t.Fatal("frontend/src/main.ts should import antd-scheme.css after base and layout styles")
+	}
+
+	for _, required := range []string{
+		`AntD 方案入口`,
+		`@import "./antd-scheme/common.css"`,
+		`@import "./antd-scheme/components/button.css"`,
+		`@import "./antd-scheme/components/input.css"`,
+		`@import "./antd-scheme/components/select.css"`,
+		`@import "./antd-scheme/components/switch.css"`,
+		`@import "./antd-scheme/components/card.css"`,
+		`@import "./antd-scheme/components/table.css"`,
+		`@import "./antd-scheme/components/dialog.css"`,
+		`@import "./antd-scheme/components/alert-dialog.css"`,
+		`@import "./antd-scheme/components/badge.css"`,
+		`@import "./antd-scheme/components/progress.css"`,
+		`@import "./antd-scheme/components/tooltip.css"`,
+		`@import "./antd-scheme/components/settings.css"`,
+	} {
+		if !strings.Contains(antDSchemeEntry, required) {
+			t.Fatalf("antd-scheme.css should be an import-only Ant Design skin entry: missing %q", required)
+		}
+	}
+
+	for _, forbidden := range []string{
+		`:root[data-display-scheme="antd"]`,
+		`[data-slot="`,
+		`.app-sidebar`,
+		`.preference-row`,
+	} {
+		if strings.Contains(antDSchemeEntry, forbidden) {
+			t.Fatalf("antd-scheme.css should not own concrete Ant Design rules after folder split: found %q", forbidden)
+		}
+	}
+
+	for _, required := range []string{
+		`AntD 方案 common`,
+		`:root[data-display-scheme="antd"]`,
+		`--antd-color-primary: #1677ff`,
+		`--antd-color-success: #52c41a`,
+		`--antd-color-warning: #faad14`,
+		`--antd-color-error: #ff4d4f`,
+		`--antd-control-height: 32px`,
+		`[data-slot="button"]`,
+		`[data-slot="badge"]`,
+		`[data-slot="card"]`,
+		`[data-slot="input"]`,
+		`.ui-native-select`,
+		`[data-slot="switch"]`,
+		`[data-slot="table-container"]`,
+		`[data-slot="dialog-content"]`,
+		`[data-slot="alert-dialog-content"]`,
+		`[data-slot="progress"]`,
+		`[data-slot="tooltip-content"]`,
+		`.app-sidebar`,
+		`.sidebar-item`,
+		`.compact-nav-item`,
+		`.topbar`,
+		`.preference-row`,
+		`.settings-compact-row`,
+		`.preference-color-trigger`,
+	} {
+		if !strings.Contains(antDSchemeStyles, required) {
+			t.Fatalf("frontend/src/styles/antd-scheme should centralise Ant Design skin rule %q", required)
+		}
+	}
+}
+
+// TestAntDesignSchemeComponentCssCoversCurrentPrimitives 验证 AntD 皮肤文件按现有 shadcn primitive 拆分，新增 primitive 时必须补覆盖文件。
+func TestAntDesignSchemeComponentCssCoversCurrentPrimitives(t *testing.T) {
+	entry := readRootFile(t, "frontend", "src", "styles", "antd-scheme.css")
+	uiRoot := rootPath(filepath.Join("frontend", "src", "components", "ui"))
+	componentCssRoot := rootPath(filepath.Join("frontend", "src", "styles", "antd-scheme", "components"))
+
+	entries, err := os.ReadDir(uiRoot)
+	if err != nil {
+		t.Fatalf("read shadcn primitive directory: %v", err)
+	}
+
+	for _, entryDir := range entries {
+		if !entryDir.IsDir() {
+			continue
+		}
+		name := entryDir.Name()
+		cssPath := filepath.Join(componentCssRoot, name+".css")
+		if _, err := os.Stat(cssPath); err != nil {
+			t.Fatalf("AntD scheme should provide component override for frontend/src/components/ui/%s at %s: %v", name, cssPath, err)
+		}
+		importPath := `@import "./antd-scheme/components/` + name + `.css"`
+		if !strings.Contains(entry, importPath) {
+			t.Fatalf("antd-scheme.css should import component override for %s: missing %q", name, importPath)
+		}
+	}
+}
+
+// TestAntDesignSchemeKeepsSwitchAsTrack 验证 AntD 皮肤不能把 Switch 当作整行表单容器拉伸。
+func TestAntDesignSchemeKeepsSwitchAsTrack(t *testing.T) {
+	switchStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", "switch.css")
+	settingsStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", "settings.css")
+
+	for _, required := range []string{
+		`:root[data-display-scheme="antd"] [data-slot="switch"]`,
+		`min-width: var(--antd-switch-track-width) !important`,
+		`height: var(--antd-switch-track-height) !important`,
+		`background: var(--antd-color-text-quaternary) !important`,
+		`border-radius: 100px`,
+		`:root[data-display-scheme="antd"] [data-slot="switch-thumb"]`,
+		`inset-inline-start: var(--antd-switch-track-padding)`,
+		`translate: none !important`,
+		`width: var(--antd-switch-handle-size) !important`,
+		`height: var(--antd-switch-handle-size) !important`,
+		`background: #ffffff !important`,
+		`box-shadow: var(--antd-switch-handle-shadow) !important`,
+		`opacity: 0.65`,
+		`:root[data-display-scheme="antd"] [data-slot="switch"][data-state="checked"] [data-slot="switch-thumb"]`,
+		`inset-inline-start: calc(100% - var(--antd-switch-handle-size) - var(--antd-switch-track-padding))`,
+	} {
+		if !strings.Contains(switchStyles, required) {
+			t.Fatalf("components/switch.css should keep switch controls as AntD switch tracks: missing %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`:root[data-display-scheme="antd"] .settings-control-switch {`,
+		`justify-self: end`,
+	} {
+		if !strings.Contains(settingsStyles, required) {
+			t.Fatalf("components/settings.css should keep settings switch controls as AntD switch tracks: missing %q", required)
+		}
+	}
+
+	for _, forbidden := range []string{
+		":root[data-display-scheme=\"antd\"] .settings-control-select,\n  :root[data-display-scheme=\"antd\"] .settings-control-switch,\n  :root[data-display-scheme=\"antd\"] .preference-control-color {\n    grid-column: 1 / -1;\n    width: 100%;\n  }",
+		`.settings-control-switch {
+    grid-column: 1 / -1;
+    width: 100%;`,
+	} {
+		if strings.Contains(settingsStyles, forbidden) {
+			t.Fatalf("AntD switch must not be stretched to full row width: found %q", forbidden)
+		}
+	}
+}
+
+// TestAntDesignSchemeComponentDetailsMatchAntDVTokens 验证 AntD 皮肤覆盖的不只是颜色，还包括官方组件常见的边框、间距、行高、阴影和状态细节。
+func TestAntDesignSchemeComponentDetailsMatchAntDVTokens(t *testing.T) {
+	commonStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "common.css")
+	buttonStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", "button.css")
+	cardStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", "card.css")
+	dialogStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", "dialog.css")
+	alertDialogStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", "alert-dialog.css")
+	badgeStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", "badge.css")
+	tableStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", "table.css")
+	tooltipStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", "tooltip.css")
+
+	for _, required := range []string{
+		`--antd-color-bg-spotlight: rgb(0 0 0 / 85%)`,
+		`--antd-color-fill-alter: rgb(0 0 0 / 2%)`,
+		`--antd-color-split: rgb(5 5 5 / 6%)`,
+		`--antd-padding-md: 20px`,
+		`--antd-padding-lg: 24px`,
+		`--antd-margin-xs: 8px`,
+		`--antd-table-cell-padding-block: 16px`,
+	} {
+		if !strings.Contains(commonStyles, required) {
+			t.Fatalf("common.css should keep AntDV detail token %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`calc((var(--antd-control-height) - var(--antd-font-size) * var(--antd-font-line-height) - 2px) / 2)`,
+		`calc(var(--antd-control-padding-horizontal-lg) - 1px)`,
+	} {
+		if !strings.Contains(buttonStyles, required) {
+			t.Fatalf("button.css should use AntDV height-derived padding detail %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`margin-bottom: -1px`,
+		`padding: 0 var(--antd-card-padding)`,
+		`padding: var(--antd-card-padding)`,
+	} {
+		if !strings.Contains(cardStyles, required) {
+			t.Fatalf("card.css should keep AntDV card spacing detail %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`border: 0`,
+		`padding: var(--antd-padding-md) var(--antd-padding-lg)`,
+		`margin-top: var(--antd-margin-sm)`,
+		`justify-content: flex-end`,
+		`background: var(--antd-color-fill-tertiary)`,
+	} {
+		if !strings.Contains(dialogStyles+alertDialogStyles, required) {
+			t.Fatalf("dialog styles should keep AntDV modal detail %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`margin-inline-end: var(--antd-margin-xs)`,
+		`border: var(--antd-line-width) var(--antd-line-type) var(--antd-color-border)`,
+		`background: var(--antd-color-fill-alter)`,
+		`padding: 0 calc(var(--antd-padding-xs) - var(--antd-line-width))`,
+		`line-height: 20px`,
+	} {
+		if !strings.Contains(badgeStyles, required) {
+			t.Fatalf("badge.css should keep AntDV Tag detail %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`overflow: auto`,
+		`text-align: start`,
+		`transition: background var(--antd-motion-duration-mid) ease`,
+		`overflow-wrap: break-word`,
+	} {
+		if !strings.Contains(tableStyles, required) {
+			t.Fatalf("table.css should keep AntDV Table detail %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`min-width: var(--antd-control-height)`,
+		`min-height: var(--antd-control-height)`,
+		`background: var(--antd-color-bg-spotlight)`,
+		`padding: calc(var(--antd-padding-sm) / 2) var(--antd-padding-xs)`,
+		`word-wrap: break-word`,
+	} {
+		if !strings.Contains(tooltipStyles, required) {
+			t.Fatalf("tooltip.css should keep AntDV Tooltip detail %q", required)
+		}
+	}
+
+}
+
+// TestAntDesignSchemeStylesNativeSelectOnly 验证 AntD 方案只能通过 CSS 覆盖项目原生 Select，禁止改 Vue 自绘下拉。
+func TestAntDesignSchemeStylesNativeSelectOnly(t *testing.T) {
+	nativeSelect := readRootFile(t, "frontend", "src", "shared", "ui", "NativeSelect.vue")
+	commonStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "common.css")
+	selectStyles := readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", "select.css")
+
+	for _, required := range []string{
+		`<select`,
+		`ui-native-select`,
+		`v-bind="delegatedAttrs"`,
+		`@change="emit('update:modelValue', ($event.target as HTMLSelectElement).value)"`,
+	} {
+		if !strings.Contains(nativeSelect, required) {
+			t.Fatalf("NativeSelect should stay as the original native select wrapper: missing %q", required)
+		}
+	}
+
+	for _, forbidden := range []string{
+		`MutationObserver`,
+		`document.addEventListener`,
+		`ui-ant-select-trigger`,
+		`ui-ant-select-dropdown`,
+		`ui-ant-select-option`,
+		`role="listbox"`,
+		`@pointerdown.stop`,
+		`ChevronDown`,
+	} {
+		if strings.Contains(nativeSelect, forbidden) {
+			t.Fatalf("NativeSelect must not implement an AntD dropdown in Vue; CSS-only override required, found %q", forbidden)
+		}
+	}
+
+	for _, required := range []string{
+		`:root[data-display-scheme="antd"] .ui-native-select`,
+		`:root[data-display-scheme="antd"] .preference-color-menu`,
+		`:root[data-display-scheme="antd"] .preference-color-option`,
+		`:root[data-display-scheme="antd"] .preference-color-option.is-selected`,
+		`:root[data-display-scheme="antd"] .ui-native-select:hover`,
+		`:root[data-display-scheme="antd"] .ui-native-select:focus-visible`,
+		`:root[data-display-scheme="antd"] .ui-native-select:disabled`,
+		`appearance: none !important`,
+		`background: var(--antd-color-bg-elevated)`,
+		`box-shadow: var(--antd-box-shadow)`,
+		`background: var(--antd-select-option-active-bg)`,
+		`background: var(--antd-select-option-selected-bg)`,
+		`color: var(--antd-select-option-selected-color)`,
+		`font-weight: var(--antd-select-option-selected-font-weight)`,
+		`padding: 0 calc(var(--antd-control-padding-horizontal) + 20px) 0 var(--antd-control-padding-horizontal) !important`,
+		`right: var(--antd-control-padding-horizontal)`,
+		`color: var(--antd-color-text-quaternary)`,
+		`border: 0`,
+	} {
+		if !strings.Contains(selectStyles, required) {
+			t.Fatalf("components/select.css should style native Select and color dropdown with AntD CSS only: missing %q", required)
+		}
+	}
+
+	for _, forbidden := range []string{
+		`.ui-ant-select-trigger`,
+		`.ui-ant-select-dropdown`,
+		`.ui-ant-select-option`,
+		`opacity: 0`,
+		`z-index: -1`,
+	} {
+		if strings.Contains(selectStyles, forbidden) {
+			t.Fatalf("components/select.css must not hide native Select or depend on Vue-rendered AntD shell: found %q", forbidden)
+		}
+	}
+
+	for _, required := range []string{
+		`--antd-select-option-active-bg: rgb(0 0 0 / 4%)`,
+		`--antd-select-option-selected-bg: #e6f4ff`,
+		`--antd-select-option-selected-color: rgb(0 0 0 / 88%)`,
+		`--antd-select-option-selected-font-weight: 600`,
+		`--antd-select-option-active-bg: rgb(255 255 255 / 8%)`,
+		`--antd-select-option-selected-bg: #111d2c`,
+	} {
+		if !strings.Contains(commonStyles, required) {
+			t.Fatalf("common.css should expose Ant Select design token %q", required)
 		}
 	}
 }
@@ -1110,7 +1501,7 @@ func TestFrontendPackageUsesVueStack(t *testing.T) {
 		"\"@lucide/vue\"",
 		"\"@vitejs/plugin-vue\"",
 		"\"vue-tsc\"",
-		"\"test\": \"vitest run ../tests/frontend/**/*.test.ts\"",
+		"\"test\": \"node ./node_modules/vitest/vitest.mjs run tests/frontend --root ..\"",
 	} {
 		if !strings.Contains(packageJSON, required) {
 			t.Fatalf("frontend/package.json should include Vue stack dependency %s", required)
@@ -1196,6 +1587,26 @@ func readRootFile(t *testing.T, parts ...string) string {
 		t.Fatalf("read %s: %v", filepath.Join(parts...), err)
 	}
 	return string(data)
+}
+
+// readAntDesignSchemeStyles 汇总 AntD 方案目录下的 common 和组件覆盖 CSS，供结构测试检查集中归属。
+func readAntDesignSchemeStyles(t *testing.T) string {
+	t.Helper()
+	var files []string
+	files = append(files, readRootFile(t, "frontend", "src", "styles", "antd-scheme", "common.css"))
+
+	componentDir := rootPath(filepath.Join("frontend", "src", "styles", "antd-scheme", "components"))
+	entries, err := os.ReadDir(componentDir)
+	if err != nil {
+		t.Fatalf("read AntD component CSS directory: %v", err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".css") {
+			continue
+		}
+		files = append(files, readRootFile(t, "frontend", "src", "styles", "antd-scheme", "components", entry.Name()))
+	}
+	return strings.Join(files, "\n")
 }
 
 // rootPath 封装 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 中的一段独立逻辑，调用方通过它复用同一业务规则。

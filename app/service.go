@@ -73,9 +73,8 @@ type Settings struct {
 	LaunchHiddenToTray       bool   `json:"launchHiddenToTray"`
 }
 
-type DisplayPreferences struct {
+type DisplayProfile struct {
 	UIStyle     string `json:"uiStyle"`
-	ThemeMode   string `json:"themeMode"`
 	BaseColor   string `json:"baseColor"`
 	ThemeColor  string `json:"themeColor"`
 	AccentColor string `json:"accentColor"`
@@ -87,6 +86,29 @@ type DisplayPreferences struct {
 	Density     string `json:"density"`
 	TextSize    string `json:"textSize"`
 	CardBorder  string `json:"cardBorder"`
+}
+
+type DisplayProfiles struct {
+	Shadcn DisplayProfile `json:"shadcn"`
+	AntD   DisplayProfile `json:"antd"`
+}
+
+type DisplayPreferences struct {
+	DisplayScheme string          `json:"displayScheme"`
+	UIStyle       string          `json:"uiStyle"`
+	ThemeMode     string          `json:"themeMode"`
+	BaseColor     string          `json:"baseColor"`
+	ThemeColor    string          `json:"themeColor"`
+	AccentColor   string          `json:"accentColor"`
+	ChartColor    string          `json:"chartColor"`
+	IconTone      string          `json:"iconTone"`
+	Menu          string          `json:"menu"`
+	MenuAccent    string          `json:"menuAccent"`
+	Radius        string          `json:"radius"`
+	Density       string          `json:"density"`
+	TextSize      string          `json:"textSize"`
+	CardBorder    string          `json:"cardBorder"`
+	Profiles      DisplayProfiles `json:"profiles"`
 }
 
 type LogEntry struct {
@@ -178,7 +200,7 @@ func (r *Runtime) ClearLogs(scope string) bool {
 }
 
 func (r *Runtime) DisplayPreferencesSnapshot() DisplayPreferences {
-	return DisplayPreferences(r.Runtime.DisplayPreferencesSnapshot())
+	return toDisplayPreferences(r.Runtime.DisplayPreferencesSnapshot())
 }
 
 func (r *Runtime) DownloadUpdate() UpdateStatus {
@@ -218,8 +240,8 @@ func (r *Runtime) QueryLogs(query LogQuery) LogResponse {
 }
 
 func (r *Runtime) SaveDisplayPreferences(preferences DisplayPreferences) (DisplayPreferences, error) {
-	saved, err := r.Runtime.SaveDisplayPreferences(appruntime.DisplayPreferences(preferences))
-	return DisplayPreferences(saved), err
+	saved, err := r.Runtime.SaveDisplayPreferences(fromDisplayPreferences(preferences))
+	return toDisplayPreferences(saved), err
 }
 
 func (r *Runtime) SaveSettings(settings Settings) (Settings, error) {
@@ -256,7 +278,7 @@ func (api *API) GetAppInfo() (AppInfo, error) {
 
 func (api *API) GetDisplayPreferences() (DisplayPreferences, error) {
 	preferences, err := api.inner.GetDisplayPreferences()
-	return DisplayPreferences(preferences), err
+	return toDisplayPreferences(preferences), err
 }
 
 func (api *API) GetEnvironmentInfo() (EnvironmentInfo, error) {
@@ -304,8 +326,8 @@ func (api *API) QuitApp() error {
 }
 
 func (api *API) SaveDisplayPreferences(preferences DisplayPreferences) (DisplayPreferences, error) {
-	saved, err := api.inner.SaveDisplayPreferences(appruntime.DisplayPreferences(preferences))
-	return DisplayPreferences(saved), err
+	saved, err := api.inner.SaveDisplayPreferences(fromDisplayPreferences(preferences))
+	return toDisplayPreferences(saved), err
 }
 
 func (api *API) SaveSettings(settings Settings) (Settings, error) {
@@ -406,5 +428,85 @@ func toLogResponse(value appruntime.LogResponse) LogResponse {
 		PageSize: value.PageSize,
 		HasMore:  value.HasMore,
 		Stats:    toLogStats(value.Stats),
+	}
+}
+
+func toDisplayPreferences(value appruntime.DisplayPreferences) DisplayPreferences {
+	return DisplayPreferences{
+		DisplayScheme: value.DisplayScheme,
+		UIStyle:       value.UIStyle,
+		ThemeMode:     value.ThemeMode,
+		BaseColor:     value.BaseColor,
+		ThemeColor:    value.ThemeColor,
+		AccentColor:   value.AccentColor,
+		ChartColor:    value.ChartColor,
+		IconTone:      value.IconTone,
+		Menu:          value.Menu,
+		MenuAccent:    value.MenuAccent,
+		Radius:        value.Radius,
+		Density:       value.Density,
+		TextSize:      value.TextSize,
+		CardBorder:    value.CardBorder,
+		Profiles: DisplayProfiles{
+			Shadcn: toDisplayProfile(value.Profiles.Shadcn),
+			AntD:   toDisplayProfile(value.Profiles.AntD),
+		},
+	}
+}
+
+func fromDisplayPreferences(value DisplayPreferences) appruntime.DisplayPreferences {
+	return appruntime.DisplayPreferences{
+		DisplayScheme: value.DisplayScheme,
+		UIStyle:       value.UIStyle,
+		ThemeMode:     value.ThemeMode,
+		BaseColor:     value.BaseColor,
+		ThemeColor:    value.ThemeColor,
+		AccentColor:   value.AccentColor,
+		ChartColor:    value.ChartColor,
+		IconTone:      value.IconTone,
+		Menu:          value.Menu,
+		MenuAccent:    value.MenuAccent,
+		Radius:        value.Radius,
+		Density:       value.Density,
+		TextSize:      value.TextSize,
+		CardBorder:    value.CardBorder,
+		Profiles: appruntime.DisplayProfiles{
+			Shadcn: fromDisplayProfile(value.Profiles.Shadcn),
+			AntD:   fromDisplayProfile(value.Profiles.AntD),
+		},
+	}
+}
+
+func toDisplayProfile(value appruntime.DisplayProfile) DisplayProfile {
+	return DisplayProfile{
+		UIStyle:     value.UIStyle,
+		BaseColor:   value.BaseColor,
+		ThemeColor:  value.ThemeColor,
+		AccentColor: value.AccentColor,
+		ChartColor:  value.ChartColor,
+		IconTone:    value.IconTone,
+		Menu:        value.Menu,
+		MenuAccent:  value.MenuAccent,
+		Radius:      value.Radius,
+		Density:     value.Density,
+		TextSize:    value.TextSize,
+		CardBorder:  value.CardBorder,
+	}
+}
+
+func fromDisplayProfile(value DisplayProfile) appruntime.DisplayProfile {
+	return appruntime.DisplayProfile{
+		UIStyle:     value.UIStyle,
+		BaseColor:   value.BaseColor,
+		ThemeColor:  value.ThemeColor,
+		AccentColor: value.AccentColor,
+		ChartColor:  value.ChartColor,
+		IconTone:    value.IconTone,
+		Menu:        value.Menu,
+		MenuAccent:  value.MenuAccent,
+		Radius:      value.Radius,
+		Density:     value.Density,
+		TextSize:    value.TextSize,
+		CardBorder:  value.CardBorder,
 	}
 }

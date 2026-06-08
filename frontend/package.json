@@ -7,7 +7,7 @@
     "dev": "vite",
     "build:dev": "node scripts/build.mjs --dev",
     "build": "node scripts/build.mjs",
-    "test": "vitest run ../tests/frontend/**/*.test.ts",
+    "test": "node ./node_modules/vitest/vitest.mjs run tests/frontend --root ..",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -27,12 +27,13 @@ type projectMetadataFixture struct {
 		LocalManifestPath string `json:"localManifestPath"`
 	} `json:"update"`
 	SettingsDefaults struct { // SettingsDefaults 保存 SettingsDefaults 对应的数据，供当前实体的调用方读取或持久化。
-		UpdateCheckIntervalHours int  `json:"updateCheckIntervalHours"` // UpdateCheckIntervalHours 保存 updateCheckIntervalHours 对应的数据，供当前实体的调用方读取或持久化。
-		MinimizeToTray           bool `json:"minimizeToTray"`           // MinimizeToTray 保存 minimizeToTray 对应的数据，供当前实体的调用方读取或持久化。
-		LogRetentionDays         int  `json:"logRetentionDays"`         // LogRetentionDays 保存 logRetentionDays 对应的数据，供当前实体的调用方读取或持久化。
-		AutoLaunch               bool `json:"autoLaunch"`               // AutoLaunch 保存 autoLaunch 对应的数据，供当前实体的调用方读取或持久化。
-		CreateDesktopShortcut    bool `json:"createDesktopShortcut"`    // CreateDesktopShortcut 保存 createDesktopShortcut 对应的数据，供当前实体的调用方读取或持久化。
-		LaunchHiddenToTray       bool `json:"launchHiddenToTray"`       // LaunchHiddenToTray 保存 launchHiddenToTray 对应的数据，供当前实体的调用方读取或持久化。
+		GitHubProxyBase          string `json:"githubProxyBase"`          // GitHubProxyBase 保存 githubProxyBase 对应的数据，供当前实体的调用方读取或持久化。
+		UpdateCheckIntervalHours int    `json:"updateCheckIntervalHours"` // UpdateCheckIntervalHours 保存 updateCheckIntervalHours 对应的数据，供当前实体的调用方读取或持久化。
+		MinimizeToTray           bool   `json:"minimizeToTray"`           // MinimizeToTray 保存 minimizeToTray 对应的数据，供当前实体的调用方读取或持久化。
+		LogRetentionDays         int    `json:"logRetentionDays"`         // LogRetentionDays 保存 logRetentionDays 对应的数据，供当前实体的调用方读取或持久化。
+		AutoLaunch               bool   `json:"autoLaunch"`               // AutoLaunch 保存 autoLaunch 对应的数据，供当前实体的调用方读取或持久化。
+		CreateDesktopShortcut    bool   `json:"createDesktopShortcut"`    // CreateDesktopShortcut 保存 createDesktopShortcut 对应的数据，供当前实体的调用方读取或持久化。
+		LaunchHiddenToTray       bool   `json:"launchHiddenToTray"`       // LaunchHiddenToTray 保存 launchHiddenToTray 对应的数据，供当前实体的调用方读取或持久化。
 	} `json:"settingsDefaults"`
 	Windows struct { // Windows 保存 Windows 对应的数据，供当前实体的调用方读取或持久化。
 		SingleInstanceID  string `json:"singleInstanceId"`  // SingleInstanceID 保存 singleInstanceId 对应的数据，供当前实体的调用方读取或持久化。

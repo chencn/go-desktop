@@ -1,11 +1,67 @@
-// 文件职责：验证 app_state.test.ts 覆盖的生产行为、结构约束或构建脚本约束。
-// 说明：注释覆盖文件、类型、方法和关键变量；代码执行路径保持不变。
-
 // 前端状态层的纯函数测试。
 // 放在 tests/frontend 下，避免把测试文件混进 frontend/src 生产源码目录。
-import {describe, expect, it} from 'vitest'
-import {type AppAction, appReducer, initialAppState, statusFromCheckResult,} from '../../frontend/src/app/state'
-import type {LogResponse, UpdateCheckResult} from '../../frontend/src/api/wails'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('../../frontend/src/api/wails', () => {
+  const defaultRuntimeSettings = {
+    updateSource: 'local',
+    githubOwner: 'chencn',
+    githubRepo: 'go-desktop',
+    githubProxyBase: '',
+    updateCheckIntervalHours: 6,
+    minimizeToTray: true,
+    logRetentionDays: 30,
+    logLevel: 'info',
+    autoLaunch: false,
+    createDesktopShortcut: false,
+    launchHiddenToTray: false,
+  }
+  const defaultShadcnDisplayProfile = {
+    accentColor: 'neutral',
+    baseColor: 'neutral',
+    cardBorder: 'visible',
+    chartColor: 'neutral',
+    density: 'comfortable',
+    iconTone: 'default',
+    menu: 'default',
+    menuAccent: 'subtle',
+    radius: 'default',
+    textSize: 'normal',
+    themeColor: 'neutral',
+    uiStyle: 'vega',
+  }
+  const defaultAntDesignDisplayProfile = {
+    ...defaultShadcnDisplayProfile,
+    accentColor: 'blue',
+    chartColor: 'blue',
+    radius: 'medium',
+    themeColor: 'blue',
+  }
+
+  return {
+    defaultRuntimeSettings,
+    defaultDisplayPreferences: {
+      ...defaultShadcnDisplayProfile,
+      displayScheme: 'shadcn',
+      themeMode: 'light',
+      profiles: {
+        shadcn: defaultShadcnDisplayProfile,
+        antd: defaultAntDesignDisplayProfile,
+      },
+    },
+  }
+})
+
+import {
+  type AppAction,
+  appReducer,
+  initialAppState,
+  statusFromCheckResult,
+} from '../../frontend/src/app/state'
+import type {
+  LogResponse,
+  UpdateCheckResult,
+} from '../../frontend/src/api/wails'
 
 // checkResult 是最小更新检查样例；缺少 sha256 时必须进入受保护错误态。
 const checkResult: UpdateCheckResult = {
@@ -31,9 +87,7 @@ describe('app state reducer', () => {
   })
 
   it('stores latest update check and updates lifecycle status', () => {
-    // action 保存 验证 app_state.test.ts 覆盖的生产行为、结构约束或构建脚本约束 使用的配置、引用或中间结果。
     const action: AppAction = { type: 'updateCheckApplied', payload: { ...checkResult, sha256: 'abc123' } }
-    // next 保存 验证 app_state.test.ts 覆盖的生产行为、结构约束或构建脚本约束 使用的配置、引用或中间结果。
     const next = appReducer(initialAppState, action)
 
     expect(next.latestUpdateCheck?.latestVersion).toBe('0.0.2')
@@ -42,7 +96,6 @@ describe('app state reducer', () => {
   })
 
   it('applies paged log responses as one immutable state update', () => {
-    // response 保存 验证 app_state.test.ts 覆盖的生产行为、结构约束或构建脚本约束 使用的配置、引用或中间结果。
     const response: LogResponse = {
       logs: [{ time: '2026-06-04T00:00:00Z', scope: 'app', severity: 'info', message: 'ok' }],
       source: 'file',
@@ -55,7 +108,6 @@ describe('app state reducer', () => {
       stats: { total: 1, debug: 0, info: 1, warning: 0, error: 0 },
     }
 
-    // next 保存 验证 app_state.test.ts 覆盖的生产行为、结构约束或构建脚本约束 使用的配置、引用或中间结果。
     const next = appReducer(initialAppState, { type: 'logsApplied', payload: response })
 
     expect(next.logs).toEqual(response.logs)
