@@ -39,27 +39,14 @@ func (s *Runtime) ListLogs() []LogEntry {
 // QueryLogs API 方法，支持分页和过滤查询。
 func (api *API) QueryLogs(query LogQuery) (response LogResponse, err error) {
 	defer api.recoverError("查询日志", &err)
-	api.runtime.RecordLogWithSeverity("api-trace", fmt.Sprintf("QueryLogs：后端收到请求 file=%q scope=%q severity=%q page=%d pageSize=%d",
-		query.FileName,
-		query.Scope,
-		query.Severity,
-		query.Page,
-		query.PageSize,
-	), "info")
 	response = api.runtime.QueryLogs(query)
-	api.runtime.RecordLogWithSeverity("api-trace", fmt.Sprintf("QueryLogs：后端返回成功 source=%q file=%q total=%d logs=%d",
-		response.Source,
-		response.FileName,
-		response.Total,
-		len(response.Logs),
-	), "info")
 	return response, nil
 }
 
 // QueryLogs 查询单个每日文件日志；文件不可用时才降级到当前内存视图。
 func (s *Runtime) QueryLogs(query LogQuery) LogResponse {
 	logs, source, fileName, filePath := s.logEntriesForQuery(query)
-	response := s.filterSortAndPageLogs(logs, query, source == "memory")
+	response := s.filterSortAndPageLogs(logs, query, true)
 	response.Source = source
 	response.FileName = fileName
 	response.FilePath = filePath
@@ -69,9 +56,9 @@ func (s *Runtime) QueryLogs(query LogQuery) LogResponse {
 // ListLogFiles API 方法，返回日志目录下可选择的每日文件。
 func (api *API) ListLogFiles() (files []LogFileInfo, err error) {
 	defer api.recoverError("读取日志文件列表", &err)
-	api.runtime.RecordLogWithSeverity("api-trace", "ListLogFiles：后端收到请求", "info")
+	api.runtime.RecordLogWithSeverity("api-trace", "ListLogFiles：后端收到请求", "debug")
 	files = api.runtime.ListLogFiles()
-	api.runtime.RecordLogWithSeverity("api-trace", fmt.Sprintf("ListLogFiles：后端返回成功 files=%d", len(files)), "info")
+	api.runtime.RecordLogWithSeverity("api-trace", fmt.Sprintf("ListLogFiles：后端返回成功 files=%d", len(files)), "debug")
 	return files, nil
 }
 

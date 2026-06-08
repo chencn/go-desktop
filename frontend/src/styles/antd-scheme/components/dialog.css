@@ -1,0 +1,48 @@
+/* AntD Modal/Dialog：覆盖 shadcn Dialog primitive。 */
+
+:root[data-display-scheme="antd"] [data-slot="dialog-overlay"] {
+  background: rgb(0 0 0 / 45%);
+}
+
+:root[data-display-scheme="antd"] [data-slot="dialog-content"] {
+  gap: var(--antd-margin-xs);
+  border: 0;
+  border-radius: var(--antd-border-radius-lg);
+  background: var(--antd-color-bg-elevated);
+  box-shadow: var(--antd-box-shadow);
+  color: var(--antd-color-text);
+  padding: var(--antd-padding-md) var(--antd-padding-lg);
+}
+
+:root[data-display-scheme="antd"] [data-slot="dialog-title"] {
+  color: var(--antd-color-text-heading);
+  font-size: var(--antd-font-size-lg);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+:root[data-display-scheme="antd"] [data-slot="dialog-description"] {
+  color: var(--antd-color-text-secondary);
+  font-size: var(--antd-font-size);
+  line-height: var(--antd-font-line-height);
+}
+
+:root[data-display-scheme="antd"] [data-slot="dialog-footer"] {
+  margin-top: var(--antd-margin-sm);
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+:root[data-display-scheme="antd"] [data-slot="dialog-close"] {
+  top: calc((var(--antd-control-height-lg) - 22px) / 2);
+  right: calc((var(--antd-control-height-lg) - 22px) / 2);
+  width: 22px;
+  height: 22px;
+  border-radius: var(--antd-border-radius-sm);
+  color: var(--antd-color-text-secondary);
+}
+
+:root[data-display-scheme="antd"] [data-slot="dialog-close"]:hover {
+  background: var(--antd-color-fill-tertiary);
+  color: var(--antd-color-text);
+}

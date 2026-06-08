@@ -80,6 +80,24 @@ func TestQueryLogsDefaultsAndHasMore(t *testing.T) {
 	}
 }
 
+func TestQueryLogsAPIDoesNotRecordQueryTraceLogs(t *testing.T) {
+	runtime := app.NewRuntime(app.ServiceOptions{})
+	runtime.RecordLog("update", "已有日志")
+
+	response, err := runtime.API().QueryLogs(app.LogQuery{Scope: "all", Severity: "all", Page: 1, PageSize: 50})
+	if err != nil {
+		t.Fatalf("query logs through API: %v", err)
+	}
+	if response.Total != 1 {
+		t.Fatalf("expected API query to leave total unchanged, got %d", response.Total)
+	}
+
+	logs := runtime.QueryLogs(app.LogQuery{Scope: "api-trace", Page: 1, PageSize: 50})
+	if logs.Total != 0 {
+		t.Fatalf("expected QueryLogs API to avoid trace noise, got %#v", logs.Logs)
+	}
+}
+
 func TestQueryLogsClampsHugePageWithoutPanic(t *testing.T) {
 	runtime := app.NewRuntime(app.ServiceOptions{})
 	runtime.RecordLog("update", "第一条")
@@ -146,8 +164,8 @@ func TestClearLogsOnlyClearsCurrentViewKeepsDailyFile(t *testing.T) {
 		t.Fatal("expected clear current view to succeed")
 	}
 	response := runtime.QueryLogs(app.LogQuery{})
-	if response.Total != 1 || len(response.Logs) != 1 || response.Logs[0].Message != "开始下载更新" {
-		t.Fatalf("expected file log query to stay authoritative after clear, got %#v", response)
+	if response.Total != 0 || len(response.Logs) != 0 {
+		t.Fatalf("expected clear current view to hide file logs, got %#v", response)
 	}
 
 	after, err := os.ReadFile(logPath)

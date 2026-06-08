@@ -1,0 +1,15 @@
+/* AntD 方案入口：只集中导入官方 token 与 shadcn primitive 覆盖层。 */
+@import "./antd-scheme/common.css";
+@import "./antd-scheme/components/button.css";
+@import "./antd-scheme/components/field.css";
+@import "./antd-scheme/components/input.css";
+@import "./antd-scheme/components/select.css";
+@import "./antd-scheme/components/switch.css";
+@import "./antd-scheme/components/card.css";
+@import "./antd-scheme/components/table.css";
+@import "./antd-scheme/components/dialog.css";
+@import "./antd-scheme/components/alert-dialog.css";
+@import "./antd-scheme/components/badge.css";
+@import "./antd-scheme/components/progress.css";
+@import "./antd-scheme/components/tooltip.css";
+@import "./antd-scheme/components/settings.css";

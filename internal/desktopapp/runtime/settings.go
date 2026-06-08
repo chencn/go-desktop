@@ -23,7 +23,7 @@ import (
 // 返回的是副本，修改不会影响内部状态
 func (api *API) GetSettings() (settings Settings, err error) {
 	defer api.recoverError("读取设置", &err)
-	api.runtime.RecordLogWithSeverity("settings-trace", "GetSettings：后端收到读取请求", "info")
+	api.runtime.RecordLogWithSeverity("settings-trace", "GetSettings：后端收到读取请求", "debug")
 	settings = api.runtime.SettingsSnapshot()
 	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("GetSettings：后端返回 source=%q owner=%q repo=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
 		settings.UpdateSource,
@@ -35,7 +35,7 @@ func (api *API) GetSettings() (settings Settings, err error) {
 		settings.UpdateCheckIntervalHours,
 		settings.LogRetentionDays,
 		settings.LogLevel,
-	), "info")
+	), "debug")
 	return settings, nil
 }
 
@@ -57,7 +57,7 @@ func (api *API) SaveSettings(settings Settings) (saved Settings, err error) {
 		settings.UpdateCheckIntervalHours,
 		settings.LogRetentionDays,
 		settings.LogLevel,
-	), "info")
+	), "debug")
 	return api.runtime.SaveSettings(settings)
 }
 

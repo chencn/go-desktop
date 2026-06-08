@@ -1,8 +1,14 @@
-:global(:root.is-log-fullscreen) .app-shell {
+:global(:root.is-log-fullscreen .app-shell) {
   visibility: hidden;
 }
 
 @keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes update-hover-spin {
   to {
     transform: rotate(360deg);
   }
@@ -27,14 +33,14 @@
   padding: 18px 14px;
 }
 
-:global(:root[data-menu="default-translucent"]) .app-sidebar,
-:global(:root[data-menu="default-muted"]) .app-sidebar {
+:global(:root[data-menu="default-translucent"] .app-sidebar),
+:global(:root[data-menu="default-muted"] .app-sidebar) {
   background: color-mix(in oklch, var(--background) 74%, var(--card));
   backdrop-filter: blur(14px);
 }
 
-:global(:root[data-menu="inverted"]) .app-sidebar,
-:global(:root[data-menu="inverted-translucent"]) .app-sidebar {
+:global(:root[data-menu="inverted"] .app-sidebar),
+:global(:root[data-menu="inverted-translucent"] .app-sidebar) {
   --sidebar: var(--foreground);
   --sidebar-foreground: var(--background);
   --sidebar-accent: color-mix(in oklch, var(--background) 14%, transparent);
@@ -44,7 +50,7 @@
   color: var(--sidebar-foreground);
 }
 
-:global(:root[data-menu="inverted-translucent"]) .app-sidebar {
+:global(:root[data-menu="inverted-translucent"] .app-sidebar) {
   background: color-mix(in oklch, var(--foreground) 88%, transparent);
   backdrop-filter: blur(14px);
 }
@@ -123,19 +129,19 @@
   color: var(--sidebar-primary-foreground);
 }
 
-:global(:root[data-menu="default-translucent"]) .sidebar-item.is-active .nav-icon,
-:global(:root[data-menu="default-muted"]) .sidebar-item.is-active .nav-icon {
+:global(:root[data-menu="default-translucent"] .sidebar-item.is-active .nav-icon),
+:global(:root[data-menu="default-muted"] .sidebar-item.is-active .nav-icon) {
   background: var(--secondary);
   color: var(--primary);
 }
 
-:global(:root[data-menu-accent="bold"]) .sidebar-item.is-active,
-:global(:root[data-menu-accent="bold"]) .compact-nav-item.is-active {
+:global(:root[data-menu-accent="bold"] .sidebar-item.is-active),
+:global(:root[data-menu-accent="bold"] .compact-nav-item.is-active) {
   background: var(--sidebar-primary);
   color: var(--sidebar-primary-foreground);
 }
 
-:global(:root[data-menu-accent="bold"]) .sidebar-item.is-active .nav-icon {
+:global(:root[data-menu-accent="bold"] .sidebar-item.is-active .nav-icon) {
   background: color-mix(in oklch, var(--sidebar-primary-foreground) 18%, transparent);
   color: var(--sidebar-primary-foreground);
 }
@@ -151,11 +157,11 @@
   white-space: nowrap;
 }
 
-:global(:root[data-icon-tone="colorful"]) .sidebar-item.is-active .nav-icon {
+:global(:root[data-icon-tone="colorful"] .sidebar-item.is-active .nav-icon) {
   color: var(--sidebar-primary-foreground);
 }
 
-:global(:root[data-icon-tone="colorful"]) .compact-nav-item.is-active svg {
+:global(:root[data-icon-tone="colorful"] .compact-nav-item.is-active svg) {
   color: currentColor;
 }
 
@@ -223,19 +229,21 @@
   gap: 10px;
 }
 
-.update-icon-button.is-ready,
-.update-icon-button.is-busy {
-  background: var(--accent);
-  color: var(--primary);
-}
-
-.update-icon-button.is-danger {
-  background: var(--soft-danger);
-  color: var(--destructive);
+.update-icon-button svg {
+  transform-origin: center;
+  transition: transform 200ms ease;
 }
 
 .update-icon-button.is-busy svg {
   animation: spin 1.2s linear infinite;
+  animation-duration: 1.2s !important;
+  animation-iteration-count: infinite !important;
+}
+
+.update-icon-button:not(.is-busy):hover svg {
+  animation: update-hover-spin 0.6s linear;
+  animation-duration: 0.6s !important;
+  animation-iteration-count: 1 !important;
 }
 
 .compact-nav {
@@ -258,17 +266,28 @@
 }
 
 .content-scroll {
+  display: grid;
   min-width: 0;
+  align-content: start;
+  gap: 20px;
   overflow: auto;
   padding: var(--page-gutter);
 }
 
 .app-error {
+  width: min(100%, 1440px);
+  margin: 0 auto;
   border: 1px solid color-mix(in oklch, var(--destructive) 38%, var(--border));
   border-radius: var(--radius-lg);
   background: var(--soft-danger);
   padding: 12px 14px;
   color: var(--destructive);
+}
+
+@media (min-width: 1600px) {
+  .app-error {
+    width: min(100%, 1560px);
+  }
 }
 
 @media (max-width: 980px) {
@@ -310,5 +329,9 @@
     flex: 0 0 auto;
     gap: 5px;
     padding: 0 6px;
+  }
+
+  .content-scroll {
+    gap: 18px;
   }
 }

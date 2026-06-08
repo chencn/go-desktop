@@ -18,7 +18,7 @@ import { Activity, Info, Logs, Settings2 } from '@lucide/vue'
 // 对应侧边栏导航的四个主要页面；更新入口固定在右上角弹窗。
 export type ViewKey = 'home' | 'logs' | 'settings' | 'about'
 // IconTone 定义定义前端导航视图键、图标、标题和副标题的单一配置来源 使用的类型契约，限制跨组件或跨模块传递的数据形状。
-export type IconTone = 'icon-tone-indigo' | 'icon-tone-green' | 'icon-tone-orange' | 'icon-tone-gray' | 'icon-tone-purple'
+export type IconTone = 'icon-tone-indigo' | 'icon-tone-blue' | 'icon-tone-green' | 'icon-tone-orange' | 'icon-tone-gray' | 'icon-tone-purple'
 // NavigationItem 定义定义前端导航视图键、图标、标题和副标题的单一配置来源 使用的类型契约，限制跨组件或跨模块传递的数据形状。
 export type NavigationItem = {
   icon: Component
@@ -40,7 +40,7 @@ export const navigation: NavigationItem[] = [
   // 日志 - 应用日志列表
   { key: 'logs' as const, label: '日志', subtitle: '检索运行记录、定位异常和清理日志', icon: Logs, tone: 'icon-tone-orange' as IconTone },
   // 设置 - 应用偏好设置
-  { key: 'settings' as const, label: '设置', subtitle: '显示偏好和业务设置', icon: Settings2, tone: 'icon-tone-gray' as IconTone },
+  { key: 'settings' as const, label: '设置', subtitle: '显示偏好和业务设置', icon: Settings2, tone: 'icon-tone-blue' as IconTone },
   // 关于 - 应用信息视图
   { key: 'about' as const, label: '关于', subtitle: '版本、Release、技术栈和本地路径', icon: Info, tone: 'icon-tone-purple' as IconTone },
 ]

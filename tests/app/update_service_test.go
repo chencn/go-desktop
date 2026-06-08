@@ -206,11 +206,18 @@ func TestCheckUpdateAutoDownloadsButDoesNotInstall(t *testing.T) {
 		]`)),
 	})
 	runtime := app.NewRuntime(app.ServiceOptions{
+		DatabasePath:   filepath.Join(t.TempDir(), "go-desktop.db"),
 		Version:        "1.0.0",
 		CachePath:      cacheDir,
 		ReleaseChecker: checker,
 		UpdateManager:  manager,
 	})
+	defer runtime.Shutdown()
+	settings := runtime.SettingsSnapshot()
+	settings.GitHubProxyBase = ""
+	if _, err := runtime.SaveSettings(settings); err != nil {
+		t.Fatalf("save test settings: %v", err)
+	}
 
 	result := runtime.CheckUpdate()
 	if result.Status != githubrelease.StatusUpdateAvailable {

@@ -146,12 +146,9 @@ export const defaultRuntimeSettings: Settings = {
   logLevel: 'info',
 }
 
-/** 显示偏好 */
-export type DisplayPreferences = {
+export type DisplayProfile = {
   /** 组件风格 */
   uiStyle: string
-  /** 主题模式 */
-  themeMode: string
   /** 基础色盘 */
   baseColor: string
   /** 主题色 */
@@ -176,8 +173,22 @@ export type DisplayPreferences = {
   cardBorder: string
 }
 
-/** 前端预览模式使用的显示偏好默认值，真实运行时以后端 SQLite KV 为准。 */
-export const defaultDisplayPreferences: DisplayPreferences = {
+export type DisplayProfiles = {
+  shadcn: DisplayProfile
+  antd: DisplayProfile
+}
+
+/** 显示偏好 */
+export type DisplayPreferences = DisplayProfile & {
+  /** 显示方案 */
+  displayScheme: string
+  /** 主题模式 */
+  themeMode: string
+  /** 所有平级显示方案的独立偏好 */
+  profiles: DisplayProfiles
+}
+
+const defaultShadcnDisplayProfile: DisplayProfile = {
   accentColor: 'neutral',
   baseColor: 'neutral',
   cardBorder: 'visible',
@@ -189,9 +200,36 @@ export const defaultDisplayPreferences: DisplayPreferences = {
   radius: 'default',
   textSize: 'normal',
   themeColor: 'neutral',
-  themeMode: 'light',
   uiStyle: 'vega',
 }
+
+const defaultAntDesignDisplayProfile: DisplayProfile = {
+  accentColor: 'blue',
+  baseColor: 'neutral',
+  cardBorder: 'visible',
+  chartColor: 'blue',
+  density: 'comfortable',
+  iconTone: 'default',
+  menu: 'default',
+  menuAccent: 'subtle',
+  radius: 'medium',
+  textSize: 'normal',
+  themeColor: 'blue',
+  uiStyle: 'vega',
+}
+
+/** 前端预览模式使用的显示偏好默认值，真实运行时以后端 SQLite KV 为准。 */
+export const defaultDisplayPreferences: DisplayPreferences = {
+  ...defaultShadcnDisplayProfile,
+  displayScheme: 'shadcn',
+  themeMode: 'light',
+  profiles: {
+    shadcn: { ...defaultShadcnDisplayProfile },
+    antd: { ...defaultAntDesignDisplayProfile },
+  },
+}
+
+const previewDisplayPreferencesStorageKey = 'go-desktop.preview.displayPreferences'
 
 // ============================================================================
 // 日志类型
@@ -409,6 +447,12 @@ function shouldUsePreviewFallback(error: unknown) {
   return isExplicitPreview() && error instanceof WailsBindingUnavailableError
 }
 
+function shouldUseDisplayPreferencesPreviewStore(error: unknown) {
+  if (shouldUsePreviewFallback(error)) return true
+  if (!import.meta.env.DEV || !(error instanceof Error)) return false
+  return /Wails|runtime|runtimeCallWithID|desktop|browser|service|backend|not available|unavailable/i.test(`${error.message}\n${error.stack ?? ''}`)
+}
+
 function traceFrontend(message: string, payload?: unknown) {
   if (payload === undefined) {
     console.info(`[settings-trace] ${message}`)
@@ -438,6 +482,38 @@ function throwSaveError(label: string, error: unknown): never {
     throw new Error(`${label}失败：Wails 服务不可用。`)
   }
   throw error instanceof Error ? error : new Error(`${label}失败。`)
+}
+
+function cloneDisplayPreferences(value: DisplayPreferences): DisplayPreferences {
+  return {
+    ...value,
+    profiles: {
+      shadcn: { ...value.profiles.shadcn },
+      antd: { ...value.profiles.antd },
+    },
+  }
+}
+
+function readPreviewDisplayPreferences(): DisplayPreferences {
+  if (typeof window === 'undefined') return cloneDisplayPreferences(defaultDisplayPreferences)
+  const raw = window.localStorage.getItem(previewDisplayPreferencesStorageKey)
+  if (!raw) return cloneDisplayPreferences(defaultDisplayPreferences)
+  try {
+    return {
+      ...cloneDisplayPreferences(defaultDisplayPreferences),
+      ...JSON.parse(raw),
+    }
+  } catch {
+    return cloneDisplayPreferences(defaultDisplayPreferences)
+  }
+}
+
+function savePreviewDisplayPreferences(preferences: DisplayPreferences): DisplayPreferences {
+  const saved = cloneDisplayPreferences(preferences)
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(previewDisplayPreferencesStorageKey, JSON.stringify(saved))
+  }
+  return saved
 }
 
 // ============================================================================
@@ -518,7 +594,10 @@ export async function getDisplayPreferences(): Promise<DisplayPreferences> {
     return preferences
   } catch (error) {
     traceFrontend('getDisplayPreferences：前端读取异常', error)
-    return previewFallback(() => ({ ...defaultDisplayPreferences }), error)
+    if (shouldUseDisplayPreferencesPreviewStore(error)) {
+      return readPreviewDisplayPreferences()
+    }
+    return previewFallback(readPreviewDisplayPreferences, error)
   }
 }
 
@@ -531,6 +610,9 @@ export async function saveDisplayPreferences(preferences: DisplayPreferences): P
     return saved
   } catch (error) {
     traceFrontend('saveDisplayPreferences：前端保存异常', error)
+    if (shouldUseDisplayPreferencesPreviewStore(error)) {
+      return savePreviewDisplayPreferences(preferences)
+    }
     throwSaveError('保存显示偏好', error)
   }
 }

@@ -84,7 +84,7 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 
 ## 4. 设置模型
 
-设置分为两类：业务设置和显示偏好。两者都通过后端 API 保存到 SQLite KV，但语义边界不同。
+设置分为两类：业务设置和显示偏好。两者都通过后端 API 保存到 SQLite 配置项，但语义边界不同。
 
 ### 4.1 业务设置
 
@@ -114,10 +114,11 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 
 ### 4.2 显示偏好
 
-显示偏好来自 `frontend/src/app/display.ts` 和后端 display KV。它们控制 DOM token，不写入后端业务 `Settings` 结构。
+显示偏好来自 `frontend/src/app/display.ts` 和后端 `display.preferences.v2` JSON 配置项。它们控制 DOM token，不写入后端业务 `Settings` 结构。
 
 | 轴 | 值 | DOM |
 | --- | --- | --- |
+| Display Scheme | `shadcn / antd` | `data-display-scheme` |
 | Mode | `light / dark` | `.dark`、`data-theme="day|night"` |
 | Style | `reka / vega / nova / maia / lyra / mira / luma / sera` | `data-style` |
 | Base Color | `neutral / stone / zinc / mauve / olive / mist / taupe` | `data-base-color` |
@@ -146,7 +147,13 @@ Theme / Accent / Chart Color 是三条独立显示轴：Theme 控制主强调，
 
 显示偏好规则：
 
-- 切换后立即更新 DOM，再异步保存到 SQLite KV。
+- 显示偏好持久化使用 `display.preferences.v2` JSON。
+- `displayScheme=shadcn` 使用 `profiles.shadcn`，当前所有显示偏好都可编辑。
+- `displayScheme=antd` 使用 `profiles.antd` 并叠加 AntD preset；preset 覆盖常用控件和应用骨架，不只是颜色。
+- AntD 下 `uiStyle / baseColor / themeColor / accentColor / iconTone` 由方案托管，`themeMode / chartColor / menu / menuAccent / radius / density / textSize / cardBorder` 可编辑。
+- 切换显示方案只切换当前方案，不把一个方案的 profile 写进另一个方案；切回原方案必须恢复该方案之前的偏好。
+- 显示偏好不使用拆分 `display.*` KV。
+- 切换后立即更新 DOM，再异步保存到 SQLite 配置项。
 - 保存失败时显示错误，但不阻塞即时预览。
 - 切换不允许触发页面 reload。
 - `themeColor` 控制主按钮、选中态、焦点环和关键进度。
@@ -154,6 +161,8 @@ Theme / Accent / Chart Color 是三条独立显示轴：Theme 控制主强调，
 - `chartColor` 只服务图表和统计色，不偷用 Theme 或 Accent。
 - Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
 - 禁止远程字体加载，字体族固定系统字体。
+- AntD preset 的外观范围包括按钮、输入、下拉、开关、卡片、表格、弹窗、Badge、菜单、顶栏、focus、hover、active 和暗色状态。
+- AntD preset 参考 Ant Design token 体系：默认主色 `#1677ff`、默认字号 `14px`、基础圆角 `6px`、默认控件高度 `32px`、菜单项高度 `40px`、卡片内容留白 `24px`。
 
 ## 5. 主题和 CSS 归属规则
 
@@ -221,6 +230,7 @@ Theme / Accent / Chart Color 是三条独立显示轴：Theme 控制主强调，
 - 简单选择器使用 `UiNativeSelect`；需要搜索、分组或复杂弹层时再补官方 `Select`。
 - 图标默认 `16-20px`。
 - 按钮默认高度 `36px`，紧凑按钮 `32px`，图标按钮宽高一致。
+- `displayScheme=antd` 时，常用控件按 AntD preset 覆盖：默认按钮为 AntD blue，次级按钮白底浅灰边框，输入和下拉使用蓝色 hover/focus 边框和 2px focus shadow，卡片为白底浅灰边框 8px 圆角，表格表头为浅灰背景，菜单选中态为 AntD 浅蓝底或深色侧栏蓝底。
 
 ## 7. 更新链路
 

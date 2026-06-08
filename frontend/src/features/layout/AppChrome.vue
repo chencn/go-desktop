@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { AppWindow, Bell, Moon, Sun } from '@lucide/vue'
+import { AppWindow, Moon, RefreshCw, Sun } from '@lucide/vue'
 import { useDisplayPreferences } from '@/app/display'
 import { toMessage } from '@/app/state'
 import { useAppStore } from '@/stores/app'
@@ -118,7 +118,7 @@ function updateIconTone(status?: string) {
                 variant="ghost"
                 @click="updateOpen = true"
               >
-                <Bell :size="18" />
+                <RefreshCw :class="cn(updateTone === 'is-danger' ? 'icon-tone-red' : updateTone === 'is-ready' ? 'icon-tone-green' : 'icon-tone-blue')" :size="18" />
               </UiButton>
             </UiTooltip>
           </div>

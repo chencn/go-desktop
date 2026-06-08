@@ -31,12 +31,12 @@ import { appReducer, defaultLogQuery, defaultStartupApiStatuses, initialAppState
 // runtimeUnsubscribers 保存 Wails 运行时事件取消订阅函数。
 let runtimeUnsubscribers: Array<() => void> = []
 
-function traceSettingsStore(message: string, payload?: unknown) {
-  if (payload === undefined) {
-    console.info(`[settings-trace] ${message}`)
-    return
-  }
-  console.info(`[settings-trace] ${message}`, payload)
+function updateStatusFromEventData(data: UpdateStatus | UpdateStatus[]) {
+  return Array.isArray(data) ? data[0] : data
+}
+
+function isUpdateTerminalStatus(status?: string) {
+  return !['downloading', 'verifying', 'installing'].includes(String(status ?? ''))
 }
 
 // useAppStore 保存 Pinia store 实例，集中访问应用共享状态和动作。
@@ -51,10 +51,6 @@ export const useAppStore = defineStore('app', {
     },
 
     async initialise() {
-      traceSettingsStore('store.initialise：开始', {
-        hasSettings: Boolean(this.settings),
-        hasDisplayPreferences: Boolean(this.displayPreferences),
-      })
       this.applyAction({ type: 'loadingSet', payload: true })
       this.applyAction({ type: 'errorSet', payload: '' })
       const errors: string[] = []
@@ -71,7 +67,6 @@ export const useAppStore = defineStore('app', {
       ) => {
         const startedAt = Date.now()
         this.applyAction({ type: 'startupApiStatusSet', payload: { key, state: 'loading', message: `${label}读取中` } })
-        traceSettingsStore(`store.initialise：准备读取 ${label}`)
         try {
           const value = await reader()
           applyValue(value)
@@ -79,7 +74,6 @@ export const useAppStore = defineStore('app', {
             type: 'startupApiStatusSet',
             payload: { key, state: 'ok', message: `${label}已返回，耗时 ${Date.now() - startedAt}ms` },
           })
-          traceSettingsStore(`store.initialise：读取 ${label} 完成`, value)
         } catch (error) {
           const message = toMessage(error)
           applyFallback?.()
@@ -87,7 +81,6 @@ export const useAppStore = defineStore('app', {
           if (surfaceError) {
             errors.push(`${label}失败：${message}`)
           }
-          traceSettingsStore(`store.initialise：读取 ${label} 异常`, error)
         }
       }
 
@@ -129,15 +122,6 @@ export const useAppStore = defineStore('app', {
         }
       } finally {
         this.applyAction({ type: 'loadingSet', payload: false })
-        traceSettingsStore('store.initialise：结束', {
-          hasSettings: Boolean(this.settings),
-          hasDisplayPreferences: Boolean(this.displayPreferences),
-          hasAppInfo: Boolean(this.appInfo),
-          hasEnvironmentInfo: Boolean(this.environmentInfo),
-          loading: this.loading,
-          errorMessage: this.errorMessage,
-          startupApiStatuses: this.startupApiStatuses,
-        })
       }
     },
 
@@ -145,7 +129,12 @@ export const useAppStore = defineStore('app', {
       if (runtimeUnsubscribers.length > 0) return
       try {
         runtimeUnsubscribers.push(Events.On('update:status:changed', async (event: { data: UpdateStatus }) => {
-          this.applyAction({ type: 'updateStatusApplied', payload: event.data })
+          const updateStatus = updateStatusFromEventData(event.data)
+          this.applyAction({ type: 'updateStatusApplied', payload: updateStatus })
+          if (isUpdateTerminalStatus(updateStatus?.status)) {
+            this.applyAction({ type: 'checkingSet', payload: false })
+            this.applyAction({ type: 'downloadingSet', payload: false })
+          }
           try {
             await this.refreshLogs()
           } catch (error) {

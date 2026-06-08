@@ -1,0 +1,73 @@
+/* AntD Switch：覆盖 shadcn/reka Switch primitive。 */
+
+:root[data-display-scheme="antd"] [data-slot="switch"] {
+  position: relative;
+  width: auto !important;
+  min-width: var(--antd-switch-track-width) !important;
+  height: var(--antd-switch-track-height) !important;
+  min-height: var(--antd-switch-track-height) !important;
+  flex: 0 0 auto;
+  border: 0 !important;
+  border-radius: 100px;
+  background: var(--antd-color-text-quaternary) !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  vertical-align: middle;
+  transition: all var(--antd-motion-duration-mid) var(--antd-motion-ease-in-out);
+}
+
+:root[data-display-scheme="antd"] [data-slot="switch"][data-state="checked"] {
+  background: var(--antd-color-primary) !important;
+}
+
+:root[data-display-scheme="antd"] [data-slot="switch-thumb"] {
+  position: absolute;
+  top: var(--antd-switch-track-padding);
+  inset-inline-start: var(--antd-switch-track-padding);
+  translate: none !important;
+  transform: none !important;
+  width: var(--antd-switch-handle-size) !important;
+  height: var(--antd-switch-handle-size) !important;
+  background: #ffffff !important;
+  border-radius: 50%;
+  box-shadow: var(--antd-switch-handle-shadow) !important;
+  transition: all var(--antd-motion-duration-mid) var(--antd-motion-ease-in-out);
+}
+
+:root[data-display-scheme="antd"] [data-slot="switch"][data-state="checked"] [data-slot="switch-thumb"] {
+  inset-inline-start: calc(100% - var(--antd-switch-handle-size) - var(--antd-switch-track-padding));
+}
+
+:root[data-display-scheme="antd"] [data-slot="switch"]:active:not(:disabled):not([data-disabled]) [data-slot="switch-thumb"] {
+  width: calc(var(--antd-switch-handle-size) + 4px) !important;
+}
+
+:root[data-display-scheme="antd"] [data-slot="switch"][data-state="checked"]:active:not(:disabled):not([data-disabled]) [data-slot="switch-thumb"] {
+  inset-inline-start: calc(100% - var(--antd-switch-handle-size) - var(--antd-switch-track-padding) - 4px);
+}
+
+:root[data-display-scheme="antd"] [data-slot="switch"]:hover {
+  background: var(--antd-color-text-tertiary) !important;
+}
+
+:root[data-display-scheme="antd"] [data-slot="switch"][data-state="checked"]:hover {
+  background: var(--antd-color-primary-hover) !important;
+}
+
+:root[data-display-scheme="antd"] [data-slot="switch"]:focus-visible {
+  outline: 0;
+  box-shadow: var(--antd-control-outline) !important;
+}
+
+:root[data-display-scheme="antd"] [data-slot="switch"]:disabled,
+:root[data-display-scheme="antd"] [data-slot="switch"][data-disabled] {
+  background: var(--antd-color-fill-secondary) !important;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+:root[data-display-scheme="antd"] [data-slot="switch"]:disabled [data-slot="switch-thumb"],
+:root[data-display-scheme="antd"] [data-slot="switch"][data-disabled] [data-slot="switch-thumb"] {
+  background: var(--antd-color-bg-container) !important;
+  box-shadow: none !important;
+}

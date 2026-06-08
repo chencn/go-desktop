@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -45,9 +44,7 @@ const dialogOpen = computed({
         <AlertDialogCancel as-child>
           <Button variant="outline" @click="emit('close')">取消</Button>
         </AlertDialogCancel>
-        <AlertDialogAction as-child>
-          <Button variant="destructive" @click="emit('confirm')">{{ confirmText }}</Button>
-        </AlertDialogAction>
+        <Button variant="destructive" @click="emit('confirm')">{{ confirmText }}</Button>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
