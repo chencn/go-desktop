@@ -50,7 +50,7 @@ tasks:
     vars:
       BUILD_FLAGS: '{{if eq .DEV "true"}}{{if .EXTRA_TAGS}}-tags {{.EXTRA_TAGS}} {{end}}-buildvcs=false -gcflags=all="-l" -ldflags="-X main.appVersion={{.APP_VERSION}} -X main.licenseMode={{env "GO_DESKTOP_LICENSE_MODE"}} -X main.licensePublicKey={{env "GO_DESKTOP_LICENSE_PUBLIC_KEY"}}"{{else}}-tags production{{if .EXTRA_TAGS}},{{.EXTRA_TAGS}}{{end}} -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui -X main.appVersion={{.APP_VERSION}} -X main.licenseMode={{env "GO_DESKTOP_LICENSE_MODE"}} -X main.licensePublicKey={{env "GO_DESKTOP_LICENSE_PUBLIC_KEY"}}"{{end}}'
     env:
-      # Windows 任务环境可能缺少系统目录变量；补齐后再调用 envrun/go build。
+      # Windows 任务环境可能缺少系统目录变量；补齐后再调用 envrun/go build，避免缓存落到 frontend/%SystemDrive%。
       SystemDrive: '{{if eq OS "windows"}}{{env "SystemDrive" | default "C:"}}{{end}}'
       ProgramData: '{{if eq OS "windows"}}{{env "ProgramData" | default (printf "%s\\ProgramData" (env "SystemDrive" | default "C:"))}}{{end}}'
       SystemRoot: '{{if eq OS "windows"}}{{env "SystemRoot" | default "C:\\WINDOWS"}}{{end}}'
@@ -112,7 +112,7 @@ tasks:
     summary: Generates Windows `.syso` file
     dir: build
     env:
-      # syso 生成同时依赖 Go 脚本和 Wails 工具，Windows 路径变量缺失会导致缓存定位失败。
+      # syso 生成同时依赖 Go 脚本和 Wails 工具，Windows 路径变量缺失会导致缓存落到 frontend/%SystemDrive%。
       SystemDrive: '{{if eq OS "windows"}}{{env "SystemDrive" | default "C:"}}{{end}}'
       ProgramData: '{{if eq OS "windows"}}{{env "ProgramData" | default (printf "%s\\ProgramData" (env "SystemDrive" | default "C:"))}}{{end}}'
       SystemRoot: '{{if eq OS "windows"}}{{env "SystemRoot" | default "C:\\WINDOWS"}}{{end}}'

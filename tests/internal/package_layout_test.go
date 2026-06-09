@@ -24,6 +24,7 @@ func TestInternalUsesLayeredTwoLevelLayout(t *testing.T) {
 		},
 		"platform": {
 			"installer": true,
+			"machineid": true,
 			"paths":     true,
 			"process":   true,
 			"shortcut":  true,
