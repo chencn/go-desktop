@@ -4,28 +4,28 @@ includes:
   common: ../Taskfile.yml
 
 vars:
-  # Signing configuration - edit these values for your project
+  # 签名配置只作为本地模板；真实证书路径、指纹和时间戳服务不要提交到仓库。
   # SIGN_CERTIFICATE: "path/to/certificate.pfx"
   # SIGN_THUMBPRINT: "certificate-thumbprint"  # Alternative to SIGN_CERTIFICATE
   # TIMESTAMP_SERVER: "http://timestamp.digicert.com"
   #
-  # Password is stored securely in system keychain. Run: wails3 setup signing
+  # 证书密码由系统 keychain 保存；本文件只保存非敏感定位信息。
 
-  # Docker image for cross-compilation with CGO (used when CGO_ENABLED=1 on non-Windows)
+  # 非 Windows 主机且 CGO_ENABLED=1 时使用该镜像交叉编译 Windows 包。
   CROSS_IMAGE: wails-cross
 
 tasks:
   build:
     summary: Builds the application for Windows
     cmds:
-      # Auto-detect CGO: if CGO_ENABLED=1, use Docker; otherwise use native Go cross-compile
+      # 自动选择构建路径：CGO 需要 Docker，纯 Go 构建走原生交叉编译。
       - task: '{{if and (ne OS "windows") (eq .CGO_ENABLED "1")}}build:docker{{else}}build:native{{end}}'
         vars:
           ARCH: '{{.ARCH}}'
           DEV: '{{.DEV}}'
           EXTRA_TAGS: '{{.EXTRA_TAGS}}'
     vars:
-      # Default to CGO_ENABLED=0 if not explicitly set
+      # 默认关闭 CGO，避免普通 Windows 包构建依赖 Docker。
       CGO_ENABLED: '{{.CGO_ENABLED | default "0"}}'
 
   build:native:
@@ -50,8 +50,7 @@ tasks:
     vars:
       BUILD_FLAGS: '{{if eq .DEV "true"}}{{if .EXTRA_TAGS}}-tags {{.EXTRA_TAGS}} {{end}}-buildvcs=false -gcflags=all="-l" -ldflags="-X main.appVersion={{.APP_VERSION}} -X main.licenseMode={{env "GO_DESKTOP_LICENSE_MODE"}} -X main.licensePublicKey={{env "GO_DESKTOP_LICENSE_PUBLIC_KEY"}}"{{else}}-tags production{{if .EXTRA_TAGS}},{{.EXTRA_TAGS}}{{end}} -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui -X main.appVersion={{.APP_VERSION}} -X main.licenseMode={{env "GO_DESKTOP_LICENSE_MODE"}} -X main.licensePublicKey={{env "GO_DESKTOP_LICENSE_PUBLIC_KEY"}}"{{end}}'
     env:
-      # Some Windows automation shells strip drive-level variables.
-      # Keep caches out of frontend/%SystemDrive% by resolving ProgramData explicitly.
+      # Windows 任务环境可能缺少系统目录变量；补齐后再调用 envrun/go build。
       SystemDrive: '{{if eq OS "windows"}}{{env "SystemDrive" | default "C:"}}{{end}}'
       ProgramData: '{{if eq OS "windows"}}{{env "ProgramData" | default (printf "%s\\ProgramData" (env "SystemDrive" | default "C:"))}}{{end}}'
       SystemRoot: '{{if eq OS "windows"}}{{env "SystemRoot" | default "C:\\WINDOWS"}}{{end}}'
@@ -84,19 +83,19 @@ tasks:
       - rm -f *.syso
     vars:
       DOCKER_ARCH: '{{.ARCH | default "amd64"}}'
-      # Mount Go module cache for faster builds
+      # 挂载 Go 模块缓存，避免每次 Docker 交叉编译重新下载依赖。
       GO_CACHE_MOUNT:
         sh: 'echo "-v ${GOPATH:-$HOME/go}/pkg/mod:/go/pkg/mod"'
-      # Extract replace directives from go.mod and create -v mounts for each
+      # go.mod 的本地 replace 目录必须只读挂载进容器，否则 Docker 内无法解析本地模块。
       REPLACE_MOUNTS:
         sh: |
           grep -E '^replace .* => ' go.mod 2>/dev/null | while read -r line; do
             path=$(echo "$line" | sed -E 's/^replace .* => //' | tr -d '\r')
-            # Convert relative paths to absolute
+            # 相对 replace 路径先转绝对路径，保证容器挂载源路径可解析。
             if [ "${path#/}" = "$path" ]; then
               path="$(cd "$(dirname "$path")" 2>/dev/null && pwd)/$(basename "$path")"
             fi
-            # Only mount if directory exists
+            # 只挂载存在的目录，避免历史 replace 或可选模块让 Docker 命令失败。
             if [ -d "$path" ]; then
               echo "-v $path:$path:ro"
             fi
@@ -113,8 +112,7 @@ tasks:
     summary: Generates Windows `.syso` file
     dir: build
     env:
-      # Some Windows automation shells strip drive-level variables.
-      # Keep caches out of frontend/%SystemDrive% by resolving ProgramData explicitly.
+      # syso 生成同时依赖 Go 脚本和 Wails 工具，Windows 路径变量缺失会导致缓存定位失败。
       SystemDrive: '{{if eq OS "windows"}}{{env "SystemDrive" | default "C:"}}{{end}}'
       ProgramData: '{{if eq OS "windows"}}{{env "ProgramData" | default (printf "%s\\ProgramData" (env "SystemDrive" | default "C:"))}}{{end}}'
       SystemRoot: '{{if eq OS "windows"}}{{env "SystemRoot" | default "C:\\WINDOWS"}}{{end}}'
@@ -135,7 +133,7 @@ tasks:
     deps:
       - task: build
     cmds:
-      # Create the Microsoft WebView2 bootstrapper if it doesn't exist
+      # WebView2 bootstrapper 由 Wails 工具补齐；NSIS 只消费最终生成的安装资源。
       - wails3 generate webview2bootstrapper -dir "{{.ROOT_DIR}}/build/windows/nsis"
       - | 
         {{if eq OS "windows"}}

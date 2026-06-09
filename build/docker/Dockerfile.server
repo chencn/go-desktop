@@ -1,41 +1,39 @@
-# Wails Server Mode Dockerfile
-# Multi-stage build for minimal image size
+# Wails server 模式镜像，只打包无 GUI 的 HTTP 服务端。
+# 多阶段构建用于缩小运行时镜像，并避免把 Go 工具链带入最终镜像。
 
-# Build stage
+# 构建阶段负责整理依赖并产出 server 二进制。
 FROM golang:alpine AS builder
 
 WORKDIR /app
 
-# Install build dependencies
+# git 只在 go mod 下载私有或 VCS 依赖时需要，运行时镜像不包含它。
 RUN apk add --no-cache git
 
-# Copy source code
+# 复制完整源码，server tag 会让入口避开桌面 GUI 依赖。
 COPY . .
 
-# Remove local replace directive if present (for production builds)
+# 发布镜像不能依赖开发机本地 replace 路径，存在时直接移除。
 RUN sed -i '/^replace/d' go.mod || true
 
-# Download dependencies
+# go mod tidy 同时校准 go.sum，保证后续 go build 使用确定的依赖集合。
 RUN go mod tidy
 
-# Build the server binary
+# server tag 只启用 HTTP 服务模式，ldflags 去掉调试符号以减小镜像体积。
 RUN go build -tags server -ldflags="-s -w" -o server .
 
-# Runtime stage - minimal image
+# 运行阶段使用 distroless，镜像中不带 shell 和包管理器。
 FROM gcr.io/distroless/static-debian12
 
-# Copy the binary
+# 只复制运行所需二进制和前端静态资源。
 COPY --from=builder /app/server /server
 
-# Copy frontend assets
 COPY --from=builder /app/frontend/dist /frontend/dist
 
-# Expose the default port
+# 默认端口需要和 server 模式监听端口保持一致。
 EXPOSE 8080
 
-# Bind to all interfaces (required for Docker)
-# Can be overridden at runtime with -e WAILS_SERVER_HOST=...
+# Docker 内必须绑定 0.0.0.0；需要收窄时由运行时环境变量覆盖。
 ENV WAILS_SERVER_HOST=0.0.0.0
 
-# Run the server
+# distroless 没有 shell，入口必须直接指向二进制。
 ENTRYPOINT ["/server"]

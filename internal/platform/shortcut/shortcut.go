@@ -1,11 +1,5 @@
-// ============================================================================
-// 文件: internal/platform/shortcut/shortcut.go
-// 描述: 桌面快捷方式平台抽象
-//
-// 功能概述:
-// - 为 app 层提供查询、创建和删除桌面快捷方式的统一入口
-// - 平台实现负责具体系统 API，app 层只处理业务设置和日志
-// ============================================================================
+// Package shortcut 为运行时提供桌面快捷方式的平台抽象。
+// 当前只有 Windows 实现，其他平台统一返回 ErrShortcutNotSupported。
 
 package shortcut
 
@@ -15,6 +9,7 @@ import "errors"
 var ErrShortcutNotSupported = errors.New("desktop shortcut is not supported on this platform")
 
 // ShortcutOptions 定义桌面快捷方式创建参数。
+// Name 不含扩展名；Arguments 会按平台规则转义后写入快捷方式。
 type ShortcutOptions struct {
 	Name        string   // 快捷方式名称，不含扩展名
 	Description string   // 快捷方式描述

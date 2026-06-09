@@ -14,7 +14,7 @@ import (
 	"github.com/chencn/go-desktop/internal/desktopapp/metadata"
 )
 
-// startLogRetentionCleanup 启动一次后台日志保留清理任务。
+// startLogRetentionCleanup 启动一次后台日志保留清理任务，并替换上一次未完成的清理上下文。
 func (s *Runtime) startLogRetentionCleanup() {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.lock.Lock()
@@ -30,6 +30,7 @@ func (s *Runtime) startLogRetentionCleanup() {
 }
 
 // cleanupExpiredLogFiles 删除超过保留天数的每日文件日志。
+// retentionDays=-1 表示永不清理，0 使用 metadata 默认值；失败只记录 warning，不影响 Runtime。
 func (s *Runtime) cleanupExpiredLogFiles(ctx context.Context, retentionDays int) {
 	if retentionDays < 0 {
 		return
@@ -70,6 +71,7 @@ func (s *Runtime) cleanupExpiredLogFiles(ctx context.Context, retentionDays int)
 	}
 }
 
+// dailyLogDate 只识别 appName-YYYY-MM-DD.log，用于避免误删 crash.log、SQLite 或其他文件。
 func dailyLogDate(appName, name string) (time.Time, bool) {
 	prefix := appName + "-"
 	suffix := ".log"

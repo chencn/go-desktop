@@ -15,38 +15,39 @@
 package main
 
 import (
-	"encoding/json" // JSON 解析
-	"flag"          // 命令行参数解析
-	"fmt"           // 格式化输出
-	"go/format"     // Go 代码格式化
-	"os"            // 文件操作
-	"path/filepath" // 路径处理
-	"strings"       // 字符串处理
+	"encoding/json"
+	"flag"
+	"fmt"
+	"go/format"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
-// metadata 定义读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 使用的数据实体，字段会直接参与校验、渲染或平台适配。
+// metadata 是 project.metadata.json 的内存表示，也是生成链唯一真源。
+// 字段会渲染到 Go、TypeScript、NSIS、Wails config、移动端项目和 release workflow。
 type metadata struct {
-	CompanyName       string         `json:"companyName"`       // CompanyName 保存 companyName 对应的数据，供当前文件的生成或运行流程读取。
-	AppName           string         `json:"appName"`           // AppName 保存 appName 对应的数据，供当前文件的生成或运行流程读取。
-	ModulePath        string         `json:"modulePath"`        // ModulePath 保存 modulePath 对应的数据，供当前文件的生成或运行流程读取。
-	DefaultVersion    string         `json:"defaultVersion"`    // DefaultVersion 保存 defaultVersion 对应的数据，供当前文件的生成或运行流程读取。
-	Description       string         `json:"description"`       // Description 保存 description 对应的数据，供当前文件的生成或运行流程读取。
-	RepositoryURL     string         `json:"repositoryUrl"`     // RepositoryURL 保存 repositoryUrl 对应的数据，供当前文件的生成或运行流程读取。
-	RepositoryComment string         `json:"repositoryComment"` // RepositoryComment 保存 repositoryComment 对应的数据，供当前文件的生成或运行流程读取。
-	Copyright         string         `json:"copyright"`         // Copyright 保存 copyright 对应的数据，供当前文件的生成或运行流程读取。
-	GitHub            githubMetadata `json:"github"`            // GitHub 保存 github 对应的数据，供当前文件的生成或运行流程读取。
-	Update            updateMetadata `json:"update"`            // Update 保存 update 对应的数据，供当前文件的生成或运行流程读取。
-	SettingsDefaults  settingsMeta   `json:"settingsDefaults"`  // SettingsDefaults 保存 settingsDefaults 对应的数据，供当前文件的生成或运行流程读取。
-	Windows           windowsMeta    `json:"windows"`           // Windows 保存 windows 对应的数据，供当前文件的生成或运行流程读取。
+	CompanyName       string         `json:"companyName"`
+	AppName           string         `json:"appName"`
+	ModulePath        string         `json:"modulePath"`
+	DefaultVersion    string         `json:"defaultVersion"`
+	Description       string         `json:"description"`
+	RepositoryURL     string         `json:"repositoryUrl"`
+	RepositoryComment string         `json:"repositoryComment"`
+	Copyright         string         `json:"copyright"`
+	GitHub            githubMetadata `json:"github"`
+	Update            updateMetadata `json:"update"`
+	SettingsDefaults  settingsMeta   `json:"settingsDefaults"`
+	Windows           windowsMeta    `json:"windows"`
 }
 
-// githubMetadata 定义读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 使用的数据实体，字段会直接参与校验、渲染或平台适配。
+// githubMetadata 定义 GitHub API、Release 和 updater 共用的仓库标识。
 type githubMetadata struct {
-	Owner      string `json:"owner"`      // Owner 保存 owner 对应的数据，供当前文件的生成或运行流程读取。
-	Repo       string `json:"repo"`       // Repo 保存 repo 对应的数据，供当前文件的生成或运行流程读取。
-	APIBase    string `json:"apiBase"`    // APIBase 保存 apiBase 对应的数据，供当前文件的生成或运行流程读取。
-	APIVersion string `json:"apiVersion"` // APIVersion 保存 apiVersion 对应的数据，供当前文件的生成或运行流程读取。
-	UserAgent  string `json:"userAgent"`  // UserAgent 保存 userAgent 对应的数据，供当前文件的生成或运行流程读取。
+	Owner      string `json:"owner"`
+	Repo       string `json:"repo"`
+	APIBase    string `json:"apiBase"`
+	APIVersion string `json:"apiVersion"`
+	UserAgent  string `json:"userAgent"`
 }
 
 // updateMetadata 定义更新源默认值和本地静态 manifest 位置。
@@ -56,24 +57,24 @@ type updateMetadata struct {
 	LocalManifestPath string `json:"localManifestPath"` // LocalManifestPath 保存本地 latest.json 相对路径。
 }
 
-// settingsMeta 定义读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 使用的数据实体，字段会直接参与校验、渲染或平台适配。
+// settingsMeta 定义运行时默认设置；这些值会同步到后端 metadata 和前端 projectMetadata。
 type settingsMeta struct {
-	GitHubProxyBase          string `json:"githubProxyBase"`          // GitHubProxyBase 保存 githubProxyBase 对应的数据，供当前文件的生成或运行流程读取。
-	UpdateCheckIntervalHours int    `json:"updateCheckIntervalHours"` // UpdateCheckIntervalHours 保存 updateCheckIntervalHours 对应的数据，供当前文件的生成或运行流程读取。
-	MinimizeToTray           bool   `json:"minimizeToTray"`           // MinimizeToTray 保存 minimizeToTray 对应的数据，供当前文件的生成或运行流程读取。
-	LogRetentionDays         int    `json:"logRetentionDays"`         // LogRetentionDays 保存 logRetentionDays 对应的数据，供当前文件的生成或运行流程读取。
-	AutoLaunch               bool   `json:"autoLaunch"`               // AutoLaunch 保存 autoLaunch 对应的数据，供当前文件的生成或运行流程读取。
-	CreateDesktopShortcut    bool   `json:"createDesktopShortcut"`    // CreateDesktopShortcut 保存 createDesktopShortcut 对应的数据，供当前文件的生成或运行流程读取。
-	LaunchHiddenToTray       bool   `json:"launchHiddenToTray"`       // LaunchHiddenToTray 保存 launchHiddenToTray 对应的数据，供当前文件的生成或运行流程读取。
+	GitHubProxyBase          string `json:"githubProxyBase"`
+	UpdateCheckIntervalHours int    `json:"updateCheckIntervalHours"`
+	MinimizeToTray           bool   `json:"minimizeToTray"`
+	LogRetentionDays         int    `json:"logRetentionDays"`
+	AutoLaunch               bool   `json:"autoLaunch"`
+	CreateDesktopShortcut    bool   `json:"createDesktopShortcut"`
+	LaunchHiddenToTray       bool   `json:"launchHiddenToTray"`
 }
 
-// windowsMeta 定义读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 使用的数据实体，字段会直接参与校验、渲染或平台适配。
+// windowsMeta 定义 Windows 运行时、NSIS、MSIX 和快捷方式共享的系统标识。
 type windowsMeta struct {
-	SingleInstanceID  string `json:"singleInstanceId"`  // SingleInstanceID 保存 singleInstanceId 对应的数据，供当前文件的生成或运行流程读取。
-	ProductIdentifier string `json:"productIdentifier"` // ProductIdentifier 保存 productIdentifier 对应的数据，供当前文件的生成或运行流程读取。
-	WindowClass       string `json:"windowClass"`       // WindowClass 保存 windowClass 对应的数据，供当前文件的生成或运行流程读取。
-	InstallDir        string `json:"installDir"`        // InstallDir 保存 installDir 对应的数据，供当前文件的生成或运行流程读取。
-	UninstallKeyName  string `json:"uninstallKeyName"`  // UninstallKeyName 保存 uninstallKeyName 对应的数据，供当前文件的生成或运行流程读取。
+	SingleInstanceID  string `json:"singleInstanceId"`
+	ProductIdentifier string `json:"productIdentifier"`
+	WindowClass       string `json:"windowClass"`
+	InstallDir        string `json:"installDir"`
+	UninstallKeyName  string `json:"uninstallKeyName"`
 }
 
 // main 是命令入口，负责解析参数、读取元数据并按开关调度同步或打印流程。
@@ -125,7 +126,7 @@ func main() {
 	mustWrite(".github/workflows/release.yml", renderReleaseWorkflow(meta, wailsVersion))
 }
 
-// mustReadMetadata 执行必须成功的辅助步骤，失败时直接终止当前命令以避免继续写入错误结果。
+// mustReadMetadata 读取并校验真源 metadata；失败直接退出，避免继续写入不完整的派生文件。
 func mustReadMetadata() metadata {
 	data, err := os.ReadFile("project.metadata.json")
 	if err != nil {
@@ -257,7 +258,8 @@ func printValue(meta metadata, key string) {
 	fmt.Print(value)
 }
 
-// renderRootTaskfile 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderRootTaskfile 渲染仓库根 Taskfile。
+// 这里是 package/dev/test 命令的生成真源；修改清理、版本解析或 envrun 调用时应先改这里。
 func renderRootTaskfile(meta metadata) string {
 	return fmt.Sprintf(`# 由 scripts/sync_project_metadata.go 根据 project.metadata.json 生成；不要手工修改。
 version: '3'
@@ -350,7 +352,7 @@ tasks:
 `, yamlString(meta.AppName))
 }
 
-// renderFrontendIndex 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderFrontendIndex 渲染前端 HTML 入口的标题和 Wails 绑定缺失兜底提示。
 func renderFrontendIndex(meta metadata) string {
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="zh-CN">
@@ -368,7 +370,7 @@ func renderFrontendIndex(meta metadata) string {
 `, htmlText(meta.AppName))
 }
 
-// renderGo 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderGo 渲染 internal/desktopapp/metadata/metadata.go，供后端运行时读取项目标识、默认设置和更新源。
 func renderGo(meta metadata) string {
 	return goSource(fmt.Sprintf(`// 由 scripts/sync_project_metadata.go 根据 project.metadata.json 生成；不要手工修改。
 //
@@ -483,7 +485,7 @@ func WindowsSetupAssetNameWithoutV(version string) string {
 	))
 }
 
-// renderTypeScript 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderTypeScript 渲染前端共享项目元数据，保持关于页、设置默认值和更新源与后端一致。
 func renderTypeScript(meta metadata) string {
 	data, err := json.MarshalIndent(meta, "", "  ")
 	if err != nil {
@@ -509,7 +511,7 @@ export const defaultSettings = {
 `, string(data))
 }
 
-// renderNSIS 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderNSIS 渲染 NSIS 宏文件；安装目录、卸载键和窗口类名都从 metadata 派生。
 func renderNSIS(meta metadata) string {
 	return fmt.Sprintf(`## 由 scripts/sync_project_metadata.go 根据 project.metadata.json 生成；不要手工修改。
 !define INFO_PROJECTNAME    %s
@@ -534,7 +536,8 @@ func renderNSIS(meta metadata) string {
 	)
 }
 
-// renderNSISProject 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderNSISProject 渲染完整 NSIS 安装脚本。
+// 该模板负责安装后启动、静默卸载、窗口关闭等待和卸载注册表写入。
 func renderNSISProject(meta metadata) string {
 	return strings.ReplaceAll(`Unicode true
 
@@ -763,7 +766,8 @@ SectionEnd
 `, "{{DEFAULT_VERSION}}", nsisString(meta.DefaultVersion))
 }
 
-// renderBuildConfig 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderBuildConfig 渲染 Wails build/config.yml。
+// info.version 是本地版本解析的兜底来源，dev_mode 命令必须继续走 envrun 以补齐 Windows 环境变量。
 func renderBuildConfig(meta metadata) string {
 	return fmt.Sprintf(`# 由 scripts/sync_project_metadata.go 根据 project.metadata.json 生成；不要手工修改。
 # 修改产品名、仓库、版本兜底或 Windows 标识时，只改 project.metadata.json，再运行同步脚本。
@@ -820,7 +824,7 @@ other:
 	)
 }
 
-// renderWindowsInfo 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderWindowsInfo 渲染 Windows 版本资源模板；实际版本由 write_info_version.go 在构建时注入。
 func renderWindowsInfo(meta metadata) string {
 	document := map[string]any{
 		"fixed": map[string]any{
@@ -845,7 +849,7 @@ func renderWindowsInfo(meta metadata) string {
 	return string(rendered) + "\n"
 }
 
-// renderWindowsManifest 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderWindowsManifest 渲染 wails.exe.manifest，用于声明 DPI、UAC 和 comctl32 依赖。
 func renderWindowsManifest(meta metadata) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
@@ -872,7 +876,7 @@ func renderWindowsManifest(meta metadata) string {
 `, xmlAttr(meta.Windows.ProductIdentifier), xmlAttr(fourPartVersion(meta.DefaultVersion)))
 }
 
-// renderWindowsMSIXTemplate 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderWindowsMSIXTemplate 渲染 Wails MSIX 模板，保留 Wails 后续替换的占位符。
 func renderWindowsMSIXTemplate(meta metadata) string {
 	executable := meta.AppName + ".exe"
 	version := fourPartVersion(meta.DefaultVersion)
@@ -951,7 +955,7 @@ func renderWindowsMSIXTemplate(meta metadata) string {
 	)
 }
 
-// renderWindowsMSIXManifest 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderWindowsMSIXManifest 渲染独立 MSIX manifest，供不走模板替换的打包流程读取。
 func renderWindowsMSIXManifest(meta metadata) string {
 	executable := meta.AppName + ".exe"
 	version := fourPartVersion(meta.DefaultVersion)
@@ -1026,7 +1030,7 @@ func renderWindowsMSIXManifest(meta metadata) string {
 	)
 }
 
-// renderLinuxDesktop 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderLinuxDesktop 渲染 Linux desktop entry；文本字段会先去掉换行，避免破坏 ini 格式。
 func renderLinuxDesktop(meta metadata) string {
 	appName := linuxText(meta.AppName)
 	return fmt.Sprintf(`[Desktop Entry]
@@ -1042,7 +1046,7 @@ StartupWMClass=%s
 `, appName, linuxText(meta.Description), appName, appName, appName)
 }
 
-// renderLinuxNfpm 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderLinuxNfpm 渲染 nfpm 配置，描述 deb/rpm 包元数据和安装后的 desktop/icon 路径。
 func renderLinuxNfpm(meta metadata) string {
 	appName := meta.AppName
 	return fmt.Sprintf(`# 由 scripts/sync_project_metadata.go 根据 project.metadata.json 生成；不要手工修改。
@@ -1122,7 +1126,7 @@ scripts:
 	)
 }
 
-// renderDarwinInfoPlist 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderDarwinInfoPlist 渲染 macOS Info.plist；dev=true 时生成开发态 bundle id 后缀。
 func renderDarwinInfoPlist(meta metadata, dev bool) string {
 	displayName := meta.AppName
 	identifier := meta.Windows.ProductIdentifier
@@ -1169,7 +1173,7 @@ func renderDarwinInfoPlist(meta metadata, dev bool) string {
 `, htmlText(displayName), htmlText(meta.AppName), htmlText(identifier), htmlText(meta.DefaultVersion), htmlText(meta.RepositoryComment), htmlText(shortVersion), htmlText(meta.Copyright))
 }
 
-// renderIOSInfoPlist 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderIOSInfoPlist 渲染 iOS Info.plist；dev=true 时生成开发态 bundle id 后缀。
 func renderIOSInfoPlist(meta metadata, dev bool) string {
 	displayName := meta.AppName
 	identifier := meta.Windows.ProductIdentifier
@@ -1245,7 +1249,7 @@ func renderIOSInfoPlist(meta metadata, dev bool) string {
 `, htmlText(meta.AppName), htmlText(identifier), htmlText(displayName), htmlText(displayName), htmlText(shortVersion), htmlText(meta.DefaultVersion), allowsArbitraryLoads, developmentMode, htmlText(meta.Copyright), htmlText(meta.RepositoryComment))
 }
 
-// renderIOSBuildScript 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderIOSBuildScript 渲染 iOS 构建脚本，负责生成 Wails overlay 并构建模拟器 c-archive。
 func renderIOSBuildScript(meta metadata) string {
 	return fmt.Sprintf(`#!/bin/bash
 set -e
@@ -1312,7 +1316,7 @@ fi
 `, shellString(meta.AppName), shellString(meta.Windows.ProductIdentifier), shellString(meta.DefaultVersion), shellString(meta.DefaultVersion))
 }
 
-// renderAndroidBuildGradle 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderAndroidBuildGradle 渲染 Android app/build.gradle，包含 applicationId、NDK 目标和 Wails archive 构建任务。
 func renderAndroidBuildGradle(meta metadata) string {
 	return fmt.Sprintf(`plugins {
     id 'com.android.application'
@@ -1380,7 +1384,7 @@ dependencies {
 `, groovyString(meta.Windows.ProductIdentifier), groovyString(meta.DefaultVersion))
 }
 
-// renderAndroidSettingsGradle 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderAndroidSettingsGradle 渲染 Android settings.gradle 的 rootProject.name。
 func renderAndroidSettingsGradle(meta metadata) string {
 	return fmt.Sprintf(`pluginManagement {
     repositories {
@@ -1403,7 +1407,7 @@ include ':app'
 `, groovyString(meta.AppName))
 }
 
-// renderAndroidStrings 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderAndroidStrings 渲染 Android strings.xml 的应用展示名。
 func renderAndroidStrings(meta metadata) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -1412,7 +1416,7 @@ func renderAndroidStrings(meta metadata) string {
 `, xmlText(meta.AppName))
 }
 
-// renderAndroidTaskfile 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderAndroidTaskfile 渲染 Android Taskfile，串联依赖检查、overlay 生成、c-shared 构建和 Gradle assemble。
 func renderAndroidTaskfile(meta metadata) string {
 	return fmt.Sprintf(`version: '3'
 
@@ -1657,7 +1661,7 @@ tasks:
 `, yamlString(meta.Windows.ProductIdentifier))
 }
 
-// renderIOSTaskfile 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderIOSTaskfile 渲染 iOS Taskfile，串联依赖检查、overlay 生成、c-archive 构建和模拟器安装运行。
 func renderIOSTaskfile(meta metadata) string {
 	return fmt.Sprintf(`version: '3'
 
@@ -1955,7 +1959,7 @@ tasks:
 `, yamlString(meta.Windows.ProductIdentifier))
 }
 
-// renderIOSLaunchScreen 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderIOSLaunchScreen 渲染 iOS LaunchScreen.storyboard，展示生成的应用名。
 func renderIOSLaunchScreen(meta metadata) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="21701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
@@ -2013,7 +2017,7 @@ func renderIOSLaunchScreen(meta metadata) string {
 `, xmlAttr(meta.AppName), xmlAttr(meta.Description))
 }
 
-// renderIOSProjectPBXProj 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderIOSProjectPBXProj 渲染最小 Xcode 工程；固定对象 ID 使生成结果稳定可 diff。
 func renderIOSProjectPBXProj(meta metadata) string {
 	appName := pbxString(meta.AppName)
 	companyName := pbxString(meta.CompanyName)
@@ -2268,7 +2272,8 @@ func renderIOSProjectPBXProj(meta metadata) string {
 	)
 }
 
-// renderReleaseWorkflow 根据项目元数据渲染对应派生文件内容，返回完整文本供同步流程写入。
+// renderReleaseWorkflow 渲染 GitHub Release workflow。
+// 发布模式强制授权公钥存在，并在前端类型检查前生成 Wails bindings。
 func renderReleaseWorkflow(meta metadata, wailsVersion string) string {
 	return fmt.Sprintf(`name: Release
 
@@ -2417,7 +2422,7 @@ jobs:
 	)
 }
 
-// mustWrite 执行必须成功的辅助步骤，失败时直接终止当前命令以避免继续写入错误结果。
+// mustWrite 原子性较弱但失败即退出；调用方按固定顺序重写所有派生文件。
 func mustWrite(path string, content string) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		exitf("创建目录失败 %s：%v", path, err)
@@ -2427,7 +2432,7 @@ func mustWrite(path string, content string) {
 	}
 }
 
-// goString 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// goString 把任意字符串编码成 Go/JSON 兼容字面量，避免手写转义。
 func goString(value string) string {
 	encoded, err := json.Marshal(value)
 	if err != nil {
@@ -2436,12 +2441,12 @@ func goString(value string) string {
 	return string(encoded)
 }
 
-// nsisString 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// nsisString 转义 NSIS 双引号；宏值本身仍由调用方保证不含控制字符。
 func nsisString(value string) string {
 	return `"` + strings.ReplaceAll(value, `"`, `$\"`) + `"`
 }
 
-// yamlString 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// yamlString 生成可嵌入 YAML 的双引号字符串字面量。
 func yamlString(value string) string {
 	encoded, err := json.Marshal(value)
 	if err != nil {
@@ -2450,7 +2455,7 @@ func yamlString(value string) string {
 	return string(encoded)
 }
 
-// shellString 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// shellString 生成 POSIX shell 可作为单个参数读取的双引号字符串字面量。
 func shellString(value string) string {
 	encoded, err := json.Marshal(value)
 	if err != nil {
@@ -2459,7 +2464,7 @@ func shellString(value string) string {
 	return string(encoded)
 }
 
-// groovyString 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// groovyString 生成 Gradle/Groovy 可读取的字符串字面量。
 func groovyString(value string) string {
 	encoded, err := json.Marshal(value)
 	if err != nil {
@@ -2468,7 +2473,7 @@ func groovyString(value string) string {
 	return string(encoded)
 }
 
-// goSource 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// goSource 格式化生成的 Go 源码；格式化失败说明模板本身已损坏，直接终止同步。
 func goSource(source string) string {
 	formatted, err := format.Source([]byte(source))
 	if err != nil {
@@ -2477,7 +2482,7 @@ func goSource(source string) string {
 	return string(formatted)
 }
 
-// pbxString 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// pbxString 转义 Xcode pbxproj 字符串，并拆开注释分隔符避免破坏工程文件语法。
 func pbxString(value string) string {
 	replacer := strings.NewReplacer(
 		`\`, `\\`,
@@ -2488,7 +2493,7 @@ func pbxString(value string) string {
 	return replacer.Replace(value)
 }
 
-// htmlText 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// htmlText 转义 HTML 文本节点和属性常见危险字符。
 func htmlText(value string) string {
 	replacer := strings.NewReplacer(
 		"&", "&amp;",
@@ -2500,17 +2505,17 @@ func htmlText(value string) string {
 	return replacer.Replace(value)
 }
 
-// xmlAttr 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// xmlAttr 转义 XML 属性值；当前规则与 htmlText 相同。
 func xmlAttr(value string) string {
 	return htmlText(value)
 }
 
-// xmlText 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// xmlText 转义 XML 文本节点；当前规则与 htmlText 相同。
 func xmlText(value string) string {
 	return htmlText(value)
 }
 
-// fourPartVersion 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// fourPartVersion 把版本补齐或截断为 Windows version resource 要求的四段格式。
 func fourPartVersion(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -2526,7 +2531,7 @@ func fourPartVersion(value string) string {
 	return strings.Join(parts, ".")
 }
 
-// windowsEnvInstallDir 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// windowsEnvInstallDir 把 metadata 中的 $VAR 路径改成 NSIS/Windows 可展开的 %VAR% 形式。
 func windowsEnvInstallDir(value string) string {
 	value = strings.TrimSpace(value)
 	value = strings.ReplaceAll(value, "$LOCALAPPDATA", "%LOCALAPPDATA%")
@@ -2534,13 +2539,13 @@ func windowsEnvInstallDir(value string) string {
 	return value
 }
 
-// linuxText 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// linuxText 清理 desktop/nfpm 文本字段中的换行，避免生成多行值。
 func linuxText(value string) string {
 	replacer := strings.NewReplacer("\r", " ", "\n", " ")
 	return replacer.Replace(strings.TrimSpace(value))
 }
 
-// exitf 封装读取 project.metadata.json 并生成各平台派生配置、安装器配置、前端项目元数据和发布工作流 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// exitf 输出同步失败原因并以非零状态退出，供 Taskfile 和 CI 捕获。
 func exitf(format string, args ...any) {
 	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)

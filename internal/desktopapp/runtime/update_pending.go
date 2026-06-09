@@ -12,10 +12,14 @@ import (
 )
 
 const (
-	pendingUpdateFileName  = "pending.json"
+	// pending.json 只表示用户已选择“下次启动安装”，由启动期消费。
+	pendingUpdateFileName = "pending.json"
+	// verified.json 表示安装包已下载且 SHA256 校验通过，可在重启后恢复到“可安装”状态。
 	verifiedUpdateFileName = "verified.json"
 )
 
+// pendingUpdateState 是 pending.json 和 verified.json 共用的磁盘格式。
+// 两者语义由文件名和 Status 区分；安装包路径必须指向更新缓存目录内的文件。
 type pendingUpdateState struct {
 	Status          string  `json:"status"`
 	Message         string  `json:"message"`
@@ -31,14 +35,17 @@ type pendingUpdateState struct {
 	UpdatedAt       string  `json:"updatedAt"`
 }
 
+// pendingUpdatePath 返回下次启动安装状态文件路径。
 func (s *Runtime) pendingUpdatePath() string {
 	return s.updateCacheStatePath(pendingUpdateFileName)
 }
 
+// verifiedUpdatePath 返回已校验安装包状态文件路径。
 func (s *Runtime) verifiedUpdatePath() string {
 	return s.updateCacheStatePath(verifiedUpdateFileName)
 }
 
+// updateCacheStatePath 在 Runtime 缓存目录下定位更新状态文件；缓存目录缺失时返回空路径。
 func (s *Runtime) updateCacheStatePath(fileName string) string {
 	if s == nil {
 		return ""
@@ -52,6 +59,7 @@ func (s *Runtime) updateCacheStatePath(fileName string) string {
 	return filepath.Join(cachePath, fileName)
 }
 
+// savePendingUpdate 写入 pending.json，并在落盘前确认安装包仍位于缓存目录内。
 func (s *Runtime) savePendingUpdate(status UpdateStatus) error {
 	path := s.pendingUpdatePath()
 	if path == "" {
@@ -87,6 +95,7 @@ func (s *Runtime) savePendingUpdate(status UpdateStatus) error {
 	return os.WriteFile(path, data, 0o600)
 }
 
+// saveVerifiedUpdate 写入 verified.json，并在落盘前复验安装包 SHA256。
 func (s *Runtime) saveVerifiedUpdate(status UpdateStatus) error {
 	path := s.verifiedUpdatePath()
 	if path == "" {
@@ -122,6 +131,7 @@ func (s *Runtime) saveVerifiedUpdate(status UpdateStatus) error {
 	return os.WriteFile(path, data, 0o600)
 }
 
+// loadPendingUpdate 读取 pending.json；返回 found=true 的错误表示文件存在但内容不可用，调用方应清理。
 func (s *Runtime) loadPendingUpdate() (UpdateStatus, bool, error) {
 	path := s.pendingUpdatePath()
 	if path == "" {
@@ -167,6 +177,7 @@ func (s *Runtime) loadPendingUpdate() (UpdateStatus, bool, error) {
 	return status, true, nil
 }
 
+// loadVerifiedUpdate 读取 verified.json；恢复前会复验安装包路径和 SHA256。
 func (s *Runtime) loadVerifiedUpdate() (UpdateStatus, bool, error) {
 	path := s.verifiedUpdatePath()
 	if path == "" {
@@ -212,10 +223,12 @@ func (s *Runtime) loadVerifiedUpdate() (UpdateStatus, bool, error) {
 	return status, true, nil
 }
 
+// validatePendingUpdateFile 只检查路径边界；pending.json 消费时还会走 InstallDownloadedUpdate 复验 SHA256。
 func (s *Runtime) validatePendingUpdateFile(status UpdateStatus) error {
 	return s.validateUpdateCacheFile(status, "待安装包")
 }
 
+// validateVerifiedUpdateFile 检查路径边界并立即复算 SHA256，保证 verified.json 可作为“已校验”状态恢复。
 func (s *Runtime) validateVerifiedUpdateFile(status UpdateStatus) error {
 	if err := s.validateUpdateCacheFile(status, "已校验安装包"); err != nil {
 		return err
@@ -230,6 +243,7 @@ func (s *Runtime) validateVerifiedUpdateFile(status UpdateStatus) error {
 	return nil
 }
 
+// validateUpdateCacheFile 拒绝缓存目录外的安装包路径，防止 pending/verified 文件被篡改后安装任意文件。
 func (s *Runtime) validateUpdateCacheFile(status UpdateStatus, label string) error {
 	s.lock.RLock()
 	cachePath := strings.TrimSpace(s.cachePath)
@@ -263,6 +277,7 @@ func (s *Runtime) validateUpdateCacheFile(status UpdateStatus, label string) err
 	return nil
 }
 
+// clearPendingUpdate 删除 pending.json；删除失败只记录警告，不覆盖主流程状态。
 func (s *Runtime) clearPendingUpdate() {
 	path := s.pendingUpdatePath()
 	if path == "" {
@@ -273,6 +288,7 @@ func (s *Runtime) clearPendingUpdate() {
 	}
 }
 
+// clearVerifiedUpdate 删除 verified.json；删除失败只记录警告，不覆盖主流程状态。
 func (s *Runtime) clearVerifiedUpdate() {
 	path := s.verifiedUpdatePath()
 	if path == "" {

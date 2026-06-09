@@ -12,32 +12,27 @@
 package configstore
 
 import (
-	"context"       // 上下文包，用于数据库操作的超时控制
-	"database/sql"  // 标准数据库接口
-	"errors"        // 错误处理
-	"os"            // 操作系统接口，用于目录创建
-	"path/filepath" // 路径处理
-	"strings"       // 字符串处理
+	"context"
+	"database/sql"
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
 
 	_ "modernc.org/sqlite" // SQLite 驱动
 )
 
-// Store 是 SQLite 数据库的封装
+// Store 是 config_items 表的 SQLite 封装；当前只承载配置项，不保存日志或业务历史。
 type Store struct {
-	db *sql.DB // db 保存 db 对应的数据，供当前实体的调用方读取或持久化。
+	db *sql.DB // db 是底层连接池，限制为单连接以匹配 SQLite 写入模型。
 }
 
 // ============================================================================
 // 数据库连接和迁移
 // ============================================================================
 
-// Open 打开或创建 SQLite 数据库
-// 参数:
-//   - path: 数据库文件路径
-//
-// 返回:
-//   - *Store: 数据库存储实例
-//   - error: 错误信息
+// Open 打开或创建 SQLite 数据库，并在返回前完成 config_items 迁移。
+// path 为空会返回错误；目录不存在时会自动创建。
 func Open(path string) (*Store, error) {
 	path = strings.TrimSpace(path)
 	if path == "" {
@@ -59,9 +54,7 @@ func Open(path string) (*Store, error) {
 	return store, nil
 }
 
-// Close 关闭数据库连接
-// 返回:
-//   - error: 错误信息
+// Close 关闭数据库连接；nil Store 可安全调用。
 func (s *Store) Close() error {
 	if s == nil || s.db == nil {
 		return nil

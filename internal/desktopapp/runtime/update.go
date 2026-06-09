@@ -16,7 +16,7 @@ import (
 	updater "github.com/chencn/go-desktop/internal/desktopapp/update"
 )
 
-// CheckUpdate API 方法，检查 GitHub Release 更新。
+// CheckUpdate API 方法，按当前设置检查 GitHub Release 或本地 manifest。
 func (api *API) CheckUpdate() (result githubrelease.CheckResult, err error) {
 	defer api.recoverError("检查更新", &err)
 	if err := api.requireAuthorized(); err != nil {
@@ -26,6 +26,7 @@ func (api *API) CheckUpdate() (result githubrelease.CheckResult, err error) {
 }
 
 // CheckUpdate 检查更新并记录当前进程最近一次检查结果。
+// 发现新版本且有 SHA256 时会自动下载并校验安装包，但不会启动安装器。
 func (s *Runtime) CheckUpdate() githubrelease.CheckResult {
 	settings := s.SettingsSnapshot()
 	checker := s.updateChecker(settings)
@@ -49,6 +50,8 @@ func releaseAssetNames(version string) []string {
 	}
 }
 
+// updateChecker 根据当前更新源构造检查器。
+// local 源读取静态 latest.json；github 源访问 GitHub Release API，并在默认配置下复用 main.go 注入的检查器。
 func (s *Runtime) updateChecker(settings Settings) *githubrelease.Checker {
 	if settings.UpdateSource == "local" {
 		return githubrelease.NewChecker(githubrelease.Config{
@@ -76,6 +79,7 @@ func (s *Runtime) updateChecker(settings Settings) *githubrelease.Checker {
 	})
 }
 
+// localUpdateManifestURL 拼接本地更新根地址和 manifest 相对路径。
 func localUpdateManifestURL(baseURL, manifestPath string) string {
 	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	manifestPath = strings.TrimLeft(strings.TrimSpace(manifestPath), "/")
@@ -110,6 +114,7 @@ func (api *API) GetUpdateStatus() (status UpdateStatus, err error) {
 }
 
 // GetUpdateStatus 返回当前更新状态。
+// 进程内活跃状态优先；否则尝试从 verified.json 恢复已校验安装包，并拒绝来源不匹配、版本不新或校验失败的缓存。
 func (s *Runtime) GetUpdateStatus() UpdateStatus {
 	s.lock.RLock()
 	state := s.updateState
@@ -149,7 +154,8 @@ func (api *API) DownloadUpdate() (status UpdateStatus, err error) {
 	return api.runtime.DownloadUpdate(), nil
 }
 
-// DownloadUpdate 下载并校验更新包。
+// DownloadUpdate 下载并校验当前进程最近一次检查发现的更新包。
+// latestUpdateCheck 不跨重启恢复；重启后必须重新 CheckUpdate，避免安装旧检查结果。
 func (s *Runtime) DownloadUpdate() UpdateStatus {
 	check, ok := s.latestCheckResult()
 	return s.downloadUpdateForCheck(check, ok)
@@ -262,7 +268,7 @@ func (s *Runtime) downloadUpdateForCheck(check githubrelease.CheckResult, ok boo
 	return verified
 }
 
-// ScheduleDownloadedUpdateOnStartup API 方法，把已校验更新包标记为下次启动安装。
+// ScheduleDownloadedUpdateOnStartup API 方法，把已校验更新包写入 pending.json，标记为下次启动安装。
 func (api *API) ScheduleDownloadedUpdateOnStartup() (status UpdateStatus, err error) {
 	defer api.recoverError("安排下次启动安装更新", &err)
 	if err := api.requireAuthorized(); err != nil {
@@ -272,6 +278,7 @@ func (api *API) ScheduleDownloadedUpdateOnStartup() (status UpdateStatus, err er
 }
 
 // ScheduleDownloadedUpdateOnStartup 把当前已校验更新包标记为下次启动安装。
+// 只写 pending.json 和内存状态，不立即运行安装器。
 func (s *Runtime) ScheduleDownloadedUpdateOnStartup() UpdateStatus {
 	s.updateOperationLock.Lock()
 	defer s.updateOperationLock.Unlock()
@@ -301,7 +308,8 @@ func (api *API) InstallDownloadedUpdate() (status UpdateStatus, err error) {
 	return api.runtime.InstallDownloadedUpdate(), nil
 }
 
-// InstallDownloadedUpdate 启动静默安装器。
+// InstallDownloadedUpdate 复验当前已校验安装包并启动静默安装器。
+// 安装器启动成功或失败都会清理 pending.json / verified.json，防止重复消费旧缓存。
 func (s *Runtime) InstallDownloadedUpdate() UpdateStatus {
 	s.updateOperationLock.Lock()
 	defer s.updateOperationLock.Unlock()
@@ -348,7 +356,8 @@ func (s *Runtime) InstallDownloadedUpdate() UpdateStatus {
 	return started
 }
 
-// InstallPendingUpdateOnStartup 在启动期安装当前进程已标记的待安装更新。
+// InstallPendingUpdateOnStartup 在启动期消费 pending.json 并安装待安装更新。
+// main.go 在创建 Wails App 后、窗口和后台任务启动前调用；只有 install_started 会让主入口直接退出。
 func (s *Runtime) InstallPendingUpdateOnStartup() (status UpdateStatus) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
@@ -396,6 +405,7 @@ func shouldReturnMemoryUpdateStatus(status UpdateStatus) bool {
 	}
 }
 
+// setUpdateStatus 更新内存状态，并在主窗口已存在时向前端广播 update:status:changed。
 func (s *Runtime) setUpdateStatus(status UpdateStatus) {
 	if status.UpdatedAt == "" {
 		status.UpdatedAt = nowRFC3339()
@@ -426,6 +436,7 @@ func (s *Runtime) failUpdateFromStatus(status UpdateStatus, reason, message stri
 	return status
 }
 
+// latestCheckResult 返回当前进程最近一次检查结果；不会读取磁盘缓存。
 func (s *Runtime) latestCheckResult() (githubrelease.CheckResult, bool) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -435,6 +446,7 @@ func (s *Runtime) latestCheckResult() (githubrelease.CheckResult, bool) {
 	return s.latestUpdateCheck, true
 }
 
+// statusFromCheckResult 把外部检查器结果归一化为前端更新状态机状态。
 func statusFromCheckResult(result githubrelease.CheckResult) UpdateStatus {
 	status := UpdateStatus{
 		Status:      "idle",

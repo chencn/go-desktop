@@ -1,5 +1,4 @@
-// 文件职责：为移动端构建检查并安装平台依赖工具。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：检查 Android/Wails 构建所需的本机工具链。
 
 package main
 
@@ -12,7 +11,8 @@ import (
 	"strings"
 )
 
-// main 是命令入口，负责解析启动上下文、装配依赖并启动核心流程。
+// main 检查 Go、Android SDK/NDK、adb、emulator、Java 和 AVD。
+// 缺失项只打印安装建议并退出，不修改用户机器配置。
 func main() {
 	fmt.Println("Checking Android development dependencies...")
 	fmt.Println()
@@ -147,7 +147,7 @@ func main() {
 	fmt.Println("✓ All Android development dependencies are installed!")
 }
 
-// checkCommand 封装 为移动端构建检查并安装平台依赖工具 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// checkCommand 通过执行命令判断工具是否可用；stdout/stderr 会被丢弃。
 func checkCommand(name string, args ...string) bool {
 	cmd := exec.Command(name, args...)
 	cmd.Stdout = nil

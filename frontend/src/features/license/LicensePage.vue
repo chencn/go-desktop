@@ -11,7 +11,7 @@ const licenseKey = ref('')
 // copied 标记最近一次设备码复制结果，用于短暂展示反馈。
 const copied = ref(false)
 
-// licenseStatus 当前后端授权状态；为空时使用初始状态兜底。
+// licenseStatus 来自启动阶段 GetLicenseStatus；未授权时 App.vue 不再继续初始化其他页面数据。
 const licenseStatus = computed(() => appStore.licenseStatus)
 // deviceCode 当前设备短码，用于发给授权签发脚本。
 const deviceCode = computed(() => licenseStatus.value?.deviceCode ?? '')
@@ -30,7 +30,7 @@ async function copyDeviceCode() {
   }, 1600)
 }
 
-// submitLicense 调用后端激活授权码；错误由 store 写入 licenseError。
+// submitLicense 调用后端 ActivateLicense；store 会去除空白并在授权成功后重新 initialise。
 async function submitLicense() {
   if (!canSubmit.value) return
   try {

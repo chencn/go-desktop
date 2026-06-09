@@ -1,33 +1,19 @@
-// ============================================================================
-// 文件: internal/common/semver/semver.go
-// 描述: 语义化版本解析和比较工具
-//
-// 功能概述:
-// - 解析语义化版本字符串（如 "v1.2.3"）
-// - 比较两个版本号的大小
-// - 标准化版本号（移除 "v" 前缀）
-// ============================================================================
+// Package semver 提供项目内部使用的简化版本号解析和比较。
+// 它只接受 v?N、v?N.N 或 v?N.N.N 三种数字版本，不支持 prerelease/build metadata。
 
 package semver
 
 import (
-	"strconv" // 字符串转整数
-	"strings" // 字符串处理
-	"unicode" // Unicode 字符判断
+	"strconv"
+	"strings"
+	"unicode"
 )
 
-// semanticVersion 是语义化版本的整数切片表示
-// 例如 "1.2.3" 表示为 [1, 2, 3]
+// Version 是补齐到三段的整数版本，例如 "1.2" 会表示为 [1, 2, 0]。
 type Version []int
 
-// parseVersion 解析语义化版本字符串
-// 支持 "v" 或 "V" 前缀（如 "v1.2.3"、"V1.2.3"）
-// 参数:
-//   - value: 版本字符串
-//
-// 返回:
-//   - semanticVersion: 解析后的版本号
-//   - bool: 解析是否成功
+// Parse 解析 v?N(.N){0,2} 格式版本，并把缺失段补 0。
+// 任一段为空、包含非数字字符或超过三段时返回 false。
 func Parse(value string) (Version, bool) {
 	value = strings.TrimSpace(value)
 	value = strings.TrimPrefix(strings.TrimPrefix(value, "v"), "V")
@@ -62,13 +48,8 @@ func Parse(value string) (Version, bool) {
 	return result, true
 }
 
-// compareVersions 比较两个版本号
-// 参数:
-//   - left: 左侧版本号
-//   - right: 右侧版本号
-//
-// 返回:
-//   - int: 1 表示 left > right，-1 表示 left < right，0 表示相等
+// Compare 比较两个可解析版本。
+// 无效版本低于有效版本；两侧都无效时视为相等。
 func Compare(left, right string) int {
 	lv, lok := Parse(left)
 	rv, rok := Parse(right)
@@ -104,12 +85,7 @@ func Compare(left, right string) int {
 	return 0
 }
 
-// normalisedVersion 标准化版本号（移除 "v" 前缀）
-// 参数:
-//   - value: 版本字符串
-//
-// 返回:
-//   - string: 标准化后的版本号
+// Normalize 返回三段数字版本；无法解析时返回空字符串。
 func Normalize(value string) string {
 	version, ok := Parse(value)
 	if !ok {

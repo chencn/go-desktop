@@ -20,6 +20,7 @@ const (
 	SchemeAntD   Scheme = "antd"
 )
 
+// Profile 是单个显示方案的可持久化配置；不同方案只会归一化并使用各自支持字段。
 type Profile struct {
 	UIStyle     string `json:"uiStyle,omitempty"`
 	BaseColor   string `json:"baseColor,omitempty"`
@@ -35,6 +36,7 @@ type Profile struct {
 	CardBorder  string `json:"cardBorder,omitempty"`
 }
 
+// PreferencesV2 是 SQLite 中 display.preferences.v2 保存的 JSON 结构。
 type PreferencesV2 struct {
 	Version       int                `json:"version"`
 	DisplayScheme string             `json:"displayScheme"`
@@ -42,6 +44,7 @@ type PreferencesV2 struct {
 	Profiles      map[string]Profile `json:"profiles"`
 }
 
+// Preferences 是当前显示方案的生效偏好，供 runtime API 以扁平字段返回给前端。
 type Preferences struct {
 	DisplayScheme string
 	UIStyle       string
@@ -59,10 +62,12 @@ type Preferences struct {
 	CardBorder    string
 }
 
+// Default 返回默认方案的生效偏好。
 func Default() Preferences {
 	return effectiveShadcn(DefaultV2().ThemeMode, defaultShadcnProfile())
 }
 
+// DefaultV2 返回完整 V2 默认偏好，包含 shadcn 和 antd 两套独立 profile。
 func DefaultV2() PreferencesV2 {
 	return PreferencesV2{
 		Version:       preferencesVersion,
@@ -75,6 +80,7 @@ func DefaultV2() PreferencesV2 {
 	}
 }
 
+// NormalizeV2 固定版本号、修正非法方案/主题，并补齐两套 profile 默认值。
 func NormalizeV2(value PreferencesV2) PreferencesV2 {
 	defaults := DefaultV2()
 	value.Version = preferencesVersion
@@ -88,6 +94,7 @@ func NormalizeV2(value PreferencesV2) PreferencesV2 {
 	return value
 }
 
+// Effective 根据 DisplayScheme 从 V2 模型中计算当前方案生效偏好。
 func Effective(value PreferencesV2) Preferences {
 	value = NormalizeV2(value)
 	if value.DisplayScheme == string(SchemeAntD) {
@@ -96,6 +103,7 @@ func Effective(value PreferencesV2) Preferences {
 	return effectiveShadcn(value.ThemeMode, value.Profiles[string(SchemeShadcn)])
 }
 
+// ParseV2 解析 SQLite JSON；空值、非法 JSON 或版本不匹配都会回退到 V2 默认值。
 func ParseV2(value string) PreferencesV2 {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -111,6 +119,7 @@ func ParseV2(value string) PreferencesV2 {
 	return NormalizeV2(parsed)
 }
 
+// MarshalV2 输出标准化后的 V2 JSON；编码失败时回退到默认 JSON。
 func MarshalV2(value PreferencesV2) string {
 	value = NormalizeV2(value)
 	data, err := json.Marshal(value)
@@ -120,6 +129,8 @@ func MarshalV2(value PreferencesV2) string {
 	return string(data)
 }
 
+// ApplyEffectivePreferences 兼容旧扁平保存协议：只更新当前目标方案的 profile。
+// 如果请求只是切换 DisplayScheme，则保留两个方案已有 profile。
 func ApplyEffectivePreferences(current PreferencesV2, incoming Preferences) PreferencesV2 {
 	current = NormalizeV2(current)
 	targetScheme := normalizeScheme(incoming.DisplayScheme, current.DisplayScheme)
@@ -163,6 +174,7 @@ func ApplyEffectivePreferences(current PreferencesV2, incoming Preferences) Pref
 	return NormalizeV2(next)
 }
 
+// Definitions 返回显示偏好配置项元数据；value 是完整 V2 JSON 字符串。
 func Definitions() []configstore.ConfigItem {
 	defaultValue := MarshalV2(DefaultV2())
 	return []configstore.ConfigItem{
@@ -170,6 +182,7 @@ func Definitions() []configstore.ConfigItem {
 	}
 }
 
+// defaultShadcnProfile 返回 shadcn 方案默认 profile。
 func defaultShadcnProfile() Profile {
 	return Profile{
 		UIStyle:     "vega",
@@ -187,6 +200,7 @@ func defaultShadcnProfile() Profile {
 	}
 }
 
+// defaultAntDProfile 返回 Ant Design 方案默认 profile。
 func defaultAntDProfile() Profile {
 	return Profile{
 		ChartColor: "blue",
@@ -200,6 +214,7 @@ func defaultAntDProfile() Profile {
 	}
 }
 
+// effectiveShadcn 计算 shadcn 方案生效偏好。
 func effectiveShadcn(themeMode string, profile Profile) Preferences {
 	profile = normalizeShadcnProfile(profile)
 	return Preferences{
@@ -220,6 +235,7 @@ func effectiveShadcn(themeMode string, profile Profile) Preferences {
 	}
 }
 
+// effectiveAntD 计算 Ant Design 方案生效偏好；不支持的 shadcn 字段使用固定兼容值。
 func effectiveAntD(themeMode string, profile Profile) Preferences {
 	profile = normalizeAntDProfile(profile)
 	return Preferences{
@@ -240,6 +256,7 @@ func effectiveAntD(themeMode string, profile Profile) Preferences {
 	}
 }
 
+// normalizeShadcnProfile 只接受 shadcn 方案允许的 token 值。
 func normalizeShadcnProfile(profile Profile) Profile {
 	defaults := defaultShadcnProfile()
 	return Profile{
@@ -258,6 +275,7 @@ func normalizeShadcnProfile(profile Profile) Profile {
 	}
 }
 
+// normalizeAntDProfile 只接受 Ant Design 方案允许的 token 值。
 func normalizeAntDProfile(profile Profile) Profile {
 	defaults := defaultAntDProfile()
 	return Profile{
@@ -272,6 +290,7 @@ func normalizeAntDProfile(profile Profile) Profile {
 	}
 }
 
+// normalizeScheme 只允许已注册显示方案，非法值回退到 fallback 或 shadcn。
 func normalizeScheme(value string, fallback string) string {
 	if value == string(SchemeShadcn) || value == string(SchemeAntD) {
 		return value
@@ -282,6 +301,7 @@ func normalizeScheme(value string, fallback string) string {
 	return string(SchemeShadcn)
 }
 
+// allowedOrDefault 校验枚举值，非法值回退到 fallback。
 func allowedOrDefault(value string, allowed map[string]struct{}, fallback string) string {
 	if _, ok := allowed[value]; ok {
 		return value
@@ -289,6 +309,7 @@ func allowedOrDefault(value string, allowed map[string]struct{}, fallback string
 	return fallback
 }
 
+// stringSet 构造枚举校验表。
 func stringSet(values ...string) map[string]struct{} {
 	result := make(map[string]struct{}, len(values))
 	for _, value := range values {

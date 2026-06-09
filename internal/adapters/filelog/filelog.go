@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// Entry 是文件日志读取后的标准结构，对应 runtime.LogEntry 的 adapter 层模型。
 type Entry struct {
 	Time     string
 	Scope    string
@@ -19,6 +20,7 @@ type Entry struct {
 	Severity string
 }
 
+// FileInfo 描述一个可供前端选择的日志文件。
 type FileInfo struct {
 	Date       string
 	FileName   string
@@ -28,6 +30,7 @@ type FileInfo struct {
 	Current    bool
 }
 
+// DailyWriter 按本地日期轮转 appName-YYYY-MM-DD.log，只负责写入和轮转，不负责清理。
 type DailyWriter struct {
 	mu       sync.Mutex
 	dir      string
@@ -38,6 +41,7 @@ type DailyWriter struct {
 	filePath string
 }
 
+// NewDailyWriter 创建每日文件 writer；目录不存在时会创建，appName 为空时使用 go-desktop。
 func NewDailyWriter(dir, appName string, now func() time.Time) (*DailyWriter, error) {
 	dir = strings.TrimSpace(dir)
 	if dir == "" {
@@ -60,6 +64,7 @@ func NewDailyWriter(dir, appName string, now func() time.Time) (*DailyWriter, er
 	return writer, nil
 }
 
+// Write 写入当前本地日期对应的日志文件；跨天时会先轮转。
 func (w *DailyWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -69,12 +74,14 @@ func (w *DailyWriter) Write(p []byte) (int, error) {
 	return w.file.Write(p)
 }
 
+// CurrentFileName 返回当前打开的日志文件完整路径。
 func (w *DailyWriter) CurrentFileName() string {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.filePath
 }
 
+// Close 关闭当前日志文件；重复调用安全。
 func (w *DailyWriter) Close() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -86,6 +93,7 @@ func (w *DailyWriter) Close() error {
 	return err
 }
 
+// ensureFileLocked 确保 writer 指向当前日期文件；调用方必须持有 w.mu。
 func (w *DailyWriter) ensureFileLocked(now time.Time) error {
 	date := now.In(time.Local).Format("2006-01-02")
 	if w.file != nil && w.date == date {
@@ -94,6 +102,7 @@ func (w *DailyWriter) ensureFileLocked(now time.Time) error {
 	return w.rotateLocked(now)
 }
 
+// rotateLocked 切换到指定日期的追加写入文件；调用方必须持有 w.mu。
 func (w *DailyWriter) rotateLocked(now time.Time) error {
 	if w.file != nil {
 		_ = w.file.Close()
@@ -111,6 +120,7 @@ func (w *DailyWriter) rotateLocked(now time.Time) error {
 	return nil
 }
 
+// ReadFile 读取单个日志文件；打不开或无法解析的行会被跳过。
 func ReadFile(path string) []Entry {
 	file, err := os.Open(path)
 	if err != nil {
@@ -129,6 +139,7 @@ func ReadFile(path string) []Entry {
 	return logs
 }
 
+// ListFiles 列出当前 app 可选择的每日日志和旧版单文件日志，按日期倒序返回。
 func ListFiles(dir, appName, currentPath string) []FileInfo {
 	if strings.TrimSpace(dir) == "" {
 		return nil
@@ -172,6 +183,7 @@ func ListFiles(dir, appName, currentPath string) []FileInfo {
 	return files
 }
 
+// SelectableName 限制前端可查询文件名，避免越权读取日志目录外文件。
 func SelectableName(appName, name string) bool {
 	name = filepath.Base(strings.TrimSpace(name))
 	if name == "" || name == "." {
@@ -183,11 +195,13 @@ func SelectableName(appName, name string) bool {
 	return legacyLogFileName(appName, name)
 }
 
+// Exists 判断路径是否存在且不是目录。
 func Exists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir()
 }
 
+// parseLogLine 兼容当前 slog JSONL 和旧版 TSV 两种格式。
 func parseLogLine(line []byte) (Entry, bool) {
 	if entry, ok := parseJSONLogLine(line); ok {
 		return entry, true
@@ -195,6 +209,7 @@ func parseLogLine(line []byte) (Entry, bool) {
 	return parseLegacyTSVLogLine(line)
 }
 
+// parseJSONLogLine 解析 slog.JSONHandler 输出的一行 JSON。
 func parseJSONLogLine(line []byte) (Entry, bool) {
 	var record map[string]any
 	if err := json.Unmarshal(line, &record); err != nil {
@@ -215,6 +230,7 @@ func parseJSONLogLine(line []byte) (Entry, bool) {
 	return entry, entry.Time != "" && entry.Message != ""
 }
 
+// parseLegacyTSVLogLine 兼容旧 time/scope/severity/message 制表符日志。
 func parseLegacyTSVLogLine(line []byte) (Entry, bool) {
 	parts := strings.SplitN(strings.TrimSpace(string(line)), "\t", 4)
 	if len(parts) != 4 {
@@ -237,6 +253,7 @@ func parseLegacyTSVLogLine(line []byte) (Entry, bool) {
 	return entry, true
 }
 
+// dailyLogDate 解析 appName-YYYY-MM-DD.log 中的日期。
 func dailyLogDate(appName, name string) (time.Time, bool) {
 	appName = strings.TrimSpace(appName)
 	if appName == "" {
@@ -253,6 +270,7 @@ func dailyLogDate(appName, name string) (time.Time, bool) {
 	return parsed, err == nil
 }
 
+// legacyLogFileName 判断旧版 appName.log 文件名。
 func legacyLogFileName(appName, name string) bool {
 	appName = strings.TrimSpace(appName)
 	if appName == "" {
@@ -261,6 +279,7 @@ func legacyLogFileName(appName, name string) bool {
 	return filepath.Base(strings.TrimSpace(name)) == appName+".log"
 }
 
+// normaliseScope 标准化日志作用域，空值归入 app。
 func normaliseScope(scope string) string {
 	scope = strings.ToLower(strings.TrimSpace(scope))
 	if scope == "" {
@@ -269,6 +288,7 @@ func normaliseScope(scope string) string {
 	return scope
 }
 
+// normaliseSeverity 标准化日志严重级别。
 func normaliseSeverity(severity string) string {
 	switch strings.ToLower(strings.TrimSpace(severity)) {
 	case "debug":
@@ -282,6 +302,7 @@ func normaliseSeverity(severity string) string {
 	}
 }
 
+// severityFromSlogLevelName 兼容缺少 severity 字段的 slog JSON。
 func severityFromSlogLevelName(level string) string {
 	switch strings.ToUpper(strings.TrimSpace(level)) {
 	case "DEBUG":
@@ -295,6 +316,7 @@ func severityFromSlogLevelName(level string) string {
 	}
 }
 
+// stringValue 只接受 JSON 字符串字段，其他类型按缺失处理。
 func stringValue(value any) string {
 	if text, ok := value.(string); ok {
 		return strings.TrimSpace(text)

@@ -1,26 +1,17 @@
-// ============================================================================
-// 文件: internal/desktopapp/update/manager.go
-// 描述: 更新管理器
-//
-// 功能概述:
-// - 下载安装包并校验 SHA256
-// - 启动静默安装器
-// - 支持下载进度回调
-// - 检测网络离线状态
-// ============================================================================
+// 文件职责：下载安装包、校验 SHA256，并只允许从更新缓存目录启动静默安装器。
 
 package update
 
 import (
-	"context"       // 上下文包
-	"errors"        // 错误处理
-	"fmt"           // 格式化字符串
-	"io"            // 输入输出
-	"net/http"      // HTTP 客户端
-	"os"            // 操作系统接口
-	"path/filepath" // 路径处理
-	"strings"       // 字符串处理
-	"time"          // 时间包
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/chencn/go-desktop/internal/common/checksum"
 	"github.com/chencn/go-desktop/internal/common/neterr"
@@ -28,83 +19,75 @@ import (
 	"github.com/chencn/go-desktop/internal/platform/installer"
 )
 
-// ============================================================================
-// 数据结构定义
-// ============================================================================
-
-// Config 是更新管理器的配置
+// Config 是更新管理器的配置。
 type Config struct {
-	CacheDir string           // 安装包缓存目录
-	Client   *http.Client     // HTTP 客户端（可选）
-	Runner   InstallerRunner  // 安装器运行函数（可选）
-	Now      func() time.Time // 当前时间函数（可选）
+	// CacheDir 是安装包缓存目录；下载、校验、安装路径边界都以它为准。
+	CacheDir string
+	// Client 是下载 HTTP 客户端；为空时使用带超时的默认客户端。
+	Client *http.Client
+	// Runner 启动静默安装器；为空时使用平台默认实现。
+	Runner InstallerRunner
+	// Now 生成完成时间；为空时使用 UTC 当前时间。
+	Now func() time.Time
 }
 
-// Manager 是更新管理器
+// Manager 持有更新下载和安装所需的依赖。
 type Manager struct {
-	cacheDir string           // cacheDir 保存 cacheDir 对应的数据，供当前实体的调用方读取或持久化。
-	client   *http.Client     // client 保存 client 对应的数据，供当前实体的调用方读取或持久化。
-	runner   InstallerRunner  // runner 保存 runner 对应的数据，供当前实体的调用方读取或持久化。
-	now      func() time.Time // now 保存 now 对应的数据，供当前实体的调用方读取或持久化。
+	cacheDir string
+	client   *http.Client
+	runner   InstallerRunner
+	now      func() time.Time
 }
 
-// ReleaseAsset 是发布资产信息
+// ReleaseAsset 是检查器选中的安装资产。
 type ReleaseAsset struct {
-	LatestVersion    string // 最新版本号
-	TagName          string // Git 标签名
-	AssetName        string // 安装包文件名
-	AssetSizeBytes   int64  // 安装包大小（字节）
-	AssetDownloadURL string // 下载链接
-	Sha256           string // SHA256 哈希值
+	LatestVersion    string
+	TagName          string
+	AssetName        string
+	AssetSizeBytes   int64
+	AssetDownloadURL string
+	Sha256           string
 }
 
-// DownloadResult 是下载结果
+// DownloadResult 描述已下载且通过 SHA256 校验的安装包。
 type DownloadResult struct {
-	Version     string `json:"version"`     // 版本号
-	AssetName   string `json:"assetName"`   // 安装包名称
-	FilePath    string `json:"filePath"`    // 本地文件路径
-	SizeBytes   int64  `json:"sizeBytes"`   // 文件大小
-	Sha256      string `json:"sha256"`      // SHA256 哈希值
-	Verified    bool   `json:"verified"`    // 是否通过校验
-	CompletedAt string `json:"completedAt"` // 完成时间
+	Version     string `json:"version"`
+	AssetName   string `json:"assetName"`
+	FilePath    string `json:"filePath"`
+	SizeBytes   int64  `json:"sizeBytes"`
+	Sha256      string `json:"sha256"`
+	Verified    bool   `json:"verified"`
+	CompletedAt string `json:"completedAt"`
 }
 
-// Progress 是下载进度
+// Progress 是下载或校验阶段的进度快照。
 type Progress struct {
-	Stage           string // 当前阶段
-	DownloadedBytes int64  // 已下载字节数
-	TotalBytes      int64  // 总字节数
+	Stage           string
+	DownloadedBytes int64
+	TotalBytes      int64
 }
 
-// ProgressFunc 是进度回调函数类型
+// ProgressFunc 在下载写入和校验开始时回调；调用方不得在回调里阻塞太久。
 type ProgressFunc func(Progress)
 
-// InstallerRunner 是安装器运行函数类型
+// InstallerRunner 是平台安装器启动函数。
 type InstallerRunner = installer.Runner
 
+// maxUpdateDownloadBytes 是未知 Content-Length 时仍允许写入的硬上限。
 const maxUpdateDownloadBytes int64 = 2 * 1024 * 1024 * 1024
 
-// ChecksumMismatchError 是校验和不匹配错误
+// ChecksumMismatchError 表示下载完成后实际 SHA256 与期望值不一致。
 type ChecksumMismatchError struct {
-	Expected string // 期望的 SHA256
-	Actual   string // 实际的 SHA256
+	Expected string
+	Actual   string
 }
 
-// Error 封装 管理更新包下载、校验、待安装状态和安装器启动 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// Error 返回用于日志和错误分支识别的 SHA256 不匹配说明。
 func (e ChecksumMismatchError) Error() string {
 	return fmt.Sprintf("SHA256 校验失败，期望 %s，实际 %s", e.Expected, e.Actual)
 }
 
-// ============================================================================
-// 构造函数
-// ============================================================================
-
-// NewManager 创建更新管理器实例
-// 参数:
-//   - config: 配置
-//
-// 返回:
-//   - *Manager: 更新管理器
+// NewManager 创建更新管理器实例，并补齐可选依赖的默认实现。
 func NewManager(config Config) *Manager {
 	client := config.Client
 	if client == nil {
@@ -126,19 +109,8 @@ func NewManager(config Config) *Manager {
 	}
 }
 
-// ============================================================================
-// 下载和校验
-// ============================================================================
-
-// DownloadAndVerify 下载安装包并校验 SHA256
-// 参数:
-//   - ctx: 上下文
-//   - asset: 发布资产信息
-//   - progress: 进度回调函数（可选）
-//
-// 返回:
-//   - DownloadResult: 下载结果
-//   - error: 错误信息
+// DownloadAndVerify 下载指定安装资产到版本子目录，并在重命名前校验 SHA256。
+// 临时文件固定为目标路径加 ".download"，调用方需要自行串行化同一缓存目录的并发下载。
 func (m *Manager) DownloadAndVerify(ctx context.Context, asset ReleaseAsset, progress ProgressFunc) (DownloadResult, error) {
 	if m == nil {
 		return DownloadResult{}, errors.New("更新管理器未初始化")
@@ -163,7 +135,7 @@ func (m *Manager) DownloadAndVerify(ctx context.Context, asset ReleaseAsset, pro
 		return DownloadResult{}, err
 	}
 
-	// 解析版本号
+	// 版本号参与目录名，必须先清理为安全路径片段。
 	version := asset.LatestVersion
 	if version == "" {
 		version = strings.TrimPrefix(strings.TrimPrefix(asset.TagName, "v"), "V")
@@ -173,7 +145,7 @@ func (m *Manager) DownloadAndVerify(ctx context.Context, asset ReleaseAsset, pro
 		version = "unknown"
 	}
 
-	// 创建缓存目录
+	// 先写入临时文件，校验通过后再替换目标文件，避免暴露半成品安装包。
 	targetDir := filepath.Join(m.cacheDir, version)
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		return DownloadResult{}, err
@@ -182,7 +154,6 @@ func (m *Manager) DownloadAndVerify(ctx context.Context, asset ReleaseAsset, pro
 	tempPath := targetPath + ".download"
 	_ = os.Remove(tempPath)
 
-	// 发送 HTTP 请求
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, asset.AssetDownloadURL, nil)
 	if err != nil {
 		return DownloadResult{}, err
@@ -201,7 +172,6 @@ func (m *Manager) DownloadAndVerify(ctx context.Context, asset ReleaseAsset, pro
 		return DownloadResult{}, fmt.Errorf("安装包大小超过允许上限：%d > %d", resp.ContentLength, downloadLimit)
 	}
 
-	// 写入临时文件
 	file, err := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return DownloadResult{}, err
@@ -217,7 +187,6 @@ func (m *Manager) DownloadAndVerify(ctx context.Context, asset ReleaseAsset, pro
 		return DownloadResult{}, closeErr
 	}
 
-	// 校验 SHA256
 	if progress != nil {
 		progress(Progress{Stage: "verifying", DownloadedBytes: written, TotalBytes: resp.ContentLength})
 	}
@@ -248,17 +217,8 @@ func (m *Manager) DownloadAndVerify(ctx context.Context, asset ReleaseAsset, pro
 	}, nil
 }
 
-// ============================================================================
-// 安装
-// ============================================================================
-
-// Install 启动安装器
-// 参数:
-//   - ctx: 上下文
-//   - installerPath: 安装包路径
-//
-// 返回:
-//   - error: 错误信息
+// Install 启动已校验安装包。
+// 这里不重新计算 SHA256；调用方必须在进入前完成校验，Manager 只负责路径边界和进程启动。
 func (m *Manager) Install(ctx context.Context, installerPath string) error {
 	if m == nil {
 		return errors.New("更新管理器未初始化")
@@ -280,13 +240,7 @@ func (m *Manager) Install(ctx context.Context, installerPath string) error {
 	return m.runner(ctx, installerPath)
 }
 
-// requireUpdateCacheFile 验证安装包是否在更新缓存目录内
-// 防止安装非缓存目录下的恶意文件
-// 参数:
-//   - installerPath: 安装包路径
-//
-// 返回:
-//   - error: 错误信息
+// requireUpdateCacheFile 验证安装包是否位于更新缓存目录内，防止安装任意本地文件。
 func (m *Manager) requireUpdateCacheFile(installerPath string) error {
 	if strings.TrimSpace(m.cacheDir) == "" {
 		return errors.New("更新缓存目录未配置，拒绝安装")
@@ -309,31 +263,18 @@ func (m *Manager) requireUpdateCacheFile(installerPath string) error {
 	return nil
 }
 
-// ============================================================================
-// 工具函数
-// ============================================================================
-
-// FileSHA256 计算文件的 SHA256 哈希值
-// 参数:
-//   - path: 文件路径
-//
-// 返回:
-//   - string: SHA256 哈希值（十六进制字符串）
-//   - error: 错误信息
+// FileSHA256 计算文件的 SHA256 十六进制摘要。
 func FileSHA256(path string) (string, error) {
 	return checksum.FileSHA256(path)
 }
 
-// IsOfflineError 判断错误是否为网络离线错误
-// 参数:
-//   - err: 错误
-//
-// 返回:
-//   - bool: 是否为离线错误
+// IsOfflineError 判断错误是否属于可跳过的离线网络错误。
 func IsOfflineError(err error) bool {
 	return neterr.IsOfflineError(err)
 }
 
+// downloadSizeLimit 计算本次下载允许写入的最大字节数。
+// Release 已声明大小时以声明值为上限；未知大小时使用全局硬上限。
 func downloadSizeLimit(assetSizeBytes int64) (int64, error) {
 	if assetSizeBytes < 0 {
 		return 0, fmt.Errorf("安装包大小无效：%d", assetSizeBytes)
@@ -347,17 +288,7 @@ func downloadSizeLimit(assetSizeBytes int64) (int64, error) {
 	return maxUpdateDownloadBytes, nil
 }
 
-// copyWithProgress 带进度回调的文件复制
-// 参数:
-//   - dst: 目标写入器
-//   - src: 源读取器
-//   - total: 总字节数（可能为 -1 表示未知）
-//   - maxBytes: 最大允许写入字节数
-//   - progress: 进度回调函数
-//
-// 返回:
-//   - int64: 实际写入的字节数
-//   - error: 错误信息
+// copyWithProgress 复制响应体并持续上报下载进度，同时强制执行最大写入字节数。
 func copyWithProgress(dst io.Writer, src io.Reader, total int64, maxBytes int64, progress ProgressFunc) (int64, error) {
 	buffer := make([]byte, 64*1024)
 	var written int64
@@ -402,12 +333,7 @@ func copyWithProgress(dst io.Writer, src io.Reader, total int64, maxBytes int64,
 	}
 }
 
-// safePathPart 清理路径部分（移除非法字符）
-// 参数:
-//   - value: 原始值
-//
-// 返回:
-//   - string: 清理后的值
+// safePathPart 清理版本目录名，避免把 Release tag 中的路径分隔符写入文件系统。
 func safePathPart(value string) string {
 	value = strings.TrimSpace(value)
 	replacer := strings.NewReplacer("\\", "-", "/", "-", ":", "-", "*", "-", "?", "-", "\"", "-", "<", "-", ">", "-", "|", "-")

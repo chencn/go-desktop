@@ -7,6 +7,7 @@ import (
 	"github.com/chencn/go-desktop/internal/desktopapp/settings"
 )
 
+// NormalizeSeverity 标准化日志记录严重级别，panic/fatal/critical 统一按 error 处理。
 func NormalizeSeverity(severity string) string {
 	switch strings.ToLower(strings.TrimSpace(severity)) {
 	case "debug":
@@ -20,6 +21,7 @@ func NormalizeSeverity(severity string) string {
 	}
 }
 
+// SeverityRank 返回严重级别排序，用于最小日志级别过滤。
 func SeverityRank(severity string) int {
 	switch NormalizeSeverity(severity) {
 	case "debug":
@@ -35,6 +37,7 @@ func SeverityRank(severity string) int {
 	}
 }
 
+// SlogLevelFromLogLevel 把设置中的最小日志级别映射为 slog.Level。
 func SlogLevelFromLogLevel(level string) slog.Level {
 	switch settings.NormalizeLogLevel(level) {
 	case "debug":
@@ -48,6 +51,7 @@ func SlogLevelFromLogLevel(level string) slog.Level {
 	}
 }
 
+// SeverityFromSlogLevel 把 slog.Level 映射为日志页严重级别。
 func SeverityFromSlogLevel(level slog.Level) string {
 	if level >= slog.LevelError {
 		return "error"
@@ -61,6 +65,8 @@ func SeverityFromSlogLevel(level slog.Level) string {
 	return "info"
 }
 
+// SeverityFromProcessMessage 根据进程输出内容推断严重级别。
+// 栈帧行即使包含 .go: 也按 info 处理，避免 panic 堆栈每行都变成 error。
 func SeverityFromProcessMessage(message string) string {
 	normalized := strings.ToLower(strings.TrimSpace(message))
 	if normalized == "" {
@@ -78,6 +84,7 @@ func SeverityFromProcessMessage(message string) string {
 	return "info"
 }
 
+// looksLikeStackFrame 判断进程输出是否像 panic 堆栈帧。
 func looksLikeStackFrame(message string) bool {
 	message = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(message, "stdout:"), "stderr:"))
 	message = strings.TrimSpace(message)
@@ -98,6 +105,7 @@ func looksLikeStackFrame(message string) bool {
 		strings.Contains(message, "runtime/")
 }
 
+// hasExplicitErrorSignal 判断消息是否带有明确错误前缀或中文失败语义。
 func hasExplicitErrorSignal(message string) bool {
 	message = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(message, "stdout:"), "stderr:"))
 	message = strings.TrimSpace(message)

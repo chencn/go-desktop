@@ -75,7 +75,7 @@ func RemoveShortcut(name string) error {
 	return nil
 }
 
-// shortcutName 封装 按平台创建、删除和检测桌面快捷方式 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// shortcutName 规范化快捷方式文件名；空名称回退到 go-desktop，并强制补 .lnk。
 func shortcutName(name string) string {
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -85,7 +85,7 @@ func shortcutName(name string) string {
 	return name + ".lnk"
 }
 
-// shortcutPath 封装 按平台创建、删除和检测桌面快捷方式 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// shortcutPath 返回当前用户 Desktop 已知目录下的快捷方式路径。
 func shortcutPath(name string) (string, error) {
 	desktopDir, err := windows.KnownFolderPath(windows.FOLDERID_Desktop, windows.KF_FLAG_DEFAULT)
 	if err != nil {
@@ -94,7 +94,7 @@ func shortcutPath(name string) (string, error) {
 	return filepath.Join(desktopDir, name), nil
 }
 
-// resolvedExecutable 封装 按平台创建、删除和检测桌面快捷方式 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// resolvedExecutable 返回当前进程可执行文件路径，能解析符号链接时优先使用真实路径。
 func resolvedExecutable() (string, error) {
 	executable, err := os.Executable()
 	if err != nil {
@@ -106,7 +106,7 @@ func resolvedExecutable() (string, error) {
 	return executable, nil
 }
 
-// writeShortcut 修改 按平台创建、删除和检测桌面快捷方式 管理的状态、文件或外部副作用，并把失败原因向上返回。
+// writeShortcut 在独立协程里写 .lnk，内部会锁定 OS 线程以满足 COM STA 要求。
 func writeShortcut(path string, executable string, description string, arguments []string) error {
 	result := make(chan error, 1)
 	go func() {
@@ -178,6 +178,7 @@ func writeShortcutOnLockedThread(path string, executable string, description str
 	return nil
 }
 
+// putShortcutProperty 设置 WScript shortcut 属性，并把 COM 错误附带属性名返回。
 func putShortcutProperty(shortcut *ole.IDispatch, name string, value any) error {
 	result, err := oleutil.PutProperty(shortcut, name, value)
 	if err := clearShortcutResult(result, err); err != nil {
@@ -186,6 +187,7 @@ func putShortcutProperty(shortcut *ole.IDispatch, name string, value any) error 
 	return nil
 }
 
+// callShortcutMethod 调用 WScript shortcut 方法，并清理 COM 返回值。
 func callShortcutMethod(shortcut *ole.IDispatch, name string, params ...any) error {
 	result, err := oleutil.CallMethod(shortcut, name, params...)
 	if err := clearShortcutResult(result, err); err != nil {
@@ -194,6 +196,7 @@ func callShortcutMethod(shortcut *ole.IDispatch, name string, params ...any) err
 	return nil
 }
 
+// clearShortcutResult 优先返回业务调用错误；只有业务调用成功时才暴露 VARIANT 清理错误。
 func clearShortcutResult(result *ole.VARIANT, err error) error {
 	if result == nil {
 		return err
@@ -204,6 +207,7 @@ func clearShortcutResult(result *ole.VARIANT, err error) error {
 	return err
 }
 
+// shortcutArguments 跳过空参数并使用 Windows 命令行转义规则拼成 Arguments 字段。
 func shortcutArguments(args []string) string {
 	parts := make([]string, 0, len(args))
 	for _, arg := range args {

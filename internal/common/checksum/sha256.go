@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+// FileSHA256 流式读取文件并返回小写十六进制 SHA256。
+// 打开、读取或关闭前的读取错误都会按原始 error 返回给调用方处理。
 func FileSHA256(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {

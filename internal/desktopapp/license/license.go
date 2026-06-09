@@ -11,8 +11,10 @@ import (
 	"time"
 )
 
+// Prefix 是当前离线授权码格式版本前缀。
 const Prefix = "GD1"
 
+// Payload 是授权码签名覆盖的 JSON 载荷。
 type Payload struct {
 	Version    int       `json:"v"`
 	Product    string    `json:"product"`
@@ -21,6 +23,7 @@ type Payload struct {
 	ExpiresAt  time.Time `json:"expiresAt,omitempty"`
 }
 
+// VerifyOptions 是验签所需的本地上下文。
 type VerifyOptions struct {
 	PublicKey  ed25519.PublicKey
 	Product    string
@@ -28,11 +31,13 @@ type VerifyOptions struct {
 	Now        time.Time
 }
 
+// Status 是验签成功后的授权状态和原始载荷。
 type Status struct {
 	Authorized bool
 	Payload    Payload
 }
 
+// Issue 使用 Ed25519 私钥签发离线授权码，格式为 GD1-base64url(payload).base64url(signature)。
 func Issue(payload Payload, privateKey ed25519.PrivateKey) (string, error) {
 	if len(privateKey) != ed25519.PrivateKeySize {
 		return "", errors.New("授权私钥无效")
@@ -48,6 +53,7 @@ func Issue(payload Payload, privateKey ed25519.PrivateKey) (string, error) {
 	return Prefix + "-" + base64.RawURLEncoding.EncodeToString(body) + "." + base64.RawURLEncoding.EncodeToString(signature), nil
 }
 
+// Verify 验证授权码签名、产品、设备码和过期时间。
 func Verify(code string, options VerifyOptions) (Status, error) {
 	body, signature, err := decode(code)
 	if err != nil {
@@ -77,6 +83,7 @@ func Verify(code string, options VerifyOptions) (Status, error) {
 	return Status{Authorized: true, Payload: payload}, nil
 }
 
+// decode 解析授权码格式并解码签名覆盖的 payload 和 signature。
 func decode(code string) ([]byte, []byte, error) {
 	trimmed := strings.Join(strings.Fields(code), "")
 	if !strings.HasPrefix(trimmed, Prefix+"-") {

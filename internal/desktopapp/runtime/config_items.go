@@ -11,15 +11,16 @@
 package runtime
 
 import (
-	"context" // 上下文包，用于 SQLite 操作
-	"fmt"     // 格式化错误信息
-	"time"    // 配置保存超时控制
+	"context"
+	"fmt"
+	"time"
 
-	"github.com/chencn/go-desktop/internal/adapters/configstore" // SQLite 配置项结构
+	"github.com/chencn/go-desktop/internal/adapters/configstore"
 	"github.com/chencn/go-desktop/internal/desktopapp/display"
 	appsettings "github.com/chencn/go-desktop/internal/desktopapp/settings"
 )
 
+// configSaveTimeout 是无 deadline 调用写入 SQLite 配置项时的兜底超时。
 const configSaveTimeout = 5 * time.Second
 
 // configItemMap 是按配置 key 建索引后的 SQLite 配置项集合。
@@ -33,6 +34,7 @@ func allConfigDefinitions() []configstore.ConfigItem {
 	return definitions
 }
 
+// licenseDefinitions 声明授权状态配置项；这里仅提供元数据和值槽位，授权校验逻辑在 license 模块。
 func licenseDefinitions() []configstore.ConfigItem {
 	return []configstore.ConfigItem{
 		{Key: licenseKeyConfig, Category: "license", Title: "授权码", Description: "当前设备保存的授权码", ValueType: "string", SortOrder: 900},
@@ -43,6 +45,7 @@ func licenseDefinitions() []configstore.ConfigItem {
 }
 
 // ensureConfigDefaults 把缺失配置项写入 SQLite，并刷新已有配置项的展示元数据。
+// 已存在 value 不会被默认值覆盖；成功后 Runtime 生命周期内只执行一次。
 func (s *Runtime) ensureConfigDefaults(ctx context.Context) error {
 	s.lock.RLock()
 	store := s.store
@@ -63,7 +66,7 @@ func (s *Runtime) ensureConfigDefaults(ctx context.Context) error {
 	return nil
 }
 
-// configItemsByKey 读取全部配置项并按 key 建索引。
+// configItemsByKey 确保默认项后读取全部配置项并按 key 建索引；存储未打开时返回空集合。
 func (s *Runtime) configItemsByKey(ctx context.Context) (configItemMap, error) {
 	if err := s.ensureConfigDefaults(ctx); err != nil {
 		return nil, err
@@ -86,6 +89,7 @@ func (s *Runtime) configItemsByKey(ctx context.Context) (configItemMap, error) {
 }
 
 // saveConfigValues 批量保存配置值；调用方负责先做 typed 标准化。
+// 存储不可用属于写入失败，需要向 API 调用方返回错误，不能静默降级。
 func (s *Runtime) saveConfigValues(ctx context.Context, values map[string]string) error {
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc

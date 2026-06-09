@@ -1,6 +1,6 @@
 <!--
   文件职责：渲染桌面应用外壳、侧栏导航、页头和更新入口。
-  说明：注释覆盖组件脚本状态、方法、生命周期和模板结构；不改变渲染逻辑。
+  更新按钮只负责打开状态弹窗；检查、安装和下次启动安装由弹窗内显式动作触发。
 -->
 
 <script setup lang="ts">
@@ -14,30 +14,28 @@ import { projectMetadata } from '@/shared/project'
 import { navigation, pageSubtitle, pageTitle, type ViewKey } from '@/shared/views'
 import UpdateStatusDialog from '@/features/update/UpdateStatusDialog.vue'
 
-// props 描述组件从父级接收的入参，保证模板和脚本使用同一份契约。
 const props = defineProps<{
+  // activeView 由 App.vue 持有，保证侧栏和窄屏导航共享同一个页面状态。
   activeView: ViewKey
 }>()
 
-// emit 描述组件向父级抛出的事件，保证导航和动作回调具备明确边界。
 const emit = defineEmits<{
+  // navigate 只通知父级切换前端页面，不触发后端路由或浏览器历史变更。
   navigate: [view: ViewKey]
 }>()
 
-// appStore 保存 Pinia store 实例，集中访问应用共享状态和动作。
 const appStore = useAppStore()
-// display 保存 渲染桌面应用外壳、侧栏导航、页头和更新入口 使用的配置、引用或中间结果。
+// display 控制全局主题 facade；保存失败时要回滚该 facade，而不是只报错。
 const display = useDisplayPreferences()
-// updateOpen 保存组件本地响应式状态，是模板渲染和事件处理的状态源。
+// updateOpen 是弹窗开关，关闭弹窗不会取消 store 中的更新任务。
 const updateOpen = ref(false)
-// activeTitle 保存由响应式状态推导出的只读结果，模板直接消费该值。
+// activeTitle/activeSubtitle 从共享导航配置读取，避免侧栏文案和页头漂移。
 const activeTitle = computed(() => pageTitle(props.activeView))
-// activeSubtitle 保存由响应式状态推导出的只读结果，模板直接消费该值。
 const activeSubtitle = computed(() => pageSubtitle(props.activeView))
-// updateTone 保存由响应式状态推导出的只读结果，模板直接消费该值。
+// updateTone 把后端更新状态压缩成图标状态类，避免模板散落状态机判断。
 const updateTone = computed(() => updateIconTone(appStore.updateStatus?.status))
 
-// toggleTheme 处理 渲染桌面应用外壳、侧栏导航、页头和更新入口 中的用户动作、生命周期动作或数据转换。
+// toggleTheme 先乐观切换 DOM 主题，再调用 SaveDisplayPreferences；失败后恢复原主题。
 async function toggleTheme() {
   const previous = display.themeMode.value
   const next = previous === 'dark' ? 'light' : 'dark'
@@ -50,9 +48,8 @@ async function toggleTheme() {
   }
 }
 
-// updateIconTone 处理 渲染桌面应用外壳、侧栏导航、页头和更新入口 中的用户动作、生命周期动作或数据转换。
+// updateIconTone 只关心用户可感知阶段：错误、忙碌、已准备，其余保持默认。
 function updateIconTone(status?: string) {
-  // value 保存 渲染桌面应用外壳、侧栏导航、页头和更新入口 使用的配置、引用或中间结果。
   const value = String(status ?? 'idle')
   if (value === 'error') return 'is-danger'
   if (['downloading', 'verifying', 'installing'].includes(value)) return 'is-busy'
@@ -62,7 +59,6 @@ function updateIconTone(status?: string) {
 </script>
 
 <template>
-  <!-- 模板结构：声明当前组件对外呈现的布局、插槽和交互入口。 -->
   <div class="app-shell">
     <aside class="app-sidebar" aria-label="主导航">
       <div class="sidebar-brand">

@@ -32,6 +32,7 @@ type ServiceCard = {
   icon: Component
 }
 
+// networkOnline 只读取浏览器在线状态；它不代表 GitHub Release 或本地更新源一定可达。
 const networkOnline = ref<boolean | null>(typeof navigator === 'undefined' ? null : navigator.onLine)
 
 const demoStats = [
@@ -57,6 +58,7 @@ const distributionSegments = [
   { label: '异常挂起', value: 15, className: 'is-chart-5' },
 ]
 
+// serviceCards 聚合启动阶段 API 状态，用于首页健康卡；不主动重新请求后端。
 const serviceCards = computed<ServiceCard[]>(() => [
   webviewStatus(),
   applicationStatus(),
@@ -93,10 +95,12 @@ function startupStatus(key: StartupApiKey): StartupApiStatus {
   return appStore.startupApiStatuses[key] ?? { state: 'idle', message: '', updatedAt: '' }
 }
 
+// pendingStatus 把 idle/loading 都视为检测中，避免启动 API 尚未开始时被误判为异常。
 function pendingStatus(status: StartupApiStatus) {
   return status.state === 'idle' || status.state === 'loading'
 }
 
+// webviewStatus 只证明前端已渲染，不代表 Go 后端 API 可用。
 function webviewStatus(): ServiceCard {
   return {
     title: 'WebView',
@@ -151,6 +155,7 @@ function applicationStatus(): ServiceCard {
 }
 
 function databaseStatus(): ServiceCard {
+  // 数据库健康同时参考 EnvironmentInfo 和依赖 SQLite 的设置/显示偏好读取结果。
   const environmentStatus = startupStatus('environmentInfo')
   const settingsStatus = startupStatus('settings')
   const displayStatus = startupStatus('displayPreferences')

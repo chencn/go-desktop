@@ -4,8 +4,11 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
 const props = withDefaults(defineProps<{
+  // label 只供无可见标题的弹窗写入 sr-only 标题，保证 Wails 桌面弹窗仍有可访问名称。
   label: string
+  // open 由业务页托管，wrapper 只把 primitive 的关闭请求翻译成 close 事件。
   open: boolean
+  // placement 目前只服务更新弹窗的右上角浮层，其它弹窗保持居中。
   placement?: 'center' | 'top-right'
 }>(), {
   placement: 'center',
@@ -18,6 +21,7 @@ const emit = defineEmits<{
 const dialogOpen = computed({
   get: () => props.open,
   set: (value) => {
+    // primitive 在 Esc、关闭按钮或受控 open=false 时都会写回；业务层统一通过 close 收敛状态。
     if (!value) emit('close')
   },
 })
@@ -25,6 +29,7 @@ const dialogOpen = computed({
 
 <template>
   <Dialog v-model:open="dialogOpen">
+    <!-- 外部点击只阻止关闭，不拦截 Esc；项目级策略放 wrapper，避免改 shadcn-vue primitive。 -->
     <DialogContent
       :show-close-button="false"
       :class="cn(

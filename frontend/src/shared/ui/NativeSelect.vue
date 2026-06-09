@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
+  // modelValue 接受 number 是为了兼容设置页枚举值，DOM change 仍按 select 原生规则回传字符串。
   modelValue?: string | number
 }>()
 
@@ -13,6 +14,8 @@ const emit = defineEmits<{
 }>()
 
 const attrs = useAttrs()
+
+// delegatedAttrs 排除 class，避免透传属性覆盖 wrapper 固定的高度、边框和禁用态样式。
 const delegatedAttrs = computed(() => {
   const { class: _class, ...rest } = attrs
   return rest

@@ -25,6 +25,7 @@ type projectMetadata struct {
 	} `json:"update"`
 }
 
+// localRelease 按 GitHub List releases 响应的最小字段集输出，供现有 GitHub updater 直接复用。
 type localRelease struct {
 	TagName    string       `json:"tag_name"`
 	Name       string       `json:"name"`
@@ -35,6 +36,8 @@ type localRelease struct {
 	Assets     []localAsset `json:"assets"`
 }
 
+// localAsset 描述本地静态服务中的安装器和校验文件。
+// BrowserDownloadURL 必须是 updater 可以直接 GET 的绝对 URL。
 type localAsset struct {
 	Name               string `json:"name"`
 	Size               int64  `json:"size"`
@@ -42,6 +45,8 @@ type localAsset struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
 
+// main 生成本地静态更新目录。
+// 输入为已构建安装器和 project.metadata.json；输出为 releases/download/vX.Y.Z 下的安装器、sha256 和 latest.json。
 func main() {
 	versionFlag := flag.String("version", "", "installer version")
 	installerFlag := flag.String("installer", "", "installer path")
@@ -120,6 +125,7 @@ func main() {
 	fmt.Printf("本地更新 staging 已生成：%s\n", manifestPath)
 }
 
+// readProjectMetadata 只读取 staging 必需字段；缺失任一字段都会终止，避免生成 updater 无法消费的 manifest。
 func readProjectMetadata(path string) projectMetadata {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -137,6 +143,8 @@ func readProjectMetadata(path string) projectMetadata {
 	return meta
 }
 
+// cleanManifestPath 规范化 update.localManifestPath。
+// 只允许 staging 根目录内的相对路径，拒绝绝对路径、卷名、URL 和 ../ 跳出。
 func cleanManifestPath(raw string) string {
 	value := strings.TrimSpace(raw)
 	if value == "" {
@@ -156,6 +164,7 @@ func cleanManifestPath(raw string) string {
 	return cleaned
 }
 
+// copyFile 复制安装器到 staging 目录，并返回实际写入字节数。
 func copyFile(source, target string) int64 {
 	input, err := os.Open(source)
 	if err != nil {
@@ -177,6 +186,7 @@ func copyFile(source, target string) int64 {
 	return written
 }
 
+// fileSHA256 返回文件内容的十六进制小写 SHA256。
 func fileSHA256(path string) string {
 	file, err := os.Open(path)
 	if err != nil {
@@ -190,6 +200,7 @@ func fileSHA256(path string) string {
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
+// exitf 输出失败原因并以非零状态退出，供 Taskfile package 链路捕获。
 func exitf(format string, args ...any) {
 	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)

@@ -24,6 +24,7 @@ const (
 
 const defaultLogLevel = "info"
 
+// Settings 是业务层设置模型；持久化时会拆成 config_items 字符串 KV。
 type Settings struct {
 	UpdateSource             string
 	GitHubOwner              string
@@ -38,6 +39,7 @@ type Settings struct {
 	LaunchHiddenToTray       bool
 }
 
+// Default 返回由 metadata 生成链和本包本地默认值共同决定的启动默认设置。
 func Default() Settings {
 	return Settings{
 		UpdateSource:             metadata.DefaultUpdateSource,
@@ -54,6 +56,8 @@ func Default() Settings {
 	}
 }
 
+// Normalize 统一处理前端输入和数据库读取结果中的非法枚举、空仓库信息和特殊保留天数。
+// LogRetentionDays=-1 表示永不清理；0 或小于 -1 回退到 metadata 默认值。
 func Normalize(value Settings) Settings {
 	value.UpdateSource = NormalizeUpdateSource(value.UpdateSource)
 	if value.GitHubOwner == "" {
@@ -70,6 +74,7 @@ func Normalize(value Settings) Settings {
 	return value
 }
 
+// NormalizeUpdateSource 只允许 local，其余输入都回退到 github。
 func NormalizeUpdateSource(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "local":
@@ -79,6 +84,7 @@ func NormalizeUpdateSource(value string) string {
 	}
 }
 
+// NormalizeUpdateCheckIntervalHours 只允许产品约定的自动检查间隔。
 func NormalizeUpdateCheckIntervalHours(value int) int {
 	switch value {
 	case 1, 3, 6, 12:
@@ -88,6 +94,7 @@ func NormalizeUpdateCheckIntervalHours(value int) int {
 	}
 }
 
+// NormalizeLogLevel 标准化最小记录级别；未知值回退到 info。
 func NormalizeLogLevel(level string) string {
 	switch strings.ToLower(strings.TrimSpace(level)) {
 	case "debug":
@@ -101,6 +108,7 @@ func NormalizeLogLevel(level string) string {
 	}
 }
 
+// FromConfigItems 从 SQLite 配置项恢复 typed 设置，缺失或解析失败的项使用 base。
 func FromConfigItems(items map[string]configstore.ConfigItem, base Settings) Settings {
 	base.UpdateSource = configString(items, KeyUpdateSource, base.UpdateSource)
 	base.GitHubOwner = configString(items, KeyGitHubOwner, base.GitHubOwner)
@@ -116,6 +124,7 @@ func FromConfigItems(items map[string]configstore.ConfigItem, base Settings) Set
 	return Normalize(base)
 }
 
+// Values 把 typed 设置转换为 SQLite 字符串 KV，调用前后都会保持归一化。
 func Values(value Settings) map[string]string {
 	value = Normalize(value)
 	return map[string]string{
@@ -133,6 +142,7 @@ func Values(value Settings) map[string]string {
 	}
 }
 
+// Definitions 返回设置配置项元数据；EnsureConfigItems 不会用这些默认值覆盖已有用户 value。
 func Definitions() []configstore.ConfigItem {
 	defaults := Default()
 	return []configstore.ConfigItem{
@@ -150,6 +160,7 @@ func Definitions() []configstore.ConfigItem {
 	}
 }
 
+// configString 读取非空字符串配置，空字符串保留 fallback。
 func configString(items map[string]configstore.ConfigItem, key string, fallback string) string {
 	if item, ok := items[key]; ok {
 		if value := strings.TrimSpace(item.Value); value != "" {
@@ -159,6 +170,7 @@ func configString(items map[string]configstore.ConfigItem, key string, fallback 
 	return fallback
 }
 
+// configBool 读取 bool 配置，解析失败时保留 fallback。
 func configBool(items map[string]configstore.ConfigItem, key string, fallback bool) bool {
 	if item, ok := items[key]; ok {
 		if value, err := strconv.ParseBool(strings.TrimSpace(item.Value)); err == nil {
@@ -168,6 +180,7 @@ func configBool(items map[string]configstore.ConfigItem, key string, fallback bo
 	return fallback
 }
 
+// configInt 读取 int 配置，解析失败时保留 fallback。
 func configInt(items map[string]configstore.ConfigItem, key string, fallback int) int {
 	if item, ok := items[key]; ok {
 		if value, err := strconv.Atoi(strings.TrimSpace(item.Value)); err == nil {

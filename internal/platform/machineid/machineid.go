@@ -1,4 +1,4 @@
-// 文件职责：从稳定机器信息生成短设备码。
+// Package machineid 从平台机器信息生成授权用短设备码。
 
 package machineid
 
@@ -8,10 +8,14 @@ import (
 	"strings"
 )
 
+// DeviceCode 读取当前平台可用机器信息并生成 GD-XXXX-XXXX-XXXX 格式设备码。
+// 如果平台信息为空或只包含占位值，返回空字符串，由授权流程报告缺少设备码。
 func DeviceCode() string {
 	return CodeFromParts(readParts())
 }
 
+// CodeFromParts 根据已采集的机器信息生成稳定短码。
+// 输入会去空白、转大写并过滤常见 OEM/空 UUID 占位值；输出不包含原始机器标识。
 func CodeFromParts(parts []string) string {
 	normalized := normalizeParts(parts)
 	if len(normalized) == 0 {
@@ -25,6 +29,7 @@ func CodeFromParts(parts []string) string {
 	return "GD-" + encoded[0:4] + "-" + encoded[4:8] + "-" + encoded[8:12]
 }
 
+// normalizeParts 过滤不稳定或无意义的机器信息，避免把 OEM 默认值写入授权指纹。
 func normalizeParts(parts []string) []string {
 	normalized := make([]string, 0, len(parts))
 	for _, part := range parts {

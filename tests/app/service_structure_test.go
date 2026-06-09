@@ -1,5 +1,4 @@
-// 文件职责：验证 service_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：验证 app facade、main.go 桌面入口和 runtime 存储/日志结构边界。
 
 package app_test
 
@@ -13,7 +12,7 @@ import (
 	"github.com/chencn/go-desktop/app"
 )
 
-// TestAppServiceFileStaysAsThinWailsFacade 验证 service_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestAppServiceFileStaysAsThinWailsFacade 验证 app/service.go 只保留 Wails facade 和启动装配，不承载后端实现。
 func TestAppServiceFileStaysAsThinWailsFacade(t *testing.T) {
 	source := readRootFile(t, "app", "service.go")
 
@@ -366,7 +365,6 @@ func TestRuntimeDoesNotUseSQLiteForLogsOrUpdateBusinessData(t *testing.T) {
 	}
 }
 
-// readRootFile 读取、解析或归一化 验证 service_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 需要的数据，并把结果返回给调用方。
 func readRootFile(t *testing.T, parts ...string) string {
 	t.Helper()
 	path := rootPath(parts...)

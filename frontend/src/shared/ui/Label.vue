@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils'
 defineOptions({ inheritAttrs: false })
 
 const attrs = useAttrs()
+
+// delegatedAttrs 排除 class，Label 的 muted 语义和调用方 class 统一交给 cn() 合并。
 const delegatedAttrs = computed(() => {
   const { class: _class, ...rest } = attrs
   return rest

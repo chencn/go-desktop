@@ -24,12 +24,12 @@ import (
 
 const maxRuntimeMemoryLogs = 200
 
-// runtimeLogHandler 同时把 slog 记录写入内存 ring buffer 和文件 handler。
+// runtimeLogHandler 同时把 slog 记录写入内存 ring buffer 和每日 JSONL 文件。
 type runtimeLogHandler struct {
-	runtime *Runtime
-	file    slog.Handler
-	attrs   []slog.Attr
-	group   string
+	runtime *Runtime     // runtime 是内存视图写入目标。
+	file    slog.Handler // file 是实际文件 handler；可能写入 io.Discard。
+	attrs   []slog.Attr  // attrs 是 WithAttrs 累积字段，用于还原内存 LogEntry。
+	group   string       // group 是 WithGroup 累积字段前缀。
 }
 
 // Enabled 复用文件 handler 的级别过滤规则。
@@ -76,7 +76,7 @@ func (h *runtimeLogHandler) WithGroup(name string) slog.Handler {
 	return next
 }
 
-// initRuntimeLogger 初始化 slog logger；文件不可写时保留内存 logger，不阻断启动。
+// initRuntimeLogger 初始化 Runtime logger；文件不可写时保留内存视图，不阻断启动。
 func (s *Runtime) initRuntimeLogger() {
 	if s.logLevel == nil {
 		s.logLevel = &slog.LevelVar{}
@@ -115,7 +115,7 @@ func (s *Runtime) initRuntimeLogger() {
 	s.lock.Unlock()
 }
 
-// closeRuntimeLogger 关闭每日文件 writer。
+// closeRuntimeLogger 停止当前 logger 并关闭每日文件 writer；内存日志不在这里清空。
 func (s *Runtime) closeRuntimeLogger() {
 	s.lock.Lock()
 	writer := s.logWriter
@@ -127,7 +127,7 @@ func (s *Runtime) closeRuntimeLogger() {
 	}
 }
 
-// currentLogFilePath 返回当前每日文件路径。
+// currentLogFilePath 返回当前每日文件路径；writer 尚未打开时按今天日期推导。
 func (s *Runtime) currentLogFilePath() string {
 	s.lock.RLock()
 	writer := s.logWriter
@@ -146,6 +146,7 @@ func (s *Runtime) currentLogFilePath() string {
 }
 
 // logEntriesForQuery 返回单一日志来源的数据；文件日志可用时不合并内存日志。
+// query.FileName 会被限制为 basename，并且必须匹配当前 app 的每日或旧版日志文件名。
 func (s *Runtime) logEntriesForQuery(query LogQuery) ([]LogEntry, string, string, string) {
 	s.lock.RLock()
 	logDirPath := s.logDirPath
@@ -194,6 +195,7 @@ func (s *Runtime) ListLogFiles() []LogFileInfo {
 	return logFileInfosFromFileLog(filelog.ListFiles(logDirPath, appName, s.currentLogFilePath()))
 }
 
+// logEntriesFromFileLog 把 adapter 层日志结构转换为 runtime API DTO。
 func logEntriesFromFileLog(entries []filelog.Entry) []LogEntry {
 	logs := make([]LogEntry, 0, len(entries))
 	for _, entry := range entries {
@@ -207,6 +209,7 @@ func logEntriesFromFileLog(entries []filelog.Entry) []LogEntry {
 	return logs
 }
 
+// logFileInfosFromFileLog 把 adapter 层文件描述转换为 runtime API DTO。
 func logFileInfosFromFileLog(files []filelog.FileInfo) []LogFileInfo {
 	result := make([]LogFileInfo, 0, len(files))
 	for _, file := range files {
@@ -222,7 +225,7 @@ func logFileInfosFromFileLog(files []filelog.FileInfo) []LogFileInfo {
 	return result
 }
 
-// appendMemoryLog 把日志加入当前前端视图 ring buffer。
+// appendMemoryLog 把日志加入当前前端视图 ring buffer；最新日志在前，最多保留 maxRuntimeMemoryLogs 条。
 func (s *Runtime) appendMemoryLog(entry LogEntry) {
 	entry.Time = strings.TrimSpace(entry.Time)
 	if entry.Time == "" {
@@ -244,6 +247,7 @@ func (s *Runtime) appendMemoryLog(entry LogEntry) {
 }
 
 // readLogFile 读取单个日志文件；优先解析 JSONL，兼容旧 TSV 文件。
+// 保留该函数用于旧调用路径，Runtime 查询当前通过 filelog adapter 读取。
 func readLogFile(path string) []LogEntry {
 	file, err := os.Open(path)
 	if err != nil {
@@ -314,7 +318,8 @@ func parseLegacyTSVLogLine(line []byte) (LogEntry, bool) {
 	return entry, true
 }
 
-// filterSortAndPageLogs 统一处理日志过滤、排序、去重与分页。
+// filterSortAndPageLogs 统一处理日志过滤、排序、去重与分页；PageSize 最大限制为 200。
+// honorViewCleared 为 true 时，会应用 ClearLogs 记录的视图清空时间。
 func (s *Runtime) filterSortAndPageLogs(logs []LogEntry, query LogQuery, honorViewCleared bool) LogResponse {
 	if query.Page <= 0 {
 		query.Page = 1
@@ -386,7 +391,7 @@ func (s *Runtime) filterSortAndPageLogs(logs []LogEntry, query LogQuery, honorVi
 	}
 }
 
-// logEntryVisible 判断日志是否应出现在当前前端视图。
+// logEntryVisible 判断日志是否晚于全局或对应 scope 的最近清空时间。
 func (s *Runtime) logEntryVisible(entry LogEntry) bool {
 	entryTime := logEntryTime(entry)
 	if entryTime.IsZero() {
@@ -401,7 +406,7 @@ func (s *Runtime) logEntryVisible(entry LogEntry) bool {
 	return clearedAt.IsZero() || entryTime.After(clearedAt)
 }
 
-// legacyDailyLogWriter 是最小按天文件 writer；只轮转，不负责清理。
+// legacyDailyLogWriter 是旧版最小按天文件 writer；保留给旧测试和兼容路径，只轮转不清理。
 type legacyDailyLogWriter struct {
 	mu       sync.Mutex
 	dir      string
@@ -412,6 +417,7 @@ type legacyDailyLogWriter struct {
 	filePath string
 }
 
+// newDailyLogWriter 创建旧版每日文件 writer；生产日志写入优先使用 filelog.DailyWriter。
 func newDailyLogWriter(dir, appName string, now func() time.Time) (*legacyDailyLogWriter, error) {
 	dir = strings.TrimSpace(dir)
 	if dir == "" {
@@ -463,6 +469,7 @@ func (w *legacyDailyLogWriter) Close() error {
 	return err
 }
 
+// ensureFileLocked 在日期变化时切换到新的每日文件；调用方必须持有 w.mu。
 func (w *legacyDailyLogWriter) ensureFileLocked(now time.Time) error {
 	date := now.In(time.Local).Format("2006-01-02")
 	if w.file != nil && w.date == date {
@@ -471,6 +478,7 @@ func (w *legacyDailyLogWriter) ensureFileLocked(now time.Time) error {
 	return w.rotateLocked(now)
 }
 
+// rotateLocked 关闭旧文件并打开指定日期的追加写入文件；调用方必须持有 w.mu。
 func (w *legacyDailyLogWriter) rotateLocked(now time.Time) error {
 	if w.file != nil {
 		_ = w.file.Close()
@@ -488,6 +496,7 @@ func (w *legacyDailyLogWriter) rotateLocked(now time.Time) error {
 	return nil
 }
 
+// logEntryFromRecord 从 slog.Record 中提取日志页需要的 scope、severity、message 和 UTC 时间。
 func logEntryFromRecord(record slog.Record, handlerAttrs []slog.Attr, _ string) LogEntry {
 	attrs := append([]slog.Attr(nil), handlerAttrs...)
 	record.Attrs(func(attr slog.Attr) bool {
@@ -532,6 +541,7 @@ func logEntryFromRecord(record slog.Record, handlerAttrs []slog.Attr, _ string) 
 	}
 }
 
+// slogLevelFromSeverity 把日志页严重级别映射为 slog 级别。
 func slogLevelFromSeverity(severity string) slog.Level {
 	switch normaliseLogSeverity(severity) {
 	case "debug":
@@ -545,6 +555,7 @@ func slogLevelFromSeverity(severity string) slog.Level {
 	}
 }
 
+// severityFromSlogLevelName 兼容 slog JSON 中只有 level、没有 severity 字段的记录。
 func severityFromSlogLevelName(level string) string {
 	switch strings.ToUpper(strings.TrimSpace(level)) {
 	case "DEBUG":
@@ -558,6 +569,7 @@ func severityFromSlogLevelName(level string) string {
 	}
 }
 
+// stringValue 只接受 JSON 字符串字段，其他类型按缺失处理。
 func stringValue(value any) string {
 	if text, ok := value.(string); ok {
 		return strings.TrimSpace(text)
@@ -565,6 +577,7 @@ func stringValue(value any) string {
 	return ""
 }
 
+// selectableLogFileName 判断文件名是否属于当前 app 的每日日志或旧版日志。
 func selectableLogFileName(appName, name string) bool {
 	name = filepath.Base(strings.TrimSpace(name))
 	if name == "" || name == "." {
@@ -576,6 +589,7 @@ func selectableLogFileName(appName, name string) bool {
 	return legacyLogFileName(appName, name)
 }
 
+// legacyLogFileName 判断旧版单文件日志名。
 func legacyLogFileName(appName, name string) bool {
 	appName = strings.TrimSpace(appName)
 	if appName == "" {
@@ -584,11 +598,13 @@ func legacyLogFileName(appName, name string) bool {
 	return filepath.Base(strings.TrimSpace(name)) == appName+".log"
 }
 
+// fileExists 判断路径是否存在且不是目录。
 func fileExists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir()
 }
 
+// normaliseLogScope 标准化日志作用域，空值归入 app。
 func normaliseLogScope(scope string) string {
 	scope = strings.ToLower(strings.TrimSpace(scope))
 	if scope == "" {
@@ -597,10 +613,12 @@ func normaliseLogScope(scope string) string {
 	return scope
 }
 
+// logEntryKey 返回日志去重键。
 func logEntryKey(entry LogEntry) string {
 	return strings.Join([]string{entry.Time, entry.Scope, entry.Severity, entry.Message}, "\x00")
 }
 
+// logEntryTime 解析日志时间；无法解析时返回零值并排到较后位置。
 func logEntryTime(entry LogEntry) time.Time {
 	if parsed, err := time.Parse(time.RFC3339Nano, entry.Time); err == nil {
 		return parsed

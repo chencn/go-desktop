@@ -1,4 +1,4 @@
-# Cross-compile Wails v3 apps to any platform
+# 用于 Wails v3 跨平台 CGO 构建的工具镜像。
 #
 # Darwin: Zig + macOS SDK
 # Linux: Native GCC when host matches target, Zig for cross-arch
@@ -17,21 +17,21 @@ FROM golang:1.25-bookworm
 
 ARG TARGETARCH
 
-# Install base tools, GCC, and GTK/WebKit dev packages
+# Linux 目标需要 GTK/WebKit 头文件；Darwin/Windows 目标主要复用 Node、Go 和 Zig。
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl xz-utils nodejs npm pkg-config gcc libc6-dev \
     libgtk-3-dev libwebkit2gtk-4.1-dev \
     libgtk-4-dev libwebkitgtk-6.0-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Zig - automatically selects correct binary for host architecture
+# Zig 版本固定，按构建机架构选择二进制，保证 CC wrapper 路径稳定。
 ARG ZIG_VERSION=0.14.0
 RUN ZIG_ARCH=$(case "${TARGETARCH}" in arm64) echo "aarch64" ;; *) echo "x86_64" ;; esac) && \
     curl -L "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-${ZIG_ARCH}-${ZIG_VERSION}.tar.xz" \
     | tar -xJ -C /opt \
     && ln -s /opt/zig-linux-${ZIG_ARCH}-${ZIG_VERSION}/zig /usr/local/bin/zig
 
-# Download macOS SDK (required for darwin targets)
+# Darwin 目标必须带 macOS SDK，否则 Zig 只能编译纯 C/Go，无法链接系统框架。
 ARG MACOS_SDK_VERSION=14.5
 RUN curl -L "https://github.com/joseluisq/macosx-sdks/releases/download/${MACOS_SDK_VERSION}/MacOSX${MACOS_SDK_VERSION}.sdk.tar.xz" \
     | tar -xJ -C /opt \
@@ -39,10 +39,9 @@ RUN curl -L "https://github.com/joseluisq/macosx-sdks/releases/download/${MACOS_
 
 ENV MACOS_SDK_PATH=/opt/macos-sdk
 
-# Create Zig CC wrappers for cross-compilation targets
-# Darwin and Windows use Zig; Linux uses native GCC (run with --platform for cross-arch)
+# CC wrapper 会剥离 Wails/Go 传入但 Zig 目标不接受的参数；Linux 目标仍使用原生 GCC。
 
-# Darwin arm64
+# Darwin arm64 wrapper 指向 macOS SDK，并禁用 sanitizer 以避开交叉链接限制。
 COPY <<'ZIGWRAP' /usr/local/bin/zcc-darwin-arm64
 #!/bin/sh
 ARGS=""
@@ -62,7 +61,7 @@ exec zig cc -fno-sanitize=all -target aarch64-macos-none -isysroot /opt/macos-sd
 ZIGWRAP
 RUN chmod +x /usr/local/bin/zcc-darwin-arm64
 
-# Darwin amd64
+# Darwin amd64 wrapper 与 arm64 保持同一 SDK，只切换 target triple。
 COPY <<'ZIGWRAP' /usr/local/bin/zcc-darwin-amd64
 #!/bin/sh
 ARGS=""
@@ -82,7 +81,7 @@ exec zig cc -fno-sanitize=all -target x86_64-macos-none -isysroot /opt/macos-sdk
 ZIGWRAP
 RUN chmod +x /usr/local/bin/zcc-darwin-amd64
 
-# Windows amd64 - uses Zig's bundled mingw
+# Windows amd64 使用 Zig 内置 mingw，过滤部分 GNU ld 参数。
 COPY <<'ZIGWRAP' /usr/local/bin/zcc-windows-amd64
 #!/bin/sh
 ARGS=""
@@ -102,7 +101,7 @@ exec zig cc -target x86_64-windows-gnu $ARGS
 ZIGWRAP
 RUN chmod +x /usr/local/bin/zcc-windows-amd64
 
-# Windows arm64 - uses Zig's bundled mingw
+# Windows arm64 同样使用 Zig 内置 mingw，避免依赖宿主机交叉工具链。
 COPY <<'ZIGWRAP' /usr/local/bin/zcc-windows-arm64
 #!/bin/sh
 ARGS=""
@@ -122,7 +121,7 @@ exec zig cc -target aarch64-windows-gnu $ARGS
 ZIGWRAP
 RUN chmod +x /usr/local/bin/zcc-windows-arm64
 
-# Build script
+# build.sh 是容器入口，按 os/arch 设置 GOOS、GOARCH、CC 和最终二进制名。
 COPY <<'SCRIPT' /usr/local/bin/build.sh
 #!/bin/sh
 set -e
@@ -172,12 +171,12 @@ esac
 export CGO_ENABLED=1
 export CGO_CFLAGS="-w"
 
-# Build frontend if exists and not already built (host may have built it)
+# 如果宿主机未提前构建前端，则在容器内补构建；已有 dist 时避免重复 npm install。
 if [ -d "frontend" ] && [ -f "frontend/package.json" ] && [ ! -d "frontend/dist" ]; then
     (cd frontend && npm install --silent && npm run build --silent)
 fi
 
-# Build
+# 生产构建默认带 production tag；Windows 额外使用 windowsgui 子系统。
 APP=${APP_NAME:-$(basename $(pwd))}
 mkdir -p bin
 

@@ -16,12 +16,17 @@ import (
 )
 
 const (
-	licenseKeyConfig         = "license.key"
-	licenseDeviceCodeConfig  = "license.device_code"
+	// license.key 保存归一化后的离线授权码。
+	licenseKeyConfig = "license.key"
+	// license.device_code 记录最近一次授权成功时的设备码，便于排查设备变更。
+	licenseDeviceCodeConfig = "license.device_code"
+	// license.validated_at 记录最近一次验签通过的 UTC 时间。
 	licenseValidatedAtConfig = "license.validated_at"
-	licenseLastErrorConfig   = "license.last_error"
+	// license.last_error 记录最近一次授权失败原因，供授权页展示。
+	licenseLastErrorConfig = "license.last_error"
 )
 
+// LicenseStatus 是前端授权页消费的运行时授权状态。
 type LicenseStatus struct {
 	Enabled    bool   `json:"enabled"`
 	Required   bool   `json:"required"`
@@ -32,16 +37,19 @@ type LicenseStatus struct {
 	LastError  string `json:"lastError,omitempty"`
 }
 
+// GetLicenseStatus API 方法，读取授权状态；未授权也允许调用，便于前端展示设备码。
 func (api *API) GetLicenseStatus() (status LicenseStatus, err error) {
 	defer api.recoverError("读取授权状态", &err)
 	return api.runtime.GetLicenseStatus(), nil
 }
 
+// ActivateLicense API 方法，验签并持久化授权码。
 func (api *API) ActivateLicense(licenseKey string) (status LicenseStatus, err error) {
 	defer api.recoverError("激活授权", &err)
 	return api.runtime.ActivateLicense(licenseKey)
 }
 
+// GetLicenseStatus 根据当前授权模式、设备码、公钥和已保存授权码计算状态。
 func (s *Runtime) GetLicenseStatus() LicenseStatus {
 	if !s.licenseRequired() {
 		return LicenseStatus{Authorized: true, Message: "授权未启用"}
@@ -68,6 +76,7 @@ func (s *Runtime) GetLicenseStatus() LicenseStatus {
 	return status
 }
 
+// ActivateLicense 验证输入授权码；成功后保存授权码、设备码和校验时间，失败时保存 last_error。
 func (s *Runtime) ActivateLicense(code string) (LicenseStatus, error) {
 	if !s.licenseRequired() {
 		return s.GetLicenseStatus(), nil
@@ -98,10 +107,12 @@ func (s *Runtime) ActivateLicense(code string) (LicenseStatus, error) {
 	return status, nil
 }
 
+// licenseRequired 判断当前构建是否启用强制授权。
 func (s *Runtime) licenseRequired() bool {
 	return strings.EqualFold(strings.TrimSpace(s.licenseMode), "required")
 }
 
+// currentLicenseDeviceCode 返回设备码覆盖、测试注入函数或平台机器码派生结果。
 func (s *Runtime) currentLicenseDeviceCode() string {
 	if strings.TrimSpace(s.licenseDeviceCode) != "" {
 		return strings.TrimSpace(s.licenseDeviceCode)
@@ -112,6 +123,7 @@ func (s *Runtime) currentLicenseDeviceCode() string {
 	return machineid.DeviceCode()
 }
 
+// storedLicenseKey 从 SQLite KV 读取已保存授权码；读取失败按未授权处理。
 func (s *Runtime) storedLicenseKey() string {
 	items, err := s.configItemsByKey(context.Background())
 	if err != nil {
@@ -120,6 +132,7 @@ func (s *Runtime) storedLicenseKey() string {
 	return items[licenseKeyConfig].Value
 }
 
+// verifyLicenseKey 用构建期注入的 Ed25519 公钥验证离线授权码。
 func (s *Runtime) verifyLicenseKey(code string, deviceCode string) (LicenseStatus, error) {
 	publicKey, err := base64.RawURLEncoding.DecodeString(strings.TrimSpace(s.licensePublicKey))
 	if err != nil || len(publicKey) != ed25519.PublicKeySize {
@@ -141,6 +154,8 @@ func (s *Runtime) verifyLicenseKey(code string, deviceCode string) (LicenseStatu
 	return LicenseStatus{Authorized: true, ExpiresAt: expiresAt}, nil
 }
 
+// requireAuthorized 是受保护 Wails API 的统一授权门禁。
+// GetLicenseStatus / ActivateLicense 不调用它，避免用户未授权时无法激活。
 func (api *API) requireAuthorized() error {
 	if api == nil || api.runtime == nil {
 		return errors.New("授权状态不可用")
@@ -159,6 +174,7 @@ func (api *API) requireAuthorized() error {
 	return errors.New(message)
 }
 
+// normaliseLicenseKey 去掉授权码中的空白，允许用户粘贴带换行的授权码。
 func normaliseLicenseKey(value string) string {
 	return strings.Join(strings.Fields(value), "")
 }

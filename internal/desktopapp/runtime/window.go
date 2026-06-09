@@ -1,41 +1,31 @@
-// ============================================================================
-// 文件: app/window.go
-// 描述: 窗口管理模块
-//
-// 功能概述:
-// - 主窗口显示和隐藏
-// - 应用退出逻辑
-// - 单实例处理
-// - 关闭到托盘策略
-// ============================================================================
+// 文件职责：管理主窗口显示、退出、关闭到托盘和第二实例启动记录。
 
 package runtime
 
 import (
-	goruntime "runtime" // 运行时信息，获取操作系统类型
-	"strings"           // 字符串处理
-	"time"              // 时间包
+	goruntime "runtime"
+	"strings"
+	"time"
 )
 
 // StartupLaunch 描述本次启动是否来自需要特殊窗口行为的启动入口。
 type StartupLaunch struct {
 	// Hidden 表示启动入口要求默认隐藏主窗口。
-	Hidden bool // Hidden 保存 Hidden 对应的数据，供当前实体的调用方读取或持久化。
+	Hidden bool
 
 	// DesktopShortcut 表示本次启动来自应用创建的桌面快捷方式。
-	DesktopShortcut bool // DesktopShortcut 保存 DesktopShortcut 对应的数据，供当前实体的调用方读取或持久化。
+	DesktopShortcut bool
 }
 
-// ShowMainWindow API 方法，显示主窗口
+// ShowMainWindow API 方法，显示主窗口。
 func (api *API) ShowMainWindow() (err error) {
 	defer api.recoverError("显示主窗口", &err)
 	api.runtime.ShowMainWindow()
 	return nil
 }
 
-// ShowMainWindow 显示主窗口
-// 如果窗口最小化则恢复，如果未最大化则最大化
-// Windows 平台会先设置置顶再取消，确保窗口可见
+// ShowMainWindow 显示主窗口。
+// Windows 平台会短暂置顶再取消，避免从托盘或第二实例唤起时窗口停在其他窗口后面。
 func (s *Runtime) ShowMainWindow() {
 	s.lock.RLock()
 	window := s.mainWindow
@@ -71,15 +61,14 @@ func (s *Runtime) ShowMainWindow() {
 	s.RecordLog("window", "窗口已显示")
 }
 
-// QuitApp API 方法，退出应用
+// QuitApp API 方法，退出应用。
 func (api *API) QuitApp() (err error) {
 	defer api.recoverError("退出应用", &err)
 	api.runtime.QuitApp()
 	return nil
 }
 
-// QuitApp 退出应用
-// 设置强制退出标志，记录日志，然后调用 Wails 退出
+// QuitApp 走显式退出路径：标记 forceQuit、记录 clean crash 状态，然后请求 Wails 退出。
 func (s *Runtime) QuitApp() {
 	s.lock.Lock()
 	s.forceQuit = true
@@ -95,22 +84,16 @@ func (s *Runtime) QuitApp() {
 	}
 }
 
-// ShouldHideOnClose 判断关闭窗口时是否应隐藏到托盘
-// 当设置为关闭到托盘且非强制退出时返回 true
-// 返回:
-//   - bool: 是否应隐藏
+// ShouldHideOnClose 判断窗口关闭事件是否应转为隐藏到托盘。
+// 显式退出路径会先设置 forceQuit，因此不会被托盘策略拦截。
 func (s *Runtime) ShouldHideOnClose() bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.settings.MinimizeToTray && !s.forceQuit
 }
 
-// RecordSecondInstance 记录第二实例启动请求
-// 当用户再次启动应用时，会记录启动参数和工作目录
-// 最多保留 20 条记录
-// 参数:
-//   - args: 启动参数
-//   - workingDir: 工作目录
+// RecordSecondInstance 记录第二实例启动请求，最多保留最近 20 条。
+// 第二实例来自桌面快捷方式时，也会写入启动来源日志。
 func (s *Runtime) RecordSecondInstance(args []string, workingDir string) {
 	record := SecondInstanceRecord{
 		Args:       append([]string(nil), args...),
@@ -141,7 +124,7 @@ func (s *Runtime) recordStartupLaunch(launch StartupLaunch, suffix string) {
 	s.RecordLog("startup", message)
 }
 
-// GetSecondInstanceRecords API 方法，获取第二实例记录
+// GetSecondInstanceRecords API 方法，获取第二实例记录。
 func (api *API) GetSecondInstanceRecords() (records []SecondInstanceRecord, err error) {
 	defer api.recoverError("读取第二实例记录", &err)
 	if err := api.requireAuthorized(); err != nil {
@@ -150,23 +133,15 @@ func (api *API) GetSecondInstanceRecords() (records []SecondInstanceRecord, err 
 	return api.runtime.GetSecondInstanceRecords(), nil
 }
 
-// GetSecondInstanceRecords 读取、解析或归一化 管理主窗口、托盘窗口状态和桌面端生命周期 需要的数据，并把结果返回给调用方。
+// GetSecondInstanceRecords 返回第二实例记录快照，调用方修改返回切片不会影响 Runtime 内部状态。
 func (s *Runtime) GetSecondInstanceRecords() []SecondInstanceRecord {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return append([]SecondInstanceRecord(nil), s.secondStart...)
 }
 
-// ParseExitRequest 解析命令行退出请求
-// 支持以下参数:
-//   - "-exit": 正常退出
-//   - "-force-exit" 或 "-installer-exit": 强制退出（安装器使用）
-//
-// 参数:
-//   - args: 命令行参数
-//
-// 返回:
-//   - ExitRequest: 退出请求信息
+// ParseExitRequest 解析命令行退出请求。
+// 支持 -exit、-force-exit 和安装器使用的 -installer-exit。
 func ParseExitRequest(args []string) ExitRequest {
 	for _, arg := range args {
 		normalised := normaliseArg(arg)
@@ -181,7 +156,7 @@ func ParseExitRequest(args []string) ExitRequest {
 }
 
 // ParseStartupLaunch 解析启动行为参数。
-// 目前只识别 --startup-hidden，用于 Wails3 Autostart 启动时隐藏主窗口。
+// 识别 --startup-hidden 和 --desktop-shortcut；normaliseArg 会兼容单横线形式。
 func ParseStartupLaunch(args []string) StartupLaunch {
 	var launch StartupLaunch
 	for _, arg := range args {
@@ -203,13 +178,7 @@ func (s *Runtime) ShouldStartHidden(startup StartupLaunch) bool {
 	return s.settings.AutoLaunch && s.settings.LaunchHiddenToTray && startup.Hidden
 }
 
-// normaliseArg 标准化命令行参数
-// 将 "--xxx" 转换为 "-xxx"
-// 参数:
-//   - arg: 原始参数
-//
-// 返回:
-//   - string: 标准化后的参数
+// normaliseArg 把 "--xxx" 归一化为 "-xxx"，便于兼容 Wails 自启和手动传参。
 func normaliseArg(arg string) string {
 	arg = strings.TrimSpace(arg)
 	if strings.HasPrefix(arg, "--") {

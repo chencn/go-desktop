@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/tooltip'
 
 defineProps<{
+  // content 是图标按钮的可访问解释文案，触发元素由默认 slot 提供。
   content: string
 }>()
 </script>

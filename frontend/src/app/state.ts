@@ -21,6 +21,7 @@ import {
 export type StartupApiKey = 'settings' | 'displayPreferences' | 'appInfo' | 'environmentInfo' | 'licenseStatus' | 'updateStatus' | 'logFiles' | 'logs'
 export type StartupApiCallState = 'idle' | 'loading' | 'ok' | 'error'
 
+// 单个启动 API 的读状态，用于启动诊断面板区分“未调用、调用中、成功、失败”。
 export type StartupApiStatus = {
   state: StartupApiCallState
   message: string
@@ -29,17 +30,21 @@ export type StartupApiStatus = {
 
 export type StartupApiStatusMap = Record<StartupApiKey, StartupApiStatus>
 
-// AppState 定义前端纯状态模型，更新只保存当前检查结果和当前状态。
+// 前端纯状态模型；更新链只保存最近一次检查结果和当前生命周期快照，不维护历史列表。
 export type AppState = {
+  // 启动一次性读取的运行时快照。
   appInfo?: AppInfo
   environmentInfo?: EnvironmentInfo
   licenseStatus?: LicenseStatus
+  // 授权页独立 loading/error，避免阻塞主页面初始化状态。
   licenseLoading: boolean
   licenseError: string
   settings?: Settings
   displayPreferences?: DisplayPreferences
+  // latestUpdateCheck 来自 CheckUpdate；updateStatus 来自后端状态机或事件流。
   latestUpdateCheck?: UpdateCheckResult
   updateStatus?: UpdateStatus
+  // 日志列表状态由 QueryLogs 的分页响应展开，currentLogQuery 保存最近一次筛选条件。
   logFiles: LogFileInfo[]
   selectedLogFileName: string
   logSource: string
@@ -51,10 +56,12 @@ export type AppState = {
   logPageSize: number
   logHasMore: boolean
   currentLogQuery: LogQuery
+  // 页面级操作状态：loading 覆盖启动流程，checking/downloading 覆盖更新按钮状态。
   loading: boolean
   checking: boolean
   downloading: boolean
   errorMessage: string
+  // 每个启动 API 的细粒度状态，不参与业务判断，只用于展示和排障。
   startupApiStatuses: StartupApiStatusMap
 }
 
@@ -91,7 +98,7 @@ export type AppAction =
   | { type: 'logQueryApplied'; payload: LogQuery }
   | { type: 'logsApplied'; payload: LogResponse }
 
-// initialAppState 保存前端默认状态。
+// 默认状态只使用前端常量；真实设置和显示偏好会在 initialise 阶段覆盖。
 export const initialAppState: AppState = {
   appInfo: undefined,
   environmentInfo: undefined,
@@ -149,7 +156,7 @@ export function defaultLogQuery(): LogQuery {
   }
 }
 
-// statusFromCheckResult 将一次更新检查结果映射为更新生命周期状态。
+// 将 CheckUpdate 的一次性结果转换为 UI 可消费的更新状态；真实下载进度仍以后端状态机为准。
 export function statusFromCheckResult(result: UpdateCheckResult): UpdateStatus {
   let status = 'idle'
   let errorReason = result.errorReason
@@ -181,7 +188,7 @@ export function statusFromCheckResult(result: UpdateCheckResult): UpdateStatus {
   }
 }
 
-// toMessage 统一把底层异常转成 UI 可展示消息。
+// 统一把 Wails/Go/JSON 包装过的异常转成 UI 可展示消息。
 export function toMessage(error: unknown) {
   if (error instanceof Error) {
     return normalizeErrorMessage(error.message)

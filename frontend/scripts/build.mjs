@@ -1,19 +1,16 @@
-// 文件职责：在前端构建前同步项目元数据并调用 Vite 构建。
-// 说明：注释覆盖文件、类型、方法和关键变量；代码执行路径保持不变。
+// 文件职责：先执行 TypeScript 类型检查，再按指定模式调用 Vite 构建。
 
 import { spawnSync } from 'node:child_process'
 
-// mode 保存 在前端构建前同步项目元数据并调用 Vite 构建 使用的配置、引用或中间结果。
+// --dev 走 development mode，生产构建默认开启 Vite 压缩。
 const mode = process.argv.includes('--dev') ? 'development' : 'production'
-// minify 保存 在前端构建前同步项目元数据并调用 Vite 构建 使用的配置、引用或中间结果。
 const minify = mode === 'production'
 
 run(process.execPath, ['node_modules/vue-tsc/bin/vue-tsc.js', '--noEmit'])
 run(process.execPath, ['node_modules/vite/bin/vite.js', 'build', '--mode', mode, ...(minify ? [] : ['--minify', 'false'])])
 
-// run 处理 在前端构建前同步项目元数据并调用 Vite 构建 中的用户动作、生命周期动作或数据转换。
+// 子命令继承 stdio，保持 vue-tsc / vite 的原始错误输出和退出码。
 function run(command, args) {
-  // result 保存 在前端构建前同步项目元数据并调用 Vite 构建 使用的配置、引用或中间结果。
   const result = spawnSync(command, args, {
     stdio: 'inherit',
     shell: false,

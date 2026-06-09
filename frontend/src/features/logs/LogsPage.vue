@@ -1,6 +1,6 @@
 <!--
   文件职责：渲染日志筛选、日志列表、清理入口和状态提示。
-  说明：注释覆盖组件脚本状态、方法、生命周期和模板结构；不改变渲染逻辑。
+  页面所有查询最终走 appStore.refreshLogs，对应后端 QueryLogs 分页过滤接口。
 -->
 
 <script setup lang="ts">
@@ -17,15 +17,14 @@ const knownLogScopes = ['all', 'app', 'process', 'window', 'startup', 'shortcut'
 // logPageSize 固定页面批量大小，避免大日志量一次性撑爆前端渲染。
 const logPageSize = 50
 
-// appStore 保存 Pinia store 实例，集中访问应用共享状态和动作。
 const appStore = useAppStore()
 // selectedLogFileName 保存当前文件选择；为空时后端默认读取当前每日文件。
 const selectedLogFileName = ref('')
 // keyword/scope/severity 是日志查询条件；变化后立即刷新第一页。
 const keyword = ref('')
-// scope 保存组件本地响应式状态，是模板渲染和事件处理的状态源。
+// scope 为后端日志作用域过滤值；all 表示不按来源过滤。
 const scope = ref('all')
-// severity 保存组件本地响应式状态，是模板渲染和事件处理的状态源。
+// severity 为后端日志级别过滤值；all 表示不按级别过滤。
 const severity = ref('all')
 // filtersOpen 默认关闭，让日志流成为首屏主体内容。
 const filtersOpen = ref(false)
@@ -33,21 +32,19 @@ const filtersOpen = ref(false)
 const fullscreen = ref(false)
 // autoRefresh 控制 5 秒轮询，适合跟踪安装器或运行时异常。
 const autoRefresh = ref(false)
-// clearDialogOpen 保存组件本地响应式状态，是模板渲染和事件处理的状态源。
+// clearDialogOpen 只控制二次确认；真正清理由 confirmClearLogs 触发后端 ClearLogs。
 const clearDialogOpen = ref(false)
-// timer 保存 渲染日志筛选、日志列表、清理入口和状态提示 使用的配置、引用或中间结果。
+// timer 保存自动刷新 interval id，组件卸载或关闭自动刷新时必须清理。
 let timer: number | undefined
 
-// logScopes 保存由响应式状态推导出的只读结果，模板直接消费该值。
+// logScopes 合并内置来源和当前查询结果中的动态来源，避免新后端 scope 无法筛选。
 const logScopes = computed(() => {
-  // scopes 保存 渲染日志筛选、日志列表、清理入口和状态提示 使用的配置、引用或中间结果。
   const scopes = new Set([...knownLogScopes, ...appStore.logs.map((log) => log.scope).filter(Boolean)])
   return Array.from(scopes)
 })
 
-// activeFilterCount 保存由响应式状态推导出的只读结果，模板直接消费该值。
+// activeFilterCount 只统计非默认筛选，供筛选按钮 badge 和重置按钮使用。
 const activeFilterCount = computed(() => {
-  // count 保存 渲染日志筛选、日志列表、清理入口和状态提示 使用的配置、引用或中间结果。
   let count = 0
   if (scope.value !== 'all') count += 1
   if (severity.value !== 'all') count += 1
@@ -55,17 +52,15 @@ const activeFilterCount = computed(() => {
   return count
 })
 
-// filterSummary 保存由响应式状态推导出的只读结果，模板直接消费该值。
+// filterSummary 展示当前查询条件，不参与后端请求构造。
 const filterSummary = computed(() => {
-  // parts 保存 渲染日志筛选、日志列表、清理入口和状态提示 使用的配置、引用或中间结果。
   const parts = [logScopeLabel(scope.value), logLevelLabel(severity.value)]
-  // value 保存 渲染日志筛选、日志列表、清理入口和状态提示 使用的配置、引用或中间结果。
   const value = keyword.value.trim()
   if (value) parts.push(`关键词：${value}`)
   return parts.join(' / ')
 })
 
-// Stat 保存 渲染日志筛选、日志列表、清理入口和状态提示 使用的配置、引用或中间结果。
+// Stat 是脚本内小型渲染组件，避免为日志统计条额外拆文件。
 const Stat = defineComponent({
   props: {
     label: { type: String, required: true },
@@ -80,7 +75,7 @@ const Stat = defineComponent({
   },
 })
 
-// buildQuery 处理 渲染日志筛选、日志列表、清理入口和状态提示 中的用户动作、生命周期动作或数据转换。
+// buildQuery 把页面筛选项转换成后端 LogQuery；page 由刷新入口显式传入。
 function buildQuery(page: number) {
   return {
     fileName: selectedLogFileName.value,
@@ -117,14 +112,14 @@ async function confirmClearLogs() {
   }
 }
 
-// clearFilters 处理 渲染日志筛选、日志列表、清理入口和状态提示 中的用户动作、生命周期动作或数据转换。
+// clearFilters 恢复本地筛选默认值，watch 会自动触发第一页刷新。
 function clearFilters() {
   keyword.value = ''
   scope.value = 'all'
   severity.value = 'all'
 }
 
-// watch 监听关键响应式状态变化，并把变更同步到派生状态或远端服务。
+// 筛选变化即刷新第一页；分页按钮会绕过这里传入目标页。
 watch([keyword, scope, severity], () => {
   void refreshLogs(1)
 })
@@ -141,7 +136,7 @@ watch(selectedLogFileName, () => {
   void refreshLogs(1)
 })
 
-// watch 监听关键响应式状态变化，并把变更同步到派生状态或远端服务。
+// 自动刷新复用当前页码，便于用户在翻页后继续观察同一页。
 watch(autoRefresh, (enabled) => {
   if (timer) {
     window.clearInterval(timer)
@@ -166,9 +161,8 @@ onUnmounted(() => {
   if (typeof document !== 'undefined') document.documentElement.classList.remove('is-log-fullscreen')
 })
 
-// logScopeLabel 处理 渲染日志筛选、日志列表、清理入口和状态提示 中的用户动作、生命周期动作或数据转换。
+// logScopeLabel 只本地化已知 scope；未知动态 scope 保留原值，方便定位新后端来源。
 function logScopeLabel(scope: string) {
-  // labels 保存 渲染日志筛选、日志列表、清理入口和状态提示 使用的配置、引用或中间结果。
   const labels: Record<string, string> = {
     all: '全部作用域',
     app: '应用',
@@ -187,9 +181,8 @@ function logScopeLabel(scope: string) {
   return labels[scope] ?? scope
 }
 
-// logLevelLabel 处理 渲染日志筛选、日志列表、清理入口和状态提示 中的用户动作、生命周期动作或数据转换。
+// logLevelLabel 保留 debug/info 等后端级别原文，避免改写影响排障搜索。
 function logLevelLabel(level: string) {
-  // labels 保存 渲染日志筛选、日志列表、清理入口和状态提示 使用的配置、引用或中间结果。
   const labels: Record<string, string> = {
     all: '全部级别',
     debug: 'debug',
@@ -211,7 +204,6 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
 </script>
 
 <template>
-  <!-- 模板结构：声明当前组件对外呈现的布局、插槽和交互入口。 -->
   <Teleport to="body" :disabled="!fullscreen">
     <div :class="cn('page-stack log-page', fullscreen && 'log-fullscreen', filtersOpen && 'has-open-filters')">
       <UiCard>

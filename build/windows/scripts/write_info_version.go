@@ -1,7 +1,6 @@
 //go:build ignore
 
-// 文件职责：把 Windows 版本资源模板写入构建产物。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：把已解析的应用版本写入 Windows version resource JSON。
 
 package main
 
@@ -15,7 +14,8 @@ import (
 	"github.com/chencn/go-desktop/internal/common/semver"
 )
 
-// main 是命令入口，负责解析启动上下文、装配依赖并启动核心流程。
+// main 读取生成的 info.json 模板，更新 fixed.file_version 和 info.0000 的版本字段后写入目标文件。
+// version 只接受 semver.Normalize 支持的数字版本，避免 Windows 资源里混入 tag 前缀或预发布文本。
 func main() {
 	version := flag.String("version", "", "version to inject")
 	input := flag.String("in", "", "source info.json path")
@@ -61,7 +61,7 @@ func main() {
 	}
 }
 
-// objectAt 封装 把 Windows 版本资源模板写入构建产物 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// objectAt 返回指定子对象；缺失或类型不匹配时创建空对象，让脚本可以修复最小模板。
 func objectAt(parent map[string]any, key string) map[string]any {
 	if value, ok := parent[key].(map[string]any); ok {
 		return value
@@ -71,7 +71,7 @@ func objectAt(parent map[string]any, key string) map[string]any {
 	return value
 }
 
-// exitf 封装 把 Windows 版本资源模板写入构建产物 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// exitf 输出失败原因并以非零状态退出，供构建任务捕获。
 func exitf(format string, args ...any) {
 	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)

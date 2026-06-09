@@ -1,21 +1,14 @@
-// ============================================================================
-// 文件: tests/app/service_test.go
-// 描述: 应用服务测试
-//
-// 功能概述:
-// - 测试设置保存和加载功能
-// - 测试设置合并和默认值处理
-// ============================================================================
+// 文件职责：验证 app facade 暴露的设置、显示偏好、路径和窗口生命周期行为。
 
 package app_test
 
 import (
-	"path/filepath" // 路径处理
-	"runtime"       // 运行时信息
-	"strings"       // 字符串处理
-	"testing"       // 测试框架
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
 
-	"github.com/chencn/go-desktop/app" // 应用核心包
+	"github.com/chencn/go-desktop/app"
 )
 
 // TestSaveSettingsPersistsAndLoadsFromSQLiteConfig 测试设置持久化。
@@ -84,7 +77,7 @@ func TestLoadSettingsWritesSQLiteDefaults(t *testing.T) {
 	}
 }
 
-// TestSaveSettingsAllowsNeverCleanLogRetention 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestSaveSettingsAllowsNeverCleanLogRetention 验证 -1 是“永不清理日志”的显式业务值，保存时不能被默认值覆盖。
 func TestSaveSettingsAllowsNeverCleanLogRetention(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "go-desktop.db")
 	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
@@ -109,7 +102,7 @@ func TestSaveSettingsAllowsNeverCleanLogRetention(t *testing.T) {
 	}
 }
 
-// TestSaveSettingsNormalisesUnsupportedUpdateInterval 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestSaveSettingsNormalisesUnsupportedUpdateInterval 验证后端会裁决非法设置值，而不是把前端传入原样落库。
 func TestSaveSettingsNormalisesUnsupportedUpdateInterval(t *testing.T) {
 	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: filepath.Join(t.TempDir(), "go-desktop.db")})
 	defer runtimeService.Shutdown()
@@ -137,7 +130,7 @@ func TestSaveSettingsNormalisesUnsupportedUpdateInterval(t *testing.T) {
 	}
 }
 
-// TestDisplayPreferencesPersistThroughSQLiteConfig 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDisplayPreferencesPersistThroughSQLiteConfig 验证显示偏好走 SQLite 配置项持久化，并在新 Runtime 中恢复。
 func TestDisplayPreferencesPersistThroughSQLiteConfig(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "go-desktop.db")
 	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
@@ -173,7 +166,7 @@ func TestDisplayPreferencesPersistThroughSQLiteConfig(t *testing.T) {
 	}
 }
 
-// TestDisplayPreferencesNormaliseInvalidValues 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDisplayPreferencesNormaliseInvalidValues 验证非法显示偏好回退到默认值，同时保留合法输入。
 func TestDisplayPreferencesNormaliseInvalidValues(t *testing.T) {
 	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: filepath.Join(t.TempDir(), "go-desktop.db")})
 	defer runtimeService.Shutdown()
@@ -386,7 +379,7 @@ func TestDisplayPreferencesAntDNormalisesManagedAndUnsupportedValues(t *testing.
 	}
 }
 
-// TestDefaultRuntimePathsUseExecutableDataDirectory 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDefaultRuntimePathsUseExecutableDataDirectory 验证默认数据库、日志、崩溃状态和更新缓存都落在可写 data 目录。
 func TestDefaultRuntimePathsUseExecutableDataDirectory(t *testing.T) {
 	databasePath := filepath.ToSlash(app.DefaultDatabasePath("go-desktop"))
 	logFilePath := filepath.ToSlash(app.DefaultLogFilePath("go-desktop"))
@@ -411,7 +404,7 @@ func TestDefaultRuntimePathsUseExecutableDataDirectory(t *testing.T) {
 	}
 }
 
-// TestGetEnvironmentInfoReturnsRuntimeAndStoragePaths 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestGetEnvironmentInfoReturnsRuntimeAndStoragePaths 验证环境诊断返回运行时信息和当前配置的存储路径。
 func TestGetEnvironmentInfoReturnsRuntimeAndStoragePaths(t *testing.T) {
 	tempDir := t.TempDir()
 	databasePath := filepath.Join(tempDir, "go-desktop.db")
@@ -443,7 +436,7 @@ func TestGetEnvironmentInfoReturnsRuntimeAndStoragePaths(t *testing.T) {
 	}
 }
 
-// TestParseExitRequestRecognisesInstallerAndForceExitArgs 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestParseExitRequestRecognisesInstallerAndForceExitArgs 验证安装器/用户退出参数在 Wails 启动前就能被识别。
 func TestParseExitRequestRecognisesInstallerAndForceExitArgs(t *testing.T) {
 	cases := []struct {
 		name string
@@ -492,7 +485,7 @@ func TestParseExitRequestRecognisesInstallerAndForceExitArgs(t *testing.T) {
 	}
 }
 
-// TestRuntimeHideOnCloseHonoursSettingAndQuitState 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestRuntimeHideOnCloseHonoursSettingAndQuitState 验证关闭到托盘只受设置和显式退出状态控制，不拦截真正退出。
 func TestRuntimeHideOnCloseHonoursSettingAndQuitState(t *testing.T) {
 	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: filepath.Join(t.TempDir(), "go-desktop.db")})
 	defer runtimeService.Shutdown()
@@ -546,7 +539,7 @@ func TestSaveSettingsReturnsErrorWhenConfigStoreUnavailable(t *testing.T) {
 	}
 }
 
-// TestRecordSecondInstanceStoresCopyAndCapsHistory 验证 service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestRecordSecondInstanceStoresCopyAndCapsHistory 验证第二实例参数会复制保存，并限制历史数量避免无界增长。
 func TestRecordSecondInstanceStoresCopyAndCapsHistory(t *testing.T) {
 	runtimeService := app.NewRuntime(app.ServiceOptions{})
 	args := []string{"go-desktop.exe", "--installer-exit"}

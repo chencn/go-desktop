@@ -1,5 +1,4 @@
-// 文件职责：验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：验证前端模块边界、设计文档合同、shadcn/AntD 结构和更新/授权页面职责。
 
 package frontend_test
 
@@ -10,7 +9,7 @@ import (
 	"testing"
 )
 
-// TestAppRootStaysAsCompositionRoot 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestAppRootStaysAsCompositionRoot 验证 App.vue 只装配全局状态、门禁和页面出口，不回流具体业务流程。
 func TestAppRootStaysAsCompositionRoot(t *testing.T) {
 	appRoot := readRootFile(t, "frontend", "src", "App.vue")
 
@@ -30,7 +29,7 @@ func TestAppRootStaysAsCompositionRoot(t *testing.T) {
 	}
 }
 
-// TestFrontendFeatureBoundariesExist 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestFrontendFeatureBoundariesExist 验证页面、store、shared/ui wrapper 和 shadcn primitive 的预期目录边界存在。
 func TestFrontendFeatureBoundariesExist(t *testing.T) {
 	for _, path := range []string{
 		filepath.Join("frontend", "src", "App.vue"),
@@ -95,7 +94,7 @@ func TestTestFilesStayInDedicatedTestsModule(t *testing.T) {
 	}
 }
 
-// TestShadcnPrimitivesAreGloballyRegistered 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestShadcnPrimitivesAreGloballyRegistered 验证全局 Ui* 注册集中在 shared/ui/plugin.ts，业务页不用重复 import primitive。
 func TestShadcnPrimitivesAreGloballyRegistered(t *testing.T) {
 	main := readRootFile(t, "frontend", "src", "main.ts")
 	uiPlugin := readRootFile(t, "frontend", "src", "shared", "ui", "plugin.ts")
@@ -150,7 +149,7 @@ func TestDialogsDoNotCloseFromOutsideClick(t *testing.T) {
 	}
 }
 
-// TestShadcnCompositionReplacesHandRolledControls 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestShadcnCompositionReplacesHandRolledControls 验证设置、日志、更新弹窗和顶栏继续组合 shadcn primitive，不回退成手写控件。
 func TestShadcnCompositionReplacesHandRolledControls(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
@@ -200,7 +199,7 @@ func TestShadcnCompositionReplacesHandRolledControls(t *testing.T) {
 	}
 }
 
-// TestDesignDocumentsShadcnVueWorkflow 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDesignDocumentsShadcnVueWorkflow 验证 DESIGN.md 记录 shadcn-vue 查询、添加和全局注册流程。
 func TestDesignDocumentsShadcnVueWorkflow(t *testing.T) {
 	design := readRootFile(t, "DESIGN.md")
 
@@ -218,7 +217,7 @@ func TestDesignDocumentsShadcnVueWorkflow(t *testing.T) {
 	}
 }
 
-// TestDesignDocumentsEngineeringHardRules 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDesignDocumentsEngineeringHardRules 验证 DESIGN.md 和 .gitignore 继续声明测试、临时产物和界面工程硬约束。
 func TestDesignDocumentsEngineeringHardRules(t *testing.T) {
 	design := readRootFile(t, "DESIGN.md")
 	gitignore := readRootFile(t, ".gitignore")
@@ -253,7 +252,7 @@ func TestDesignDocumentsEngineeringHardRules(t *testing.T) {
 	}
 }
 
-// TestDesignDocumentMatchesCurrentSettingsContract 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDesignDocumentMatchesCurrentSettingsContract 验证 DESIGN.md 没有保留旧设置模型和过时测试命令。
 func TestDesignDocumentMatchesCurrentSettingsContract(t *testing.T) {
 	design := readRootFile(t, "DESIGN.md")
 
@@ -288,7 +287,7 @@ func TestDesignDocumentMatchesCurrentSettingsContract(t *testing.T) {
 	}
 }
 
-// TestUpdateIsGlobalIconNotStandalonePage 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestUpdateIsGlobalIconNotStandalonePage 验证更新入口属于顶栏图标和弹窗，不重新变成导航页面。
 func TestUpdateIsGlobalIconNotStandalonePage(t *testing.T) {
 	appRoot := readRootFile(t, "frontend", "src", "App.vue")
 	views := readRootFile(t, "frontend", "src", "shared", "views.ts")
@@ -540,7 +539,7 @@ func TestFrontendHasLicenseGate(t *testing.T) {
 	}
 }
 
-// TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings 验证显示偏好和后端设置在设置页保持独立保存链路。
 func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	displayState := readRootFile(t, "frontend", "src", "app", "display.ts")
@@ -668,7 +667,7 @@ func TestGeneratedAppBindingsDoNotExposeInternalPackages(t *testing.T) {
 	}
 }
 
-// TestSettingsPageOnlyContainsEditableSettings 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestSettingsPageOnlyContainsEditableSettings 验证设置页只放可编辑状态，不展示只读版本、路径或环境信息。
 func TestSettingsPageOnlyContainsEditableSettings(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 
@@ -726,7 +725,7 @@ func TestSettingsPageOnlyContainsEditableSettings(t *testing.T) {
 	}
 }
 
-// TestSettingsPageMirrorsShadcnVueCreateControls 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestSettingsPageMirrorsShadcnVueCreateControls 验证显示偏好控件继续映射 shadcn-vue create 的可调轴。
 func TestSettingsPageMirrorsShadcnVueCreateControls(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	displayState := readRootFile(t, "frontend", "src", "app", "display.ts")
@@ -810,7 +809,7 @@ func TestSettingsPageMirrorsShadcnVueCreateControls(t *testing.T) {
 	}
 }
 
-// TestDisplayCssUsesCurrentColorAxes 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDisplayCssUsesCurrentColorAxes 验证 CSS dataset 和变量仍覆盖当前支持的颜色、菜单、密度和字号轴。
 func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 	styles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "styles.css"), "\r\n", "\n")
 
@@ -859,7 +858,7 @@ func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 	}
 }
 
-// TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation 验证彩色图标只用于语义点缀，不覆盖当前激活导航状态。
 func TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
@@ -1151,7 +1150,7 @@ func TestLogsPageKeepsFileSelectorInsideFilterPanel(t *testing.T) {
 	}
 }
 
-// TestMenuAccentCssOnlyUsesSupportedValues 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestMenuAccentCssOnlyUsesSupportedValues 验证菜单强调样式只依赖当前支持的 CSS dataset 值。
 func TestMenuAccentCssOnlyUsesSupportedValues(t *testing.T) {
 	displayState := readRootFile(t, "frontend", "src", "app", "display.ts")
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
@@ -1182,7 +1181,7 @@ func TestMenuAccentCssOnlyUsesSupportedValues(t *testing.T) {
 	}
 }
 
-// TestTopbarUsesSharedNavigationAndResponsiveUtilityRow 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestTopbarUsesSharedNavigationAndResponsiveUtilityRow 验证顶栏复用 shared views 导航数据，并在窄屏保留工具区布局。
 func TestTopbarUsesSharedNavigationAndResponsiveUtilityRow(t *testing.T) {
 	appRoot := readRootFile(t, "frontend", "src", "App.vue")
 	appChrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
@@ -1664,7 +1663,7 @@ func TestAntDesignSchemeStylesNativeSelectOnly(t *testing.T) {
 	}
 }
 
-// TestDesignDocumentsCommentAndLoggingRequirements 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDesignDocumentsCommentAndLoggingRequirements 验证 DESIGN.md 继续覆盖注释、日志和临时调试产物规则。
 func TestDesignDocumentsCommentAndLoggingRequirements(t *testing.T) {
 	design := readRootFile(t, "DESIGN.md")
 
@@ -1683,7 +1682,7 @@ func TestDesignDocumentsCommentAndLoggingRequirements(t *testing.T) {
 	}
 }
 
-// TestFrontendPackageUsesVueStack 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestFrontendPackageUsesVueStack 验证前端依赖和 test script 保持 Vue/Pinia/Vitest 栈，不回退到 React。
 func TestFrontendPackageUsesVueStack(t *testing.T) {
 	packageJSON := readRootFile(t, "frontend", "package.json")
 
@@ -1712,7 +1711,7 @@ func TestFrontendPackageUsesVueStack(t *testing.T) {
 	}
 }
 
-// TestHeaderDoesNotExposeRepositoryOrGlobalUpdateAction 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestHeaderDoesNotExposeRepositoryOrGlobalUpdateAction 验证顶栏不展示仓库信息，也不塞入额外更新操作。
 func TestHeaderDoesNotExposeRepositoryOrGlobalUpdateAction(t *testing.T) {
 	appChrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
 
@@ -1729,7 +1728,7 @@ func TestHeaderDoesNotExposeRepositoryOrGlobalUpdateAction(t *testing.T) {
 	}
 }
 
-// TestHomePageDoesNotExposeUpdateWorkflowActions 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestHomePageDoesNotExposeUpdateWorkflowActions 验证首页不承担更新检查、安装或下次启动更新操作。
 func TestHomePageDoesNotExposeUpdateWorkflowActions(t *testing.T) {
 	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
 
@@ -1771,7 +1770,6 @@ func TestFrontendDoesNotTrackUpdateHistoryOrEvents(t *testing.T) {
 	}
 }
 
-// readRootFile 读取、解析或归一化 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 需要的数据，并把结果返回给调用方。
 func readRootFile(t *testing.T, parts ...string) string {
 	t.Helper()
 	data, err := os.ReadFile(rootPath(filepath.Join(parts...)))
@@ -1801,7 +1799,6 @@ func readAntDesignSchemeStyles(t *testing.T) string {
 	return strings.Join(files, "\n")
 }
 
-// rootPath 封装 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func rootPath(path string) string {
 	return filepath.Join("..", "..", path)
 }

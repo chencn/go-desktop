@@ -1,5 +1,4 @@
-// 文件职责：从 .env 文件加载环境变量后执行指定命令。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：加载仓库 .env 并为子命令补齐 Windows 自动化环境变量。
 
 package main
 
@@ -13,7 +12,8 @@ import (
 	"strings"
 )
 
-// main 是命令入口，负责解析启动上下文、装配依赖并启动核心流程。
+// main 保留子命令的 stdin/stdout/stderr，并把子命令退出码透传给调用方。
+// Windows 上无扩展名命令会优先解析为 .cmd，兼容 npm、wails3 等 shim。
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, "usage: envrun <command> [args...]")
@@ -61,7 +61,7 @@ func findDotEnv() string {
 	}
 }
 
-// mergeDotEnv 读取可选 .env；进程环境变量优先于 .env。
+// mergeDotEnv 读取可选 .env；进程环境变量优先于 .env，避免本地密钥或 CI 变量被覆盖。
 func mergeDotEnv(env []string, path string) []string {
 	file, err := os.Open(path)
 	if err != nil {
@@ -89,7 +89,8 @@ func mergeDotEnv(env []string, path string) []string {
 	return env
 }
 
-// windowsEnvWithDefaults 封装 从 .env 文件加载环境变量后执行指定命令 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// windowsEnvWithDefaults 补齐 Windows shell 里常见缺失变量。
+// 这些默认值防止 Go/npm/Wails 把缓存目录解析到仓库内的 %SystemDrive% 或空路径。
 func windowsEnvWithDefaults(env []string) []string {
 	if runtime.GOOS != "windows" {
 		return env
@@ -138,7 +139,7 @@ func windowsEnvWithDefaults(env []string) []string {
 	return env
 }
 
-// driveRoot 封装 从 .env 文件加载环境变量后执行指定命令 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// driveRoot 把 C: 形式补成可参与 filepath.Join 的根路径 C:\。
 func driveRoot(drive string) string {
 	if strings.HasSuffix(drive, `\`) || strings.HasSuffix(drive, `/`) {
 		return drive
@@ -146,7 +147,7 @@ func driveRoot(drive string) string {
 	return drive + `\`
 }
 
-// envValue 封装 从 .env 文件加载环境变量后执行指定命令 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// envValue 在环境变量列表里按 Windows 规则大小写不敏感查找值。
 func envValue(env []string, name string) string {
 	for _, entry := range env {
 		key, value, ok := strings.Cut(entry, "=")
@@ -157,7 +158,7 @@ func envValue(env []string, name string) string {
 	return ""
 }
 
-// setDefaultEnv 修改 从 .env 文件加载环境变量后执行指定命令 管理的状态、文件或外部副作用，并把失败原因向上返回。
+// setDefaultEnv 只填补缺失或空值，不覆盖已有非空环境变量。
 func setDefaultEnv(env []string, name, value string) []string {
 	if value == "" {
 		return env

@@ -1,5 +1,4 @@
 // 文件职责：把进程级输出和错误接入应用日志存储。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
 
 package runtime
 
@@ -39,7 +38,7 @@ func (s *Runtime) InstallProcessLogCapture() {
 	s.RecordLog("process", "进程日志捕获已启用")
 }
 
-// closeProcessLogCapture 恢复 log/slog/stdout/stderr 的捕获前状态。
+// closeProcessLogCapture 恢复 log/slog/stdout/stderr 的捕获前状态；Shutdown 会调用它避免全局 logger 泄漏。
 func (s *Runtime) closeProcessLogCapture() {
 	s.closeProcessStreamCapture()
 	s.lock.Lock()
@@ -54,7 +53,7 @@ func (s *Runtime) closeProcessLogCapture() {
 	slog.SetDefault(restore.slogLogger)
 }
 
-// installProcessStreamCapture 安装 stdout/stderr 捕获器，并替换旧捕获器。
+// installProcessStreamCapture 安装 stdout/stderr 捕获器，并把每行输出按内容推断严重级别。
 func (s *Runtime) installProcessStreamCapture() error {
 	capture, err := processutil.NewStreamCapture(
 		func(stream string, line string) {
@@ -95,17 +94,17 @@ func (s *Runtime) closeProcessStreamCapture() {
 // processLogRestore 保存 Runtime 安装全局日志捕获前的状态。
 type processLogRestore struct {
 	// logWriter 是标准库 log 原输出目标。
-	logWriter io.Writer // logWriter 保存 logWriter 对应的数据，供当前实体的调用方读取或持久化。
+	logWriter io.Writer
 	// logFlags 是标准库 log 原 flags。
-	logFlags int // logFlags 保存 logFlags 对应的数据，供当前实体的调用方读取或持久化。
+	logFlags int
 	// slogLogger 是结构化日志原默认 logger。
-	slogLogger *slog.Logger // slogLogger 保存 slogLogger 对应的数据，供当前实体的调用方读取或持久化。
+	slogLogger *slog.Logger
 }
 
 // processLogWriter 适配标准库 log.Writer 接口。
 type processLogWriter struct {
 	// runtime 是日志写入目标，负责继续写入文件日志和内存 tail。
-	runtime *Runtime // runtime 保存 runtime 对应的数据，供当前实体的调用方读取或持久化。
+	runtime *Runtime
 }
 
 // Write 捕获标准库 log 输出；返回 len(p) 避免影响调用方。
@@ -120,14 +119,14 @@ func (w processLogWriter) Write(p []byte) (int, error) {
 // processSlogHandler 适配 slog.Handler，把结构化日志写入 Runtime。
 type processSlogHandler struct {
 	// runtime 是日志写入目标。
-	runtime *Runtime // runtime 保存 runtime 对应的数据，供当前实体的调用方读取或持久化。
-	// attrs 是 WithAttrs 累积的结构化字段。
-	attrs []slog.Attr // attrs 保存 attrs 对应的数据，供当前实体的调用方读取或持久化。
+	runtime *Runtime
+	// attrs 是 WithAttrs 累积的结构化字段，会被拼到日志消息末尾。
+	attrs []slog.Attr
 	// group 是 WithGroup 累积的字段前缀。
-	group string // group 保存 group 对应的数据，供当前实体的调用方读取或持久化。
+	group string
 }
 
-// Enabled 接受所有级别，过滤交给日志页完成。
+// Enabled 接受所有级别；最终是否记录由 RecordLogWithSeverity 按 Runtime 设置过滤。
 func (h processSlogHandler) Enabled(_ context.Context, _ slog.Level) bool {
 	return true
 }

@@ -1,14 +1,12 @@
 //go:build ios
 
-// 文件职责：app_options_ios.go 中的业务流程、状态和数据结构。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：为 iOS 构建调整 Wails options，避开移动端 signal handler 限制。
 
 package main
 
 import "github.com/wailsapp/wails/v3/pkg/application"
 
-// modifyOptionsForIOS adjusts the application options for iOS
+// modifyOptionsForIOS 关闭默认 signal handler，避免 Go runtime 在 iOS 上触发 sigaltstack 崩溃。
 func modifyOptionsForIOS(opts *application.Options) {
-	// Disable signal handlers on iOS to prevent crashes
 	opts.DisableDefaultSignalHandler = true
 }

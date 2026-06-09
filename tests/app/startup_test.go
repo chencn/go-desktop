@@ -1,5 +1,4 @@
-// 文件职责：验证 startup_test.go 覆盖的生产行为、结构约束或构建脚本约束。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：验证启动来源、开机自启参数和授权构建变量接线。
 
 package app_test
 
@@ -11,7 +10,7 @@ import (
 	"github.com/chencn/go-desktop/app"
 )
 
-// TestParseStartupLaunchRecognisesHiddenFlag 验证 startup_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestParseStartupLaunchRecognisesHiddenFlag 验证启动参数能区分开机隐藏启动和桌面快捷方式启动。
 func TestParseStartupLaunchRecognisesHiddenFlag(t *testing.T) {
 	cases := []struct {
 		name         string
@@ -36,7 +35,7 @@ func TestParseStartupLaunchRecognisesHiddenFlag(t *testing.T) {
 	}
 }
 
-// TestShouldStartHiddenRequiresAutoLaunchSettingAndFlag 验证 startup_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestShouldStartHiddenRequiresAutoLaunchSettingAndFlag 验证隐藏启动必须同时满足设置和启动参数，手动启动不隐藏。
 func TestShouldStartHiddenRequiresAutoLaunchSettingAndFlag(t *testing.T) {
 	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: filepath.Join(t.TempDir(), "go-desktop.db")})
 	defer runtimeService.Shutdown()
@@ -65,7 +64,7 @@ func TestShouldStartHiddenRequiresAutoLaunchSettingAndFlag(t *testing.T) {
 	}
 }
 
-// TestStartupAutostartArgumentsOnlyIncludeHiddenWhenEnabled 验证 startup_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestStartupAutostartArgumentsOnlyIncludeHiddenWhenEnabled 验证开机自启快捷方式只在启用隐藏到托盘时附带参数。
 func TestStartupAutostartArgumentsOnlyIncludeHiddenWhenEnabled(t *testing.T) {
 	if args := app.StartupAutostartArguments(app.Settings{AutoLaunch: false, LaunchHiddenToTray: true}); len(args) != 0 {
 		t.Fatalf("expected no args when auto launch is disabled, got %#v", args)

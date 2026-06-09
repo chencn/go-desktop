@@ -12,6 +12,7 @@
   color: var(--foreground);
 }
 
+/* 彩色图标模式只改语义图标容器和 svg 颜色，不改变业务组件自己的状态色。 */
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-indigo {
   background: color-mix(in srgb, var(--icon-indigo) 16%, transparent);
   color: var(--icon-indigo);
@@ -102,6 +103,7 @@
   color: var(--icon-red);
 }
 
+/* 页面通用布局类必须保持 min-width: 0，避免日志、路径和版本号撑破桌面 shell。 */
 .page-stack {
   display: grid;
   width: min(100%, 1440px);

@@ -1,4 +1,4 @@
-// 文件职责：提供跨模块复用的网络错误分类工具。
+// Package neterr 提供跨模块复用的网络失败分类工具。
 
 package neterr
 
@@ -10,7 +10,8 @@ import (
 	"strings"
 )
 
-// IsOfflineError 判断错误是否属于网络离线或连接不可用场景。
+// IsOfflineError 判断错误是否属于网络离线、DNS、连接失败或超时场景。
+// 该函数用于 UI 降噪和更新源切换提示，不应把业务校验错误归类为离线。
 func IsOfflineError(err error) bool {
 	if err == nil {
 		return false

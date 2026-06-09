@@ -15,6 +15,7 @@ import ProgressCompat from './Progress.vue'
 import SwitchCompat from './Switch.vue'
 import TooltipCompat from './Tooltip.vue'
 
+// components 是全局 Ui* 注册白名单；业务页只能从这里拿项目 wrapper 或官方 primitive 别名。
 const components: Record<string, Component> = {
   UiAlertDialog: AlertDialogCompat,
   UiBadge: Badge,
@@ -43,6 +44,7 @@ const components: Record<string, Component> = {
 
 export const uiPlugin = {
   install(app: App) {
+    // 统一注册避免业务页重复 import primitive，也把 shared/ui wrapper 作为项目级行为边界。
     for (const [name, component] of Object.entries(components)) {
       app.component(name, component)
     }

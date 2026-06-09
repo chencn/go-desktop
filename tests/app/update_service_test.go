@@ -1,5 +1,4 @@
-// 文件职责：验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：验证 app 更新 facade 到 release checker、下载校验器和 pending/verified 缓存的完整行为。
 
 package app_test
 
@@ -36,7 +35,7 @@ func testAssetNames(version string) []string {
 	}
 }
 
-// TestDownloadUpdateVerifiesAndWaitsForUserInstall 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDownloadUpdateVerifiesAndWaitsForUserInstall 验证下载只进入 verified 状态，安装必须等待用户显式触发。
 func TestDownloadUpdateVerifiesAndWaitsForUserInstall(t *testing.T) {
 	payload := []byte("installer")
 
@@ -306,7 +305,7 @@ func TestCheckUpdateUsesLocalManifestWhenSourceIsLocal(t *testing.T) {
 	}
 }
 
-// TestInstallDownloadedUpdateStartsInstallerAfterVerifiedDownload 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestInstallDownloadedUpdateStartsInstallerAfterVerifiedDownload 验证只有 verified 安装包才会进入安装器 runner。
 func TestInstallDownloadedUpdateStartsInstallerAfterVerifiedDownload(t *testing.T) {
 	payload := []byte("installer")
 
@@ -345,7 +344,7 @@ func TestInstallDownloadedUpdateStartsInstallerAfterVerifiedDownload(t *testing.
 	}
 }
 
-// TestInstallDownloadedUpdateRequiresVerifiedDownload 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestInstallDownloadedUpdateRequiresVerifiedDownload 验证未完成下载校验时禁止直接安装。
 func TestInstallDownloadedUpdateRequiresVerifiedDownload(t *testing.T) {
 	payload := []byte("installer")
 
@@ -381,7 +380,7 @@ func TestInstallDownloadedUpdateRequiresVerifiedDownload(t *testing.T) {
 	}
 }
 
-// TestDownloadUpdateRejectsMissingSha256 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDownloadUpdateRejectsMissingSha256 验证缺少 SHA256 时不允许下载更新包。
 func TestDownloadUpdateRejectsMissingSha256(t *testing.T) {
 	runtime := app.NewRuntime(app.ServiceOptions{})
 	runtime.RecordUpdateCheckResult(githubrelease.CheckResult{
@@ -401,7 +400,7 @@ func TestDownloadUpdateRejectsMissingSha256(t *testing.T) {
 	}
 }
 
-// TestDownloadUpdateReportsChecksumMismatchAndDoesNotInstall 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDownloadUpdateReportsChecksumMismatchAndDoesNotInstall 验证校验失败会停在错误状态，不能启动安装器。
 func TestDownloadUpdateReportsChecksumMismatchAndDoesNotInstall(t *testing.T) {
 	payload := []byte("installer")
 
@@ -437,7 +436,7 @@ func TestDownloadUpdateReportsChecksumMismatchAndDoesNotInstall(t *testing.T) {
 	}
 }
 
-// TestDownloadUpdateSkipsOfflineDownload 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDownloadUpdateSkipsOfflineDownload 验证离线下载按 skipped 返回，避免把网络故障展示成安装失败。
 func TestDownloadUpdateSkipsOfflineDownload(t *testing.T) {
 	var installedPath string
 	cacheDir := t.TempDir()
@@ -531,7 +530,7 @@ func TestDownloadUpdateSerialisesConcurrentRequests(t *testing.T) {
 	}
 }
 
-// TestDownloadUpdateDoesNotExposeEnglishTransportError 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDownloadUpdateDoesNotExposeEnglishTransportError 验证底层传输错误不会原样暴露给用户界面。
 func TestDownloadUpdateDoesNotExposeEnglishTransportError(t *testing.T) {
 	cacheDir := t.TempDir()
 	manager := updater.NewManager(updater.Config{
@@ -559,7 +558,7 @@ func TestDownloadUpdateDoesNotExposeEnglishTransportError(t *testing.T) {
 	}
 }
 
-// TestInstallDownloadedUpdateDoesNotExposeEnglishRunnerError 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestInstallDownloadedUpdateDoesNotExposeEnglishRunnerError 验证安装器启动失败会转成中文用户提示。
 func TestInstallDownloadedUpdateDoesNotExposeEnglishRunnerError(t *testing.T) {
 	payload := []byte("installer")
 
@@ -800,7 +799,7 @@ func TestScheduleDownloadedUpdateOnStartupMarksCurrentStatus(t *testing.T) {
 	}
 }
 
-// TestScheduleDownloadedUpdateOnStartupRequiresVerifiedDownload 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestScheduleDownloadedUpdateOnStartupRequiresVerifiedDownload 验证未校验安装包不能写入 pending.json。
 func TestScheduleDownloadedUpdateOnStartupRequiresVerifiedDownload(t *testing.T) {
 	runtime := app.NewRuntime(app.ServiceOptions{})
 
@@ -810,13 +809,12 @@ func TestScheduleDownloadedUpdateOnStartupRequiresVerifiedDownload(t *testing.T)
 	}
 }
 
-// sha256Text 封装 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func sha256Text(payload []byte) string {
 	sum := sha256.Sum256(payload)
 	return hex.EncodeToString(sum[:])
 }
 
-// updateHTTPClient 修改 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 管理的状态、文件或外部副作用，并把失败原因向上返回。
+// updateHTTPClient 返回固定响应的下载客户端，避免测试依赖真实网络。
 func updateHTTPClient(status int, body []byte) *http.Client {
 	return &http.Client{Transport: updateRoundTripFunc(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
@@ -828,10 +826,8 @@ func updateHTTPClient(status int, body []byte) *http.Client {
 	})}
 }
 
-// updateRoundTripFunc 定义 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 使用的数据实体，字段会直接参与校验、渲染、持久化或平台适配。
 type updateRoundTripFunc func(*http.Request) (*http.Response, error)
 
-// RoundTrip 封装 验证 update_service_test.go 覆盖的生产行为、结构约束或构建脚本约束 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func (fn updateRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return fn(req)
 }

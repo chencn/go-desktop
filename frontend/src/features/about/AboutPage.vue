@@ -36,16 +36,20 @@ type TechGroup = {
 }
 
 const appStore = useAppStore()
+// now 只用于驱动运行时长刷新；关于页其余信息保持只读，不在这里重新拉取后端数据。
 const now = ref(Date.now())
 
+// uptimeTimer 每 30 秒刷新一次运行时长，避免页面常驻时显示停在首次渲染。
 let uptimeTimer: number | undefined
 
+// 应用身份优先使用后端 GetAppInfo，预览或未返回时回退到生成的项目 metadata。
 const appName = computed(() => appStore.appInfo?.name ?? projectMetadata.appName)
 const appDescription = computed(() => appStore.appInfo?.description ?? projectMetadata.description)
 const currentVersion = computed(() => appStore.appInfo?.version ?? projectMetadata.defaultVersion)
 const startedAtLabel = computed(() => formatDateTime(appStore.appInfo?.startedAt))
 const uptimeLabel = computed(() => formatUptime(appStore.appInfo?.startedAt, now.value))
 const platformLabel = computed(() => `${appStore.environmentInfo?.os ?? '未获取'} / ${appStore.environmentInfo?.arch ?? '未获取'}`)
+// releaseSourceLabel 反映当前设置中的 GitHub Release 来源，而不是固定写死仓库默认值。
 const releaseSourceLabel = computed(() => `${appStore.settings?.githubOwner ?? projectMetadata.github.owner}/${appStore.settings?.githubRepo ?? projectMetadata.github.repo}`)
 
 const appDetails = computed<DetailItem[]>(() => [

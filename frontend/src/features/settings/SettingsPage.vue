@@ -1,6 +1,6 @@
 <!--
   文件职责：渲染设置表单并把用户输入提交给应用状态 store。
-  说明：注释覆盖组件脚本状态、方法、生命周期和模板结构；不改变渲染逻辑。
+  业务设置保存到后端 Settings；显示偏好保存到独立 DisplayPreferences。
 -->
 
 <script setup lang="ts">
@@ -11,40 +11,39 @@ import { useAppStore } from '@/stores/app'
 import { defaultRuntimeSettings, type LogLevel, type Settings, type UpdateSource } from '@/api/wails'
 import SettingsColorSelect from './SettingsColorSelect.vue'
 
-// appStore 保存 Pinia store 实例，集中访问应用共享状态和动作。
 const appStore = useAppStore()
-// display 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// display 是全局显示偏好的响应式 facade，实际持久化仍通过 appStore.persistDisplayPreferences。
 const display = useDisplayPreferences()
 const settingsReady = computed(() => Boolean(appStore.settings))
 const displayReady = computed(() => Boolean(appStore.displayPreferences))
-// draft 保存组件本地响应式状态，是模板渲染和事件处理的状态源。
+// draft 是业务设置表单草稿；保存成功后以后端返回值为准重新覆盖。
 const draft = ref<Settings>({ ...defaultRuntimeSettings })
 // settingsSaveDelayMs 控制设置保存的短延迟，合并连续点击产生的多次后端写入。
 const settingsSaveDelayMs = 180
-// saveRevision 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// saveRevision 标记最新业务设置保存请求，旧 revision 进入队列后会被跳过。
 let saveRevision = 0
-// saveQueue 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// saveQueue 串行化 SaveSettings，避免快速点击导致后端写入乱序。
 let saveQueue = Promise.resolve()
 // saveTimer 保存业务设置防抖计时器。
 let saveTimer: ReturnType<typeof window.setTimeout> | undefined
-// displaySaveRevision 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// displaySaveRevision 标记最新显示偏好保存请求，配合队列丢弃过期写入。
 let displaySaveRevision = 0
-// displaySaveQueue 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// displaySaveQueue 串行化 SaveDisplayPreferences，保证落库顺序和 UI 最终状态一致。
 let displaySaveQueue = Promise.resolve()
 // displaySaveTimer 保存显示偏好防抖计时器。
 let displaySaveTimer: ReturnType<typeof window.setTimeout> | undefined
 // resetDisplayDialogOpen 控制恢复当前显示方案默认值的二次确认弹窗。
 const resetDisplayDialogOpen = ref(false)
 
-// styleOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// styleOptions 对应 shadcn-vue create 的 style；Ant Design 方案下该项由方案托管。
 const styleOptions: Array<[UIStyle, string]> = [['reka', 'Reka'], ['vega', 'Vega'], ['nova', 'Nova'], ['maia', 'Maia'], ['lyra', 'Lyra'], ['mira', 'Mira'], ['luma', 'Luma'], ['sera', 'Sera']]
 // displaySchemeOptions 保存显示偏好方案选项。
 const displaySchemeOptions: Array<[DisplayScheme, string]> = [['shadcn', 'shadcn'], ['antd', 'Ant Design']]
-// themeOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// themeOptions 控制全局亮暗模式，和具体显示方案的 profile 分开保存。
 const themeOptions: Array<[ThemeMode, string]> = [['light', '亮色'], ['dark', '暗色']]
-// baseOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// baseOptions 限定中性色盘；强调/主题/图表色使用更完整的 colorOptions。
 const baseOptions: Array<[BaseColor, string]> = [['neutral', 'Neutral'], ['stone', 'Stone'], ['zinc', 'Zinc'], ['mauve', 'Mauve'], ['olive', 'Olive'], ['mist', 'Mist'], ['taupe', 'Taupe']]
-// colorOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// colorOptions 同时服务主题色、强调色和图表色，值必须匹配 app/display.ts 的类型守卫。
 const colorOptions: Array<[AccentColor, string]> = [
   ['neutral', 'Neutral'],
   ['stone', 'Stone'],
@@ -71,36 +70,34 @@ const colorOptions: Array<[AccentColor, string]> = [
   ['violet', 'Violet'],
   ['yellow', 'Yellow'],
 ]
-// themeColorOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// 这些别名让模板表达具体业务含义，同时复用同一套色值枚举。
 const themeColorOptions: Array<[ThemeColor, string]> = colorOptions
-// accentOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
 const accentOptions: Array<[AccentColor, string]> = colorOptions
-// chartOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
 const chartOptions: Array<[ChartColor, string]> = colorOptions
-// iconToneOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// iconToneOptions 只影响语义图标是否彩色，不改变 lucide 图标本身。
 const iconToneOptions: Array<[IconTone, string]> = [['default', '默认颜色'], ['colorful', '彩色图标']]
-// menuOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// menuOptions 包含 shadcn 支持的透明变体；Ant Design 下会由 visibleMenuOptions 收窄。
 const menuOptions: Array<[MenuPreference, string]> = [['default', 'Default'], ['inverted', 'Inverted'], ['default-translucent', 'Default Translucent'], ['inverted-translucent', 'Inverted Translucent']]
-// menuAccentOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// menuAccentOptions 控制菜单 hover/active 背景强度。
 const menuAccentOptions: Array<[MenuAccent, string]> = [['subtle', 'Subtle'], ['bold', 'Bold']]
-// textOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// textOptions 写入 DOM dataset，由 CSS token 层统一响应。
 const textOptions: Array<[TextSize, string]> = [['small', '小'], ['normal', '正常'], ['medium', '中'], ['large', '大']]
-// radiusOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// radiusOptions 写入 --radius；Ant Design 下不暴露 none，避免破坏组件基线。
 const radiusOptions: Array<[Radius, string]> = [['default', '默认'], ['none', '无'], ['small', '小'], ['medium', '中'], ['large', '大']]
-// densityOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// densityOptions 控制页面和控件密度 token。
 const densityOptions: Array<[Density, string]> = [['compact', '紧凑'], ['comfortable', '舒展']]
-// cardBorderOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// cardBorderOptions 控制容器边框强度，不影响业务设置字段。
 const cardBorderOptions: Array<[CardBorder, string]> = [['visible', '清晰'], ['soft', '柔和'], ['hidden', '隐藏']]
 const antDesignManagedKeys: Array<keyof DisplayPreferences> = ['uiStyle', 'baseColor', 'themeColor', 'accentColor']
 const isAntDesign = computed(() => display.displayScheme.value === 'antd')
 const visibleMenuOptions = computed(() => isAntDesign.value ? menuOptions.filter(([value]) => value === 'default' || value === 'inverted') : menuOptions)
 const visibleRadiusOptions = computed(() => isAntDesign.value ? radiusOptions.filter(([value]) => value !== 'none') : radiusOptions)
-// updateIntervalOptions 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// updateIntervalOptions 必须和后端允许的检查间隔保持一致；非法值会回退默认值。
 const updateIntervalOptions = [1, 3, 6, 12]
 const updateSourceOptions: Array<[UpdateSource, string]> = [['github', 'GitHub Release'], ['local', '本地静态服务']]
 const logLevelOptions: Array<[LogLevel, string]> = [['debug', 'debug'], ['info', 'info'], ['warning', 'warning'], ['error', 'error']]
 
-// PreferenceRow 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
+// PreferenceRow 是显示偏好的脚本内行组件，避免只为固定排版拆分新文件。
 const PreferenceRow = defineComponent({
   props: {
     description: { type: String, required: true },
@@ -117,23 +114,21 @@ const PreferenceRow = defineComponent({
   },
 })
 
-// watch 监听关键响应式状态变化，并把变更同步到派生状态或远端服务。
+// 后端设置变化时重建草稿；归一化保证旧配置或异常值不会进入控件。
 watch(() => appStore.settings, (settings) => {
   if (settings) {
     draft.value = normaliseSettingsDraft({ ...defaultRuntimeSettings, ...settings })
   }
 }, { immediate: true })
 
-// persistSettingsPatch 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
+// persistSettingsPatch 合并单项变更并防抖调用 SaveSettings；失败时回滚到 store 中最后成功的设置。
 function persistSettingsPatch(patch: Partial<Settings>) {
   const base = appStore.settings
   if (!base) {
     appStore.applyAction({ type: 'errorSet', payload: '设置尚未加载，暂不能保存。' })
     return saveQueue
   }
-  // revision 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
   const revision = ++saveRevision
-  // next 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
   const next = normaliseSettingsDraft({ ...base, ...draft.value, ...patch })
   draft.value = next
 
@@ -148,7 +143,6 @@ function persistSettingsPatch(patch: Partial<Settings>) {
           return
         }
         try {
-          // saved 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
           const saved = await appStore.persistSettings(next)
           if (revision === saveRevision) {
             draft.value = { ...saved }
@@ -167,7 +161,7 @@ function persistSettingsPatch(patch: Partial<Settings>) {
   return saveQueue
 }
 
-// normaliseSettingsDraft 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
+// normaliseSettingsDraft 是前端提交前的最后一道约束；后端仍会再次校验并返回最终值。
 function normaliseSettingsDraft(settings: Settings): Settings {
   return {
     updateSource: normaliseUpdateSource(settings.updateSource),
@@ -188,9 +182,8 @@ function normaliseUpdateSource(value: string): UpdateSource {
   return updateSourceOptions.some(([source]) => source === value) ? value as UpdateSource : defaultRuntimeSettings.updateSource
 }
 
-// normaliseUpdateCheckIntervalHours 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
+// normaliseUpdateCheckIntervalHours 只接受 UI 暴露的枚举值，防止手工改 DOM 写入异常间隔。
 function normaliseUpdateCheckIntervalHours(value: number) {
-  // interval 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
   const interval = Number(value)
   return updateIntervalOptions.includes(interval) ? interval : defaultRuntimeSettings.updateCheckIntervalHours
 }
@@ -218,98 +211,88 @@ function asDisplayScheme(value: string) {
   persistDisplayPreferences({ immediate: true })
 }
 
-// asStyle 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
+// asStyle 只更新当前显示方案的 uiStyle，随后防抖保存完整 DisplayPreferences。
 function asStyle(value: string) {
   if (!ensureDisplayReady()) return
   display.setUiStyle(value as UIStyle)
   persistDisplayPreferences()
 }
 
-// asThemeMode 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
+// asThemeMode 切换全局亮暗模式；该值不随 shadcn/antd profile 分离。
 function asThemeMode(value: string) {
   if (!ensureDisplayReady()) return
   display.setThemeMode(value as ThemeMode)
   persistDisplayPreferences()
 }
 
-// asBaseColor 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
+// 下面这些 as* 方法都是控件边界：先写 display facade，再持久化完整偏好快照。
 function asBaseColor(value: string) {
   if (!ensureDisplayReady()) return
   display.setBaseColor(value as BaseColor)
   persistDisplayPreferences()
 }
 
-// asThemeColor 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asThemeColor(value: string) {
   if (!ensureDisplayReady()) return
   display.setThemeColor(value as ThemeColor)
   persistDisplayPreferences()
 }
 
-// asAccentColor 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asAccentColor(value: string) {
   if (!ensureDisplayReady()) return
   display.setAccentColor(value as AccentColor)
   persistDisplayPreferences()
 }
 
-// asChartColor 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asChartColor(value: string) {
   if (!ensureDisplayReady()) return
   display.setChartColor(value as ChartColor)
   persistDisplayPreferences()
 }
 
-// asIconTone 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asIconTone(value: string) {
   if (!ensureDisplayReady()) return
   display.setIconTone(value as IconTone)
   persistDisplayPreferences()
 }
 
-// asMenu 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asMenu(value: string) {
   if (!ensureDisplayReady()) return
   display.setMenu(value as MenuPreference)
   persistDisplayPreferences()
 }
 
-// asMenuAccent 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asMenuAccent(value: string) {
   if (!ensureDisplayReady()) return
   display.setMenuAccent(value as MenuAccent)
   persistDisplayPreferences()
 }
 
-// asRadius 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asRadius(value: string) {
   if (!ensureDisplayReady()) return
   display.setRadius(value as Radius)
   persistDisplayPreferences()
 }
 
-// asDensity 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asDensity(value: string) {
   if (!ensureDisplayReady()) return
   display.setDensity(value as Density)
   persistDisplayPreferences()
 }
 
-// asTextSize 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asTextSize(value: string) {
   if (!ensureDisplayReady()) return
   display.setTextSize(value as TextSize)
   persistDisplayPreferences()
 }
 
-// asCardBorder 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
 function asCardBorder(value: string) {
   if (!ensureDisplayReady()) return
   display.setCardBorder(value as CardBorder)
   persistDisplayPreferences()
 }
 
-// resetDisplayPreferencesAndPersist 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
+// resetDisplayPreferencesAndPersist 只恢复当前显示方案默认值，保留另一套方案和亮暗模式。
 function resetDisplayPreferencesAndPersist() {
   if (!ensureDisplayReady()) return
   display.resetDisplayPreferencesForCurrentScheme()
@@ -321,14 +304,12 @@ function confirmResetDisplayPreferences() {
   resetDisplayPreferencesAndPersist()
 }
 
-// persistDisplayPreferences 处理 渲染设置表单并把用户输入提交给应用状态 store 中的用户动作、生命周期动作或数据转换。
+// persistDisplayPreferences 保存 exportDisplayPreferences 的完整快照；切换显示方案需要 immediate 避免旧方案覆盖。
 function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
   if (!ensureDisplayReady()) {
     return displaySaveQueue
   }
-  // revision 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
   const revision = ++displaySaveRevision
-  // next 保存 渲染设置表单并把用户输入提交给应用状态 store 使用的配置、引用或中间结果。
   const next = exportDisplayPreferences()
 
   if (displaySaveTimer) {
@@ -364,7 +345,6 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
 </script>
 
 <template>
-  <!-- 模板结构：声明当前组件对外呈现的布局、插槽和交互入口。 -->
   <div class="page-stack">
     <section class="content-grid settings-layout">
       <UiCard class="settings-card-wide">

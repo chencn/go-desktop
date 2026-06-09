@@ -1,7 +1,6 @@
 //go:build ios
 
-// 文件职责：main_ios.go 中的业务流程、状态和数据结构。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：为 iOS Objective-C 启动层导出 Wails 应用入口。
 
 package main
 
@@ -9,19 +8,11 @@ import (
 	"C"
 )
 
-// For iOS builds, we need to export a function that can be called from Objective-C
-// This wrapper allows us to keep the original main.go unmodified
-
 //export WailsIOSMain
 func WailsIOSMain() {
-	// DO NOT lock the goroutine to the current OS thread on iOS!
-	// This causes signal handling issues:
+	// iOS 禁止把入口 goroutine 锁到当前 OS thread，否则 Go signal handler 会触发：
 	// "signal 16 received on thread with no signal stack"
 	// "fatal error: non-Go code disabled sigaltstack"
-	// iOS apps run in a sandboxed environment where the Go runtime's
-	// signal handling doesn't work the same way as desktop platforms.
-
-	// Call the actual main function from main.go
-	// This ensures all the user's code is executed
+	// 因此这里只做 Objective-C 可调用 wrapper，真正启动逻辑仍复用 main.go。
 	main()
 }

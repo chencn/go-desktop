@@ -12,9 +12,9 @@
 package runtime
 
 import (
-	"context" // 上下文包，用于数据库操作
+	"context"
 	"errors"
-	"fmt" // 格式化字符串
+	"fmt"
 
 	appsettings "github.com/chencn/go-desktop/internal/desktopapp/settings"
 )
@@ -42,12 +42,7 @@ func (api *API) GetSettings() (settings Settings, err error) {
 	return settings, nil
 }
 
-// SaveSettings API 方法，保存设置到内存和磁盘
-// 参数:
-//   - settings: 要保存的设置
-//
-// 返回:
-//   - Settings: 保存后的设置（经过标准化处理）
+// SaveSettings API 方法，保存标准化后的设置，并同步相关桌面集成。
 func (api *API) SaveSettings(settings Settings) (saved Settings, err error) {
 	defer api.recoverError("保存设置", &err)
 	if err := api.requireAuthorized(); err != nil {
@@ -67,7 +62,8 @@ func (api *API) SaveSettings(settings Settings) (saved Settings, err error) {
 	return api.runtime.SaveSettings(settings)
 }
 
-// SaveSettings 修改 读写用户设置并同步自启动、快捷方式等桌面副作用 管理的状态、文件或外部副作用，并把失败原因向上返回。
+// SaveSettings 先写 SQLite KV，再更新内存快照和日志级别，最后同步自启动/桌面快捷方式。
+// 系统集成失败时会回滚 SQLite、内存快照和日志级别，避免前端看到已保存但外部状态未同步的配置。
 func (s *Runtime) SaveSettings(settings Settings) (Settings, error) {
 	settings = normaliseSettings(settings)
 	s.RecordLogWithSeverity("settings", "保存设置：开始写入配置", "debug")
@@ -116,7 +112,7 @@ func (s *Runtime) rollbackSettingsAfterIntegrationFailure(previous Settings) err
 	return rollbackErr
 }
 
-// loadSettings 读取、解析或归一化 读写用户设置并同步自启动、快捷方式等桌面副作用 需要的数据，并把结果返回给调用方。
+// loadSettings 从 SQLite 配置项加载设置；读取失败时保留默认值并允许 Runtime 继续启动。
 func (s *Runtime) loadSettings() {
 	settings := defaultSettings()
 	items, err := s.configItemsByKey(context.Background())
@@ -128,29 +124,29 @@ func (s *Runtime) loadSettings() {
 	s.settings = fromDomainSettings(appsettings.FromConfigItems(items, toDomainSettings(settings)))
 }
 
-// defaultSettings 读取、解析或归一化 读写用户设置并同步自启动、快捷方式等桌面副作用 需要的数据，并把结果返回给调用方。
+// defaultSettings 返回 metadata 和 settings domain 层定义的默认设置。
 func defaultSettings() Settings {
 	return fromDomainSettings(appsettings.Default())
 }
 
-// normaliseSettings 封装 读写用户设置并同步自启动、快捷方式等桌面副作用 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// normaliseSettings 复用 settings domain 层的枚举、默认值和区间归一化规则。
 func normaliseSettings(settings Settings) Settings {
 	return fromDomainSettings(appsettings.Normalize(toDomainSettings(settings)))
 }
 
-// normaliseUpdateCheckIntervalHours 封装 读写用户设置并同步自启动、快捷方式等桌面副作用 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// normaliseUpdateCheckIntervalHours 只接受 settings domain 层声明的自动检查间隔。
 func normaliseUpdateCheckIntervalHours(value int) int {
 	return appsettings.NormalizeUpdateCheckIntervalHours(value)
 }
 
-// SettingsSnapshot 修改 读写用户设置并同步自启动、快捷方式等桌面副作用 管理的状态、文件或外部副作用，并把失败原因向上返回。
+// SettingsSnapshot 返回当前内存设置副本；调用方不能通过返回值修改 Runtime 状态。
 func (s *Runtime) SettingsSnapshot() Settings {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.settings
 }
 
-// settingsFromConfigItems 修改 读写用户设置并同步自启动、快捷方式等桌面副作用 管理的状态、文件或外部副作用，并把失败原因向上返回。
+// toDomainSettings 把 runtime API DTO 转成 settings domain 模型，持久化前仍会由 domain 层归一化。
 func toDomainSettings(value Settings) appsettings.Settings {
 	return appsettings.Settings{
 		UpdateSource:             value.UpdateSource,
@@ -167,6 +163,7 @@ func toDomainSettings(value Settings) appsettings.Settings {
 	}
 }
 
+// fromDomainSettings 把 settings domain 模型转回 Wails API 暴露的 DTO。
 func fromDomainSettings(value appsettings.Settings) Settings {
 	return Settings{
 		UpdateSource:             value.UpdateSource,

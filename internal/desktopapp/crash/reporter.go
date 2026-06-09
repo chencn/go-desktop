@@ -13,7 +13,7 @@ import (
 	"github.com/chencn/go-desktop/internal/platform/process"
 )
 
-// State 记录一次桌面进程启动的关键阶段。
+// State 记录一次桌面进程启动的关键阶段；状态文件未被清理时，下次启动会把它视为异常退出线索。
 type State struct {
 	PID       int      `json:"pid"`
 	Args      []string `json:"args"`
@@ -22,7 +22,7 @@ type State struct {
 	Phase     string   `json:"phase"`
 }
 
-// Reporter 是 main 最早安装的落盘日志，不能依赖 Runtime、SQLite 或 Wails。
+// Reporter 是 main 最早安装的落盘日志器，不能依赖 Runtime、SQLite 或 Wails。
 type Reporter struct {
 	logPath     string
 	statePath   string
@@ -40,7 +40,7 @@ func NewReporter(logPath string, statePath string) *Reporter {
 	}
 }
 
-// StartReporter 读取上次异常状态并安装本次最早期 crash 输出。
+// StartReporter 先读取上次未清理状态，再写入本次启动状态并安装 Go crash output。
 func StartReporter(logPath string, statePath string, args []string) (*Reporter, State, bool) {
 	previousCrash, hasPreviousCrash := ReadPreviousState(statePath)
 	reporter := NewReporter(logPath, statePath)
@@ -50,6 +50,7 @@ func StartReporter(logPath string, statePath string, args []string) (*Reporter, 
 }
 
 // ReadPreviousState 读取上次未清理的运行状态。
+// 已标记正常退出或 PID 仍存活的状态不会作为崩溃恢复。
 func ReadPreviousState(path string) (State, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -221,6 +222,7 @@ func (r *Reporter) writeState() {
 	_ = os.WriteFile(r.statePath, data, 0o644)
 }
 
+// PreviousLogTail 返回指定时间之前的 crash.log 尾部行，用于把上次异常退出线索导入运行日志。
 func PreviousLogTail(path string, limit int, notAfter string) []string {
 	path = strings.TrimSpace(path)
 	if path == "" || limit <= 0 {

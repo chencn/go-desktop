@@ -6,12 +6,12 @@
  * 功能概述:
  * - 定义所有后端 API 的 TypeScript 类型和接口
  * - 封装 Wails 绑定调用，提供类型安全的异步函数
- * - 支持前端预览模式（Browser 环境下提供 fallback 数据）
+ * - 支持显式前端预览模式（VITE_PREVIEW=true 时提供 fallback 数据）
  * - 处理外部链接打开（优先使用 Wails Browser API，降级到 window.open）
  *
  * 架构说明:
  * - 通过 Wails 的代码生成绑定（bindings/ 目录）调用 Go 后端方法
- * - 读取类 service() 调用可在预览模式降级；保存类调用必须抛错，避免假保存成功
+ * - 读取类 API 可在显式预览模式降级；保存类调用必须抛错，避免假保存成功
  * ============================================================================
  */
 
@@ -449,12 +449,13 @@ export type ServiceBinding = {
 
 /**
  * 获取 Wails 绑定服务实例
- * 将自动生成的绑定类型转换为 ServiceBinding
+ * 只使用 app facade 生成的绑定，避免直接依赖 internal runtime binding 路径。
  */
 function service(): ServiceBinding {
   return AppBinding.API as unknown as ServiceBinding
 }
 
+// 显式 preview 下主动制造绑定缺失错误，让读接口走受控 fallback。
 class WailsBindingUnavailableError extends Error {
   constructor(method: string) {
     super(`Wails 绑定不可用：${method}`)
@@ -470,6 +471,7 @@ function isSettingsTraceEnabled() {
   return import.meta.env.VITE_SETTINGS_TRACE === 'true'
 }
 
+// 所有 Wails API 调用先经过这里；真实桌面模式下绑定缺失必须暴露为错误。
 function binding<K extends keyof ServiceBinding>(method: K): NonNullable<ServiceBinding[K]> {
   if (isExplicitPreview()) {
     throw new WailsBindingUnavailableError(String(method))
@@ -486,6 +488,7 @@ function shouldUsePreviewFallback(error: unknown) {
   return isExplicitPreview() && error instanceof WailsBindingUnavailableError
 }
 
+// 显示偏好在 dev 浏览器预览中允许落到 localStorage，便于不连接 Wails 时调试主题。
 function shouldUseDisplayPreferencesPreviewStore(error: unknown) {
   if (shouldUsePreviewFallback(error)) return true
   if (!import.meta.env.DEV || !(error instanceof Error)) return false
@@ -503,8 +506,7 @@ function traceFrontend(message: string, payload?: unknown) {
 
 /**
  * 预览模式降级处理
- * 在非 Wails 环境下（浏览器预览），返回 fallback 数据而非抛出错误
- * 在 Wails 环境下，直接抛出原始错误
+ * 只在 VITE_PREVIEW=true 且绑定不可用时返回 fallback；真实后端错误必须继续向上抛。
  *
  * @param factory - 生成 fallback 数据的工厂函数
  * @param error - 原始错误
@@ -524,6 +526,7 @@ function throwSaveError(label: string, error: unknown): never {
   throw error instanceof Error ? error : new Error(`${label}失败。`)
 }
 
+// 显示偏好包含嵌套 profiles，preview store 读写前复制一层，避免共享默认对象引用。
 function cloneDisplayPreferences(value: DisplayPreferences): DisplayPreferences {
   return {
     ...value,
@@ -534,6 +537,7 @@ function cloneDisplayPreferences(value: DisplayPreferences): DisplayPreferences 
   }
 }
 
+// 仅供 preview/dev fallback 使用；真实运行时的来源是后端 SQLite KV。
 function readPreviewDisplayPreferences(): DisplayPreferences {
   if (typeof window === 'undefined') return cloneDisplayPreferences(defaultDisplayPreferences)
   const raw = window.localStorage.getItem(previewDisplayPreferencesStorageKey)
@@ -548,6 +552,7 @@ function readPreviewDisplayPreferences(): DisplayPreferences {
   }
 }
 
+// preview/dev 下模拟保存显示偏好，保证设置页刷新后仍能看到本地改动。
 function savePreviewDisplayPreferences(preferences: DisplayPreferences): DisplayPreferences {
   const saved = cloneDisplayPreferences(preferences)
   if (typeof window !== 'undefined') {

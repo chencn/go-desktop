@@ -1,54 +1,37 @@
-// ============================================================================
-// 文件: main.go
-// 描述: Go Desktop 应用程序的主入口文件
-//
-// 功能概述:
-// - 初始化 Wails v3 桌面应用程序
-// - 配置系统托盘、窗口管理、单实例控制
-// - 集成自动更新检查、日志记录、设置持久化
-// - 处理多平台特定行为（Windows/macOS/Linux）
-// ============================================================================
+// main.go 是桌面进程入口，负责装配 app facade、Wails 应用、窗口生命周期
+// 和启动期更新/崩溃恢复流程。业务状态留在 app.Runtime，入口只编排依赖。
 
 package main
 
 import (
-	"embed"   // Go 1.16+ 嵌入文件到二进制
-	_ "embed" // 空白导入，用于 embed 指令
-	"fmt"     // 格式化 panic 日志
-	"log"     // 标准日志库，用于运行失败输出
-	"os"      // 操作系统接口，读取命令行参数
+	"embed"
+	_ "embed"
+	"fmt"
+	"log"
+	"os"
 
-	// 项目内部包
-	desktopapp "github.com/chencn/go-desktop/app"                  // 应用核心逻辑包
-	"github.com/chencn/go-desktop/internal/adapters/githubrelease" // GitHub 版本检查模块
-	"github.com/chencn/go-desktop/internal/desktopapp/metadata"    // 项目元数据常量
+	desktopapp "github.com/chencn/go-desktop/app"
+	"github.com/chencn/go-desktop/internal/adapters/githubrelease"
+	"github.com/chencn/go-desktop/internal/desktopapp/metadata"
 
-	// Wails v3 框架
-	"github.com/wailsapp/wails/v3/pkg/application" // Wails 应用主包
-	"github.com/wailsapp/wails/v3/pkg/events"      // Wails 事件系统
+	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
-// ============================================================================
-// 嵌入资源
-// ============================================================================
-
-// assets 嵌入前端构建产物（HTML/CSS/JS）
-// 开发模式下不使用嵌入，Wails 会启动独立的前端开发服务器
-// 生产模式下，所有前端资源会被编译进 Go 二进制文件
+// assets 是生产包使用的前端构建产物；开发模式由 Wails dev server 接管。
 //
 //go:embed all:frontend/dist
 var assets embed.FS
 
-// appIcon 应用程序图标的 PNG 字节数据
-// 用于系统托盘图标显示
+// appIcon 是托盘图标资源，随二进制一起嵌入。
 //
 //go:embed build/appicon.png
 var appIcon []byte
 
-// appVersion 从项目元数据读取的当前版本号
-// 格式: semver (如 "1.0.0")
 var (
-	appVersion       = metadata.DefaultVersion
+	// appVersion 是发布链在构建期注入或从元数据读取的当前版本号。
+	appVersion = metadata.DefaultVersion
+	// licenseMode 和 licensePublicKey 由授权构建注入；空值表示授权关闭。
 	licenseMode      = ""
 	licensePublicKey = ""
 )
@@ -111,6 +94,7 @@ func main() {
 			appRuntime.RecordLogWithSeverity("panic", fmt.Sprintf("Wails panic：%s\n%s", details.Error, details.StackTrace), "error")
 		},
 		Services: []application.Service{
+			// 只注册 app.API facade，避免 Wails 绑定暴露 internal 包路径。
 			application.NewService(appRuntime.API()),
 		},
 		Assets: application.AssetOptions{
@@ -158,6 +142,7 @@ func main() {
 	var splashWindow *application.WebviewWindow
 	if !startHidden {
 		crashReporter.Phase("创建启动加载窗口")
+		// 主窗口保持 Hidden，直到 WebView runtime ready；splash 只覆盖可见加载态。
 		splashWindow = wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 			Name:             "splash",
 			Title:            "",
@@ -266,6 +251,7 @@ func main() {
 	appRuntime.RecordLogWithSeverity("app", "Wails 主循环已返回", "warning")
 }
 
+// splashHTML 返回启动期透明加载窗口的完整 HTML。
 func splashHTML(_ string) string {
 	return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -379,6 +365,7 @@ func splashHTML(_ string) string {
 </html>`
 }
 
+// releaseAssetNames 保持 main.go 注入的更新检查器与 runtime 默认匹配同一组资产名。
 func releaseAssetNames(version string) []string {
 	return []string{
 		metadata.WindowsInstallerAssetName(version),

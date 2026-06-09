@@ -1,6 +1,6 @@
 <!--
   文件职责：渲染更新状态弹窗并驱动检查、下载、安装动作。
-  说明：注释覆盖组件脚本状态、方法、生命周期和模板结构；不改变渲染逻辑。
+  边界：打开弹窗只读取当前状态；安装只能由用户点击主按钮显式触发。
 -->
 
 <script setup lang="ts">
@@ -12,39 +12,39 @@ import { formatBytes } from '@/shared/format'
 import { displayMessage } from '@/shared/labels'
 import { projectMetadata } from '@/shared/project'
 
-// props 描述组件从父级接收的入参，保证模板和脚本使用同一份契约。
 const props = defineProps<{
+  // 由 AppChrome 控制弹窗可见性；组件内部不会自行保持打开状态。
   open: boolean
 }>()
-// emit 描述组件向父级抛出的事件，保证导航和动作回调具备明确边界。
 const emit = defineEmits<{
+  // close 只通知父级收起弹窗，不取消正在进行的后端下载或安装流程。
   close: []
 }>()
 
-// appStore 保存 Pinia store 实例，集中访问应用共享状态和动作。
 const appStore = useAppStore()
-// status 保存由响应式状态推导出的只读结果，模板直接消费该值。
+// status 统一把缺失状态视为 idle，避免后端状态尚未返回时按钮文案抖动。
 const status = computed(() => String(appStore.updateStatus?.status ?? 'idle'))
-// progress 保存由响应式状态推导出的只读结果，模板直接消费该值。
+// progress 只做展示取整；真实字节数仍从 updateStatus 读取。
 const progress = computed(() => Math.round(appStore.updateStatus?.progressPercent ?? 0))
-// isBusy 保存由响应式状态推导出的只读结果，模板直接消费该值。
+// isBusy 聚合 store 标志和后端生命周期状态，统一锁住检查/安装入口。
 const isBusy = computed(() => appStore.checking || appStore.downloading || ['downloading', 'verifying', 'installing'].includes(status.value))
-// canInstall 保存由响应式状态推导出的只读结果，模板直接消费该值。
+// canInstall 要求后端返回已校验文件路径；只看状态名不足以证明安装包可用。
 const canInstall = computed(() => Boolean(appStore.updateStatus?.verified && appStore.updateStatus?.filePath && ['verified', 'pending_install'].includes(status.value)))
-// message 保存由响应式状态推导出的只读结果，模板直接消费该值。
+// message 优先用生命周期状态消息，其次用最近一次检查消息，最后才给空状态提示。
 const message = computed(() => displayMessage(appStore.updateStatus?.message ?? appStore.latestUpdateCheck?.message ?? '尚未执行更新检查。'))
 const currentVersion = computed(() => appStore.latestUpdateCheck?.currentVersion ?? appStore.appInfo?.version ?? projectMetadata.defaultVersion)
 const latestVersion = computed(() => appStore.latestUpdateCheck?.latestVersion ?? appStore.updateStatus?.version ?? '未获取')
 const showProgress = computed(() => appStore.checking || isTransferState(status.value) || status.value === 'installing')
 const description = computed(() => userStatusDescription())
+// openRevision 用来丢弃过期的打开刷新结果，避免快速开关弹窗后旧请求覆盖错误状态。
 let openRevision = 0
 
-// checkAndDownload 触发一次 Release 检查，并沿用 store 内部策略自动衔接下载。
+// checkAndDownload 调用后端 CheckUpdate；store 会随后读取 GetUpdateStatus 并刷新日志。
 async function checkAndDownload() {
   await appStore.checkUpdate()
 }
 
-// installNow 请求后端立即启动已校验安装包的安装流程。
+// installNow 请求后端 InstallDownloadedUpdate，通常会启动安装器并进入安装生命周期。
 async function installNow() {
   await appStore.installDownloadedUpdate()
 }
@@ -55,11 +55,12 @@ async function scheduleOnStartup() {
   closeDialog()
 }
 
-// closeDialog 处理 渲染更新状态弹窗并驱动检查、下载、安装动作 中的用户动作、生命周期动作或数据转换。
+// closeDialog 只关闭 UI；下载进度仍靠 Wails 事件继续同步到 store。
 function closeDialog() {
   emit('close')
 }
 
+// 弹窗打开时只刷新 GetUpdateStatus，不能在这里自动 install，避免“查看状态”变成隐式升级。
 watch(() => props.open, async (open) => {
   if (!open) return
   const revision = ++openRevision
@@ -71,12 +72,12 @@ watch(() => props.open, async (open) => {
   }
 })
 
-// isTransferState 处理 渲染更新状态弹窗并驱动检查、下载、安装动作 中的用户动作、生命周期动作或数据转换。
+// isTransferState 用于进度条展示；installing 单独处理，因为它没有下载字节进度语义。
 function isTransferState(status?: string) {
   return status === 'downloading' || status === 'verifying'
 }
 
-// progressText 处理 渲染更新状态弹窗并驱动检查、下载、安装动作 中的用户动作、生命周期动作或数据转换。
+// progressText 在没有百分比时回退到阶段文案，避免 0% 被误读为下载失败。
 function progressText(status: UpdateStatus | undefined, progress: number) {
   if (appStore.checking) return '正在检查'
   if (progress > 0) {
@@ -88,9 +89,8 @@ function progressText(status: UpdateStatus | undefined, progress: number) {
   return '未开始'
 }
 
-// updateStatusLabel 处理 渲染更新状态弹窗并驱动检查、下载、安装动作 中的用户动作、生命周期动作或数据转换。
+// updateStatusLabel 映射后端状态机值；未知状态回退为未检查，避免把内部状态直接暴露到 UI。
 function updateStatusLabel(status?: string) {
-  // labels 保存 渲染更新状态弹窗并驱动检查、下载、安装动作 使用的配置、引用或中间结果。
   const labels: Record<string, string> = {
     idle: '未检查',
     update_available: '发现可更新版本',
@@ -159,7 +159,6 @@ function primaryActionIcon() {
 </script>
 
 <template>
-  <!-- 模板结构：声明当前组件对外呈现的布局、插槽和交互入口。 -->
   <UiDialog :open="props.open" label="更新状态" placement="top-right" @close="closeDialog">
       <header class="dialog-header">
         <div>

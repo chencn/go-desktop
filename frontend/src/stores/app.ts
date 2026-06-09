@@ -31,17 +31,20 @@ import {
 import { exportDisplayPreferences, hydrateDisplayPreferences } from '../app/display'
 import { appReducer, defaultLogQuery, defaultStartupApiStatuses, initialAppState, toMessage, type AppAction, type AppState, type StartupApiKey } from '../app/state'
 
-// runtimeUnsubscribers 保存 Wails 运行时事件取消订阅函数。
+// Wails 事件订阅跨组件生命周期保存，避免 App.vue 重挂载时重复监听更新状态。
 let runtimeUnsubscribers: Array<() => void> = []
 
+// Wails Events.On 的 data 在不同运行时包装下可能是值或单元素数组，这里统一成状态快照。
 function updateStatusFromEventData(data: UpdateStatus | UpdateStatus[]) {
   return Array.isArray(data) ? data[0] : data
 }
 
+// 这些状态不再需要维持检查/下载按钮的 busy 态。
 function isUpdateTerminalStatus(status?: string) {
   return !['downloading', 'verifying', 'installing'].includes(String(status ?? ''))
 }
 
+// 授权状态读取失败时按“需要授权且未授权”处理，防止绕过授权页进入主界面。
 function failedLicenseStatus(message = '授权状态读取失败'): LicenseStatus {
   return {
     enabled: true,
@@ -53,11 +56,12 @@ function failedLicenseStatus(message = '授权状态读取失败'): LicenseStatu
   }
 }
 
+// 授权码允许用户复制时带空格或换行，提交给后端前统一压缩。
 function normaliseLicenseKey(value: string) {
   return value.split(/\s+/).join('')
 }
 
-// useAppStore 保存 Pinia store 实例，集中访问应用共享状态和动作。
+// 应用唯一 Pinia store：异步 API、运行时事件和纯 reducer 状态都从这里汇合。
 export const useAppStore = defineStore('app', {
   state: (): AppState => ({ ...initialAppState, startupApiStatuses: defaultStartupApiStatuses() }),
   getters: {
@@ -75,6 +79,7 @@ export const useAppStore = defineStore('app', {
       let settings: Settings = { ...defaultRuntimeSettings }
       let displayPreferences: DisplayPreferences = { ...defaultDisplayPreferences }
 
+      // 启动读取统一记录耗时和错误；非关键 API 可选择不冒泡到全局 errorMessage。
       const readStartupApi = async <T>(
         key: StartupApiKey,
         label: string,
@@ -102,6 +107,7 @@ export const useAppStore = defineStore('app', {
         }
       }
 
+      // 授权先于其他启动 API；未授权时只渲染 LicensePage，避免无意义地读取业务数据。
       let initialLicenseStatus: LicenseStatus | undefined
       await readStartupApi('licenseStatus', 'GetLicenseStatus', getLicenseStatus, (licenseStatus) => {
         initialLicenseStatus = licenseStatus
@@ -116,6 +122,7 @@ export const useAppStore = defineStore('app', {
         return
       }
 
+      // 其余启动 API 可以并发读取；单项失败只更新对应 startupApiStatuses。
       await Promise.allSettled([
         readStartupApi('settings', 'GetSettings', getSettings, (value) => {
           settings = value
@@ -160,6 +167,7 @@ export const useAppStore = defineStore('app', {
     subscribeRuntimeUpdates() {
       if (runtimeUnsubscribers.length > 0) return
       try {
+        // 后端下载、校验、安装阶段会推送 update:status:changed，前端同步刷新状态和日志。
         runtimeUnsubscribers.push(Events.On('update:status:changed', async (event: { data: UpdateStatus }) => {
           const updateStatus = updateStatusFromEventData(event.data)
           this.applyAction({ type: 'updateStatusApplied', payload: updateStatus })
@@ -174,7 +182,7 @@ export const useAppStore = defineStore('app', {
           }
         }) as unknown as () => void)
       } catch {
-        // Browser preview mode has no Wails event bridge.
+        // 浏览器预览没有 Wails event bridge，订阅失败不影响静态预览。
       }
     },
 

@@ -1,5 +1,4 @@
-// 文件职责：管理更新包下载、校验、待安装状态和安装器启动。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：验证更新包管理器的下载、校验、缓存边界和安装器启动约束。
 
 package update_test
 
@@ -20,7 +19,7 @@ import (
 	updater "github.com/chencn/go-desktop/internal/desktopapp/update"
 )
 
-// TestDownloadAndVerifySuccess 验证 管理更新包下载、校验、待安装状态和安装器启动 的关键行为，避免后续重构破坏既有约束。
+// TestDownloadAndVerifySuccess 验证成功路径会落盘安装包、上报下载/校验进度并返回 verified 结果。
 func TestDownloadAndVerifySuccess(t *testing.T) {
 	payload := []byte("installer")
 
@@ -57,7 +56,7 @@ func TestDownloadAndVerifySuccess(t *testing.T) {
 	}
 }
 
-// TestDownloadAndVerifyRejectsHTTPError 验证 管理更新包下载、校验、待安装状态和安装器启动 的关键行为，避免后续重构破坏既有约束。
+// TestDownloadAndVerifyRejectsHTTPError 验证 HTTP 非 2xx 响应不会被当成可校验安装包。
 func TestDownloadAndVerifyRejectsHTTPError(t *testing.T) {
 	_, err := updater.NewManager(updater.Config{
 		CacheDir: t.TempDir(),
@@ -73,7 +72,7 @@ func TestDownloadAndVerifyRejectsHTTPError(t *testing.T) {
 	}
 }
 
-// TestDownloadAndVerifyDeletesTempFileOnInterruptedDownload 验证 管理更新包下载、校验、待安装状态和安装器启动 的关键行为，避免后续重构破坏既有约束。
+// TestDownloadAndVerifyDeletesTempFileOnInterruptedDownload 验证下载中断会清理目标文件和 .download 临时文件。
 func TestDownloadAndVerifyDeletesTempFileOnInterruptedDownload(t *testing.T) {
 	cacheDir := t.TempDir()
 	_, err := updater.NewManager(updater.Config{
@@ -97,7 +96,7 @@ func TestDownloadAndVerifyDeletesTempFileOnInterruptedDownload(t *testing.T) {
 	}
 }
 
-// TestDownloadAndVerifyDeletesFileOnChecksumMismatch 验证 管理更新包下载、校验、待安装状态和安装器启动 的关键行为，避免后续重构破坏既有约束。
+// TestDownloadAndVerifyDeletesFileOnChecksumMismatch 验证 SHA256 不匹配时删除已写入安装包。
 func TestDownloadAndVerifyDeletesFileOnChecksumMismatch(t *testing.T) {
 	payload := []byte("installer")
 
@@ -147,7 +146,7 @@ func TestDownloadAndVerifyRejectsOversizedResponse(t *testing.T) {
 	}
 }
 
-// TestInstallRequiresVerifiedFilePath 验证 管理更新包下载、校验、待安装状态和安装器启动 的关键行为，避免后续重构破坏既有约束。
+// TestInstallRequiresVerifiedFilePath 验证安装前必须能读取已校验文件。
 func TestInstallRequiresVerifiedFilePath(t *testing.T) {
 	manager := updater.NewManager(updater.Config{
 		CacheDir: t.TempDir(),
@@ -161,7 +160,7 @@ func TestInstallRequiresVerifiedFilePath(t *testing.T) {
 	}
 }
 
-// TestInstallRejectsFileOutsideUpdateCache 验证 管理更新包下载、校验、待安装状态和安装器启动 的关键行为，避免后续重构破坏既有约束。
+// TestInstallRejectsFileOutsideUpdateCache 验证安装器路径必须留在更新缓存目录内。
 func TestInstallRejectsFileOutsideUpdateCache(t *testing.T) {
 	cacheDir := t.TempDir()
 	outsideDir := t.TempDir()
@@ -182,7 +181,7 @@ func TestInstallRejectsFileOutsideUpdateCache(t *testing.T) {
 	}
 }
 
-// TestIsOfflineError 验证 管理更新包下载、校验、待安装状态和安装器启动 的关键行为，避免后续重构破坏既有约束。
+// TestIsOfflineError 验证 DNS 失败会归类为离线错误，供上层返回 skipped 状态。
 func TestIsOfflineError(t *testing.T) {
 	err := &net.DNSError{Err: "no such host", Name: "example.invalid"}
 	if !updater.IsOfflineError(err) {
@@ -190,18 +189,16 @@ func TestIsOfflineError(t *testing.T) {
 	}
 }
 
-// sha256Hex 封装 管理更新包下载、校验、待安装状态和安装器启动 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func sha256Hex(payload []byte) string {
 	sum := sha256.Sum256(payload)
 	return hex.EncodeToString(sum[:])
 }
 
-// httpClient 封装 管理更新包下载、校验、待安装状态和安装器启动 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// httpClient 构造固定响应下载客户端，避免触发真实网络。
 func httpClient(status int, body []byte) *http.Client {
 	return httpClientWithBody(status, io.NopCloser(bytes.NewReader(body)), int64(len(body)))
 }
 
-// httpClientWithBody 封装 管理更新包下载、校验、待安装状态和安装器启动 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func httpClientWithBody(status int, body io.ReadCloser, contentLength int64) *http.Client {
 	return &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
@@ -214,20 +211,17 @@ func httpClientWithBody(status int, body io.ReadCloser, contentLength int64) *ht
 	})}
 }
 
-// roundTripFunc 定义 管理更新包下载、校验、待安装状态和安装器启动 使用的数据实体，字段会直接参与校验、渲染、持久化或平台适配。
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
-// RoundTrip 封装 管理更新包下载、校验、待安装状态和安装器启动 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return fn(req)
 }
 
-// interruptedReader 定义 管理更新包下载、校验、待安装状态和安装器启动 使用的数据实体，字段会直接参与校验、渲染、持久化或平台适配。
+// interruptedReader 首次读取返回部分内容，第二次读取模拟下载连接中断。
 type interruptedReader struct {
-	readOnce bool // readOnce 保存 readOnce 对应的数据，供当前实体的调用方读取或持久化。
+	readOnce bool
 }
 
-// Read 读取、解析或归一化 管理更新包下载、校验、待安装状态和安装器启动 需要的数据，并把结果返回给调用方。
 func (r *interruptedReader) Read(p []byte) (int, error) {
 	if r.readOnce {
 		return 0, errors.New("download interrupted")

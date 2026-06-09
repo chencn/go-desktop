@@ -7,8 +7,7 @@
 //   TASK_FORCE_YES=true go run install_deps.go  # Auto-accept prompts
 //   CI=true go run install_deps.go              # CI mode (auto-accept)
 
-// 文件职责：为移动端构建检查并安装平台依赖工具。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：检查 iOS/Wails 构建所需的 Xcode、SDK 和模拟器环境。
 
 package main
 
@@ -20,18 +19,20 @@ import (
 	"strings"
 )
 
-// Dependency 定义 为移动端构建检查并安装平台依赖工具 使用的数据实体，字段会直接参与校验、渲染、持久化或平台适配。
+// Dependency 描述一个可检测的 iOS 构建依赖。
+// InstallCmd 为空时只提示人工安装；非空时可在交互确认或 CI/TASK_FORCE_YES 下执行。
 type Dependency struct {
-	Name       string                // Name 保存 Name 对应的数据，供当前实体的调用方读取或持久化。
-	CheckFunc  func() (bool, string) // Returns (success, details)
-	Required   bool                  // Required 保存 Required 对应的数据，供当前实体的调用方读取或持久化。
-	InstallCmd []string              // InstallCmd 保存 InstallCmd 对应的数据，供当前实体的调用方读取或持久化。
-	InstallMsg string                // InstallMsg 保存 InstallMsg 对应的数据，供当前实体的调用方读取或持久化。
-	SuccessMsg string                // SuccessMsg 保存 SuccessMsg 对应的数据，供当前实体的调用方读取或持久化。
-	FailureMsg string                // FailureMsg 保存 FailureMsg 对应的数据，供当前实体的调用方读取或持久化。
+	Name       string
+	CheckFunc  func() (bool, string) // 返回是否通过，以及可展示的版本/路径/失败细节。
+	Required   bool
+	InstallCmd []string
+	InstallMsg string
+	SuccessMsg string
+	FailureMsg string
 }
 
-// main 是命令入口，负责解析启动上下文、装配依赖并启动核心流程。
+// main 检查 Xcode、xcode-select、iOS SDK、模拟器 runtime 和 iPhone 模拟器设备。
+// 仅 xcode-select 和模拟器创建会在确认后执行命令；其他缺失项只提示用户安装。
 func main() {
 	fmt.Println("Checking iOS development dependencies...")
 	fmt.Println("=" + strings.Repeat("=", 50))
@@ -293,7 +294,7 @@ func main() {
 	}
 }
 
-// checkCommand 封装 为移动端构建检查并安装平台依赖工具 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// checkCommand 通过执行命令判断工具是否可用；stdout/stderr 会被丢弃。
 func checkCommand(args []string) bool {
 	if len(args) == 0 {
 		return false
@@ -305,7 +306,7 @@ func checkCommand(args []string) bool {
 	return err == nil
 }
 
-// promptUser 封装 为移动端构建检查并安装平台依赖工具 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// promptUser 在交互终端请求确认；CI 或 TASK_FORCE_YES=true 时自动接受。
 func promptUser(question string) bool {
 	// Check if we're in a non-interactive environment
 	if os.Getenv("CI") != "" || os.Getenv("TASK_FORCE_YES") == "true" {

@@ -1,5 +1,4 @@
-// 文件职责：验证 sync_project_metadata_test.go 覆盖的生产行为、结构约束或构建脚本约束。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：验证 project.metadata.json 到 Go、前端、NSIS、Taskfile 和 GitHub workflow 的生成合同。
 
 package build_test
 
@@ -15,31 +14,31 @@ import (
 	"testing"
 )
 
-// projectMetadataFixture 定义 验证 sync_project_metadata_test.go 覆盖的生产行为、结构约束或构建脚本约束 使用的数据实体，字段会直接参与校验、渲染、持久化或平台适配。
+// projectMetadataFixture 只声明测试断言需要的元数据字段，避免把生成源 JSON 的完整 schema 复制到测试里。
 type projectMetadataFixture struct {
-	AppName        string   `json:"appName"`        // AppName 保存 appName 对应的数据，供当前实体的调用方读取或持久化。
-	DefaultVersion string   `json:"defaultVersion"` // DefaultVersion 保存 defaultVersion 对应的数据，供当前实体的调用方读取或持久化。
-	ModulePath     string   `json:"modulePath"`     // ModulePath 保存 modulePath 对应的数据，供当前实体的调用方读取或持久化。
-	RepositoryURL  string   `json:"repositoryUrl"`  // RepositoryURL 保存 repositoryUrl 对应的数据，供当前实体的调用方读取或持久化。
-	Update         struct { // Update 保存 Update 对应的数据，供当前实体的调用方读取或持久化。
+	AppName        string `json:"appName"`
+	DefaultVersion string `json:"defaultVersion"`
+	ModulePath     string `json:"modulePath"`
+	RepositoryURL  string `json:"repositoryUrl"`
+	Update         struct {
 		DefaultSource     string `json:"defaultSource"`
 		LocalBaseURL      string `json:"localBaseUrl"`
 		LocalManifestPath string `json:"localManifestPath"`
 	} `json:"update"`
-	SettingsDefaults struct { // SettingsDefaults 保存 SettingsDefaults 对应的数据，供当前实体的调用方读取或持久化。
-		GitHubProxyBase          string `json:"githubProxyBase"`          // GitHubProxyBase 保存 githubProxyBase 对应的数据，供当前实体的调用方读取或持久化。
-		UpdateCheckIntervalHours int    `json:"updateCheckIntervalHours"` // UpdateCheckIntervalHours 保存 updateCheckIntervalHours 对应的数据，供当前实体的调用方读取或持久化。
-		MinimizeToTray           bool   `json:"minimizeToTray"`           // MinimizeToTray 保存 minimizeToTray 对应的数据，供当前实体的调用方读取或持久化。
-		LogRetentionDays         int    `json:"logRetentionDays"`         // LogRetentionDays 保存 logRetentionDays 对应的数据，供当前实体的调用方读取或持久化。
-		AutoLaunch               bool   `json:"autoLaunch"`               // AutoLaunch 保存 autoLaunch 对应的数据，供当前实体的调用方读取或持久化。
-		CreateDesktopShortcut    bool   `json:"createDesktopShortcut"`    // CreateDesktopShortcut 保存 createDesktopShortcut 对应的数据，供当前实体的调用方读取或持久化。
-		LaunchHiddenToTray       bool   `json:"launchHiddenToTray"`       // LaunchHiddenToTray 保存 launchHiddenToTray 对应的数据，供当前实体的调用方读取或持久化。
+	SettingsDefaults struct {
+		GitHubProxyBase          string `json:"githubProxyBase"`
+		UpdateCheckIntervalHours int    `json:"updateCheckIntervalHours"`
+		MinimizeToTray           bool   `json:"minimizeToTray"`
+		LogRetentionDays         int    `json:"logRetentionDays"`
+		AutoLaunch               bool   `json:"autoLaunch"`
+		CreateDesktopShortcut    bool   `json:"createDesktopShortcut"`
+		LaunchHiddenToTray       bool   `json:"launchHiddenToTray"`
 	} `json:"settingsDefaults"`
-	Windows struct { // Windows 保存 Windows 对应的数据，供当前实体的调用方读取或持久化。
-		SingleInstanceID  string `json:"singleInstanceId"`  // SingleInstanceID 保存 singleInstanceId 对应的数据，供当前实体的调用方读取或持久化。
-		ProductIdentifier string `json:"productIdentifier"` // ProductIdentifier 保存 productIdentifier 对应的数据，供当前实体的调用方读取或持久化。
-		WindowClass       string `json:"windowClass"`       // WindowClass 保存 windowClass 对应的数据，供当前实体的调用方读取或持久化。
-		UninstallKeyName  string `json:"uninstallKeyName"`  // UninstallKeyName 保存 uninstallKeyName 对应的数据，供当前实体的调用方读取或持久化。
+	Windows struct {
+		SingleInstanceID  string `json:"singleInstanceId"`
+		ProductIdentifier string `json:"productIdentifier"`
+		WindowClass       string `json:"windowClass"`
+		UninstallKeyName  string `json:"uninstallKeyName"`
 	} `json:"windows"`
 }
 
@@ -60,7 +59,7 @@ type localUpdateAssetFixture struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
 
-// TestScriptsDirectoryContainsNoGoTests 验证 sync_project_metadata_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestScriptsDirectoryContainsNoGoTests 验证 scripts/ 只放可执行工具，Go 测试集中在独立 tests 模块。
 func TestScriptsDirectoryContainsNoGoTests(t *testing.T) {
 	var testFiles []string
 	scriptsRoot := rootPath("scripts")
@@ -80,7 +79,7 @@ func TestScriptsDirectoryContainsNoGoTests(t *testing.T) {
 	}
 }
 
-// TestSyncProjectMetadataPrintsCurrentDefaults 验证 sync_project_metadata_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestSyncProjectMetadataPrintsCurrentDefaults 验证 -print 输出和当前元数据默认值一致，供脚本和 CI 复用。
 func TestSyncProjectMetadataPrintsCurrentDefaults(t *testing.T) {
 	for key, want := range map[string]string{
 		"companyName":                    "chencn",
@@ -101,7 +100,7 @@ func TestSyncProjectMetadataPrintsCurrentDefaults(t *testing.T) {
 	}
 }
 
-// TestGeneratedProjectMetadataFilesUseCurrentDefaults 验证 sync_project_metadata_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestGeneratedProjectMetadataFilesUseCurrentDefaults 验证生成物没有偏离 project.metadata.json 这个真源。
 func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 	meta := readProjectMetadataFixture(t)
 
@@ -424,7 +423,6 @@ func TestStageLocalUpdateWritesGithubCompatibleStaticFiles(t *testing.T) {
 	}
 }
 
-// runSyncProjectMetadata 封装 验证 sync_project_metadata_test.go 覆盖的生产行为、结构约束或构建脚本约束 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func runSyncProjectMetadata(t *testing.T, args ...string) string {
 	t.Helper()
 	cmd := exec.Command("go", append([]string{"run", "./scripts/sync_project_metadata.go"}, args...)...)
@@ -438,7 +436,7 @@ func runSyncProjectMetadata(t *testing.T, args ...string) string {
 	return strings.TrimSpace(string(output))
 }
 
-// readProjectMetadataFixture 读取、解析或归一化 验证 sync_project_metadata_test.go 覆盖的生产行为、结构约束或构建脚本约束 需要的数据，并把结果返回给调用方。
+// readProjectMetadataFixture 读取真源 project.metadata.json，用来和生成物断言交叉校验。
 func readProjectMetadataFixture(t *testing.T) projectMetadataFixture {
 	t.Helper()
 	var meta projectMetadataFixture
@@ -452,7 +450,7 @@ func readProjectMetadataFixture(t *testing.T) projectMetadataFixture {
 	return meta
 }
 
-// requireLineContaining 封装 验证 sync_project_metadata_test.go 覆盖的生产行为、结构约束或构建脚本约束 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// requireLineContaining 用行级匹配锁定 Go 常量，避免跨行字符串误命中。
 func requireLineContaining(t *testing.T, path string, source string, fields ...string) {
 	t.Helper()
 	for _, line := range strings.Split(source, "\n") {
@@ -504,7 +502,6 @@ func runGit(t *testing.T, dir string, args ...string) {
 	}
 }
 
-// rootPath 封装 验证 sync_project_metadata_test.go 覆盖的生产行为、结构约束或构建脚本约束 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func rootPath(parts ...string) string {
 	return filepath.Join(append([]string{"..", ".."}, parts...)...)
 }

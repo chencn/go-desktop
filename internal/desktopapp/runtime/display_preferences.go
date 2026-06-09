@@ -11,13 +11,13 @@
 package runtime
 
 import (
-	"context" // 上下文包，用于 SQLite 操作
-	"fmt"     // 格式化日志消息
+	"context"
+	"fmt"
 
 	"github.com/chencn/go-desktop/internal/desktopapp/display"
 )
 
-// DisplayProfile 是单个显示方案的可持久化 profile。
+// DisplayProfile 是单个显示方案的可持久化 profile；不同方案只使用各自支持的字段。
 type DisplayProfile struct {
 	UIStyle     string `json:"uiStyle"`
 	BaseColor   string `json:"baseColor"`
@@ -33,30 +33,30 @@ type DisplayProfile struct {
 	CardBorder  string `json:"cardBorder"`
 }
 
-// DisplayProfiles 保存所有平级显示方案的独立 profile。
+// DisplayProfiles 保存所有平级显示方案的独立 profile，用于切换方案时保留各自偏好。
 type DisplayProfiles struct {
 	Shadcn DisplayProfile `json:"shadcn"`
 	AntD   DisplayProfile `json:"antd"`
 }
 
-// DisplayPreferences 是前端显示偏好的 typed 快照
-// 扁平字段表示当前方案的生效偏好，Profiles 保留所有方案的可持久化 profile。
+// DisplayPreferences 是前端显示偏好的 typed 快照。
+// 扁平字段表示当前方案的生效偏好；Profiles 是完整 V2 JSON 持久化模型的前端可见副本。
 type DisplayPreferences struct {
-	DisplayScheme string          `json:"displayScheme"` // DisplayScheme 保存当前显示方案。
-	UIStyle       string          `json:"uiStyle"`       // UIStyle 保存当前生效组件风格。
-	ThemeMode     string          `json:"themeMode"`     // ThemeMode 保存全局亮暗模式。
-	BaseColor     string          `json:"baseColor"`     // BaseColor 保存当前生效基础色盘。
-	ThemeColor    string          `json:"themeColor"`    // ThemeColor 保存当前生效主题色。
-	AccentColor   string          `json:"accentColor"`   // AccentColor 保存当前生效强调色。
-	ChartColor    string          `json:"chartColor"`    // ChartColor 保存当前生效图表色。
-	IconTone      string          `json:"iconTone"`      // IconTone 保存当前生效图标颜色模式。
-	Menu          string          `json:"menu"`          // Menu 保存当前生效菜单样式。
-	MenuAccent    string          `json:"menuAccent"`    // MenuAccent 保存当前生效菜单强调样式。
-	Radius        string          `json:"radius"`        // Radius 保存当前生效圆角。
-	Density       string          `json:"density"`       // Density 保存当前生效密度。
-	TextSize      string          `json:"textSize"`      // TextSize 保存当前生效字体大小。
-	CardBorder    string          `json:"cardBorder"`    // CardBorder 保存当前生效卡片边框强度。
-	Profiles      DisplayProfiles `json:"profiles"`      // Profiles 保存所有显示方案的独立偏好。
+	DisplayScheme string          `json:"displayScheme"`
+	UIStyle       string          `json:"uiStyle"`
+	ThemeMode     string          `json:"themeMode"`
+	BaseColor     string          `json:"baseColor"`
+	ThemeColor    string          `json:"themeColor"`
+	AccentColor   string          `json:"accentColor"`
+	ChartColor    string          `json:"chartColor"`
+	IconTone      string          `json:"iconTone"`
+	Menu          string          `json:"menu"`
+	MenuAccent    string          `json:"menuAccent"`
+	Radius        string          `json:"radius"`
+	Density       string          `json:"density"`
+	TextSize      string          `json:"textSize"`
+	CardBorder    string          `json:"cardBorder"`
+	Profiles      DisplayProfiles `json:"profiles"`
 }
 
 // GetDisplayPreferences API 方法，返回当前显示偏好快照。
@@ -103,7 +103,8 @@ func (api *API) SaveDisplayPreferences(preferences DisplayPreferences) (saved Di
 	return api.runtime.SaveDisplayPreferences(preferences)
 }
 
-// SaveDisplayPreferences 保存显示偏好并返回标准化后的快照。
+// SaveDisplayPreferences 保存 V2 JSON 配置项并返回当前方案的标准化生效快照。
+// 没带 Profiles 的旧前端请求只更新当前方案；带 Profiles 时按完整 V2 模型覆盖两个方案。
 func (s *Runtime) SaveDisplayPreferences(preferences DisplayPreferences) (DisplayPreferences, error) {
 	s.RecordLogWithSeverity("settings", "保存显示偏好：开始写入配置", "debug")
 
@@ -128,14 +129,14 @@ func (s *Runtime) SaveDisplayPreferences(preferences DisplayPreferences) (Displa
 	return effective, nil
 }
 
-// DisplayPreferencesSnapshot 返回当前显示偏好副本。
+// DisplayPreferencesSnapshot 返回当前显示偏好副本；它来自内存中的 V2 配置生效结果。
 func (s *Runtime) DisplayPreferencesSnapshot() DisplayPreferences {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.displayPreferences
 }
 
-// loadDisplayPreferences 从 SQLite JSON KV 配置项加载显示偏好。
+// loadDisplayPreferences 从 SQLite JSON KV 配置项加载显示偏好；缺失或非法 JSON 会回到 V2 默认值。
 func (s *Runtime) loadDisplayPreferences() {
 	items, err := s.configItemsByKey(context.Background())
 	if err != nil {
@@ -154,11 +155,12 @@ func (s *Runtime) loadDisplayPreferences() {
 	s.displayPreferences = fromDomainPreferencesV2(stored)
 }
 
-// defaultDisplayPreferences 返回显示偏好默认值。
+// defaultDisplayPreferences 返回当前默认方案的生效偏好，不暴露数据库 KV 结构。
 func defaultDisplayPreferences() DisplayPreferences {
 	return fromDomainPreferencesV2(display.DefaultV2())
 }
 
+// toDomainPreferencesV2 合并前端请求和当前 V2 状态，兼容旧的扁平字段保存协议。
 func toDomainPreferencesV2(current display.PreferencesV2, value DisplayPreferences) display.PreferencesV2 {
 	current = display.NormalizeV2(current)
 	if !hasDisplayProfiles(value.Profiles) {
@@ -174,6 +176,7 @@ func toDomainPreferencesV2(current display.PreferencesV2, value DisplayPreferenc
 	})
 }
 
+// toDomainDisplayPreferences 只转换当前方案的扁平生效字段。
 func toDomainDisplayPreferences(value DisplayPreferences) display.Preferences {
 	return display.Preferences{
 		DisplayScheme: value.DisplayScheme,
@@ -193,6 +196,7 @@ func toDomainDisplayPreferences(value DisplayPreferences) display.Preferences {
 	}
 }
 
+// fromDomainDisplayPreferences 只转换当前方案的扁平生效字段。
 func fromDomainDisplayPreferences(value display.Preferences) DisplayPreferences {
 	return DisplayPreferences{
 		DisplayScheme: value.DisplayScheme,
@@ -212,6 +216,7 @@ func fromDomainDisplayPreferences(value display.Preferences) DisplayPreferences 
 	}
 }
 
+// fromDomainPreferencesV2 同时返回当前方案生效值和所有方案 profile。
 func fromDomainPreferencesV2(value display.PreferencesV2) DisplayPreferences {
 	value = display.NormalizeV2(value)
 	effective := fromDomainDisplayPreferences(display.Effective(value))
@@ -222,6 +227,7 @@ func fromDomainPreferencesV2(value display.PreferencesV2) DisplayPreferences {
 	return effective
 }
 
+// toDomainDisplayProfile 转换单个方案 profile；字段合法性由 display.NormalizeV2 处理。
 func toDomainDisplayProfile(value DisplayProfile) display.Profile {
 	return display.Profile{
 		UIStyle:     value.UIStyle,
@@ -239,6 +245,7 @@ func toDomainDisplayProfile(value DisplayProfile) display.Profile {
 	}
 }
 
+// fromDomainDisplayProfile 转换单个方案 profile。
 func fromDomainDisplayProfile(value display.Profile) DisplayProfile {
 	return DisplayProfile{
 		UIStyle:     value.UIStyle,
@@ -256,10 +263,12 @@ func fromDomainDisplayProfile(value display.Profile) DisplayProfile {
 	}
 }
 
+// hasDisplayProfiles 判断请求是否携带完整 profile 模型，用于区分旧扁平保存协议。
 func hasDisplayProfiles(value DisplayProfiles) bool {
 	return hasDisplayProfile(value.Shadcn) || hasDisplayProfile(value.AntD)
 }
 
+// hasDisplayProfile 判断单个 profile 是否包含任意可保存字段。
 func hasDisplayProfile(value DisplayProfile) bool {
 	return value.UIStyle != "" ||
 		value.BaseColor != "" ||

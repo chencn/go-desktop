@@ -4,7 +4,7 @@ package configstore
 
 import "context"
 
-// migrate 执行数据库表结构迁移。
+// migrate 执行数据库表结构迁移；当前 schema 只包含通用 config_items。
 func (s *Store) migrate(ctx context.Context) error {
 	statements := []string{
 		`CREATE TABLE IF NOT EXISTS config_items (

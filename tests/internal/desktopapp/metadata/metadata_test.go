@@ -1,5 +1,4 @@
-// 文件职责：提供由项目元数据生成的产品、仓库、默认设置和安装器常量。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：验证由 project.metadata.json 生成的后端 metadata 常量。
 
 package metadata_test
 
@@ -9,7 +8,7 @@ import (
 	"github.com/chencn/go-desktop/internal/desktopapp/metadata"
 )
 
-// TestMetadataDefinesStableProductDefaults 验证 提供由项目元数据生成的产品、仓库、默认设置和安装器常量 的关键行为，避免后续重构破坏既有约束。
+// TestMetadataDefinesStableProductDefaults 验证产品身份、仓库地址和运行时默认设置没有偏离元数据真源。
 func TestMetadataDefinesStableProductDefaults(t *testing.T) {
 	if metadata.AppName != "go-desktop" {
 		t.Fatalf("unexpected app name: %q", metadata.AppName)
@@ -40,7 +39,7 @@ func TestMetadataDefinesStableProductDefaults(t *testing.T) {
 	}
 }
 
-// TestReleaseAssetNameUsesProjectMetadata 验证 提供由项目元数据生成的产品、仓库、默认设置和安装器常量 的关键行为，避免后续重构破坏既有约束。
+// TestReleaseAssetNameUsesProjectMetadata 验证 Windows 安装包命名策略仍来自生成的 metadata helper。
 func TestReleaseAssetNameUsesProjectMetadata(t *testing.T) {
 	if metadata.WindowsInstallerAssetName("1.2.3") != "go-desktop-v1.2.3-windows-amd64.exe" {
 		t.Fatalf("unexpected primary asset name: %q", metadata.WindowsInstallerAssetName("1.2.3"))

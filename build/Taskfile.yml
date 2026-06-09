@@ -11,8 +11,7 @@ tasks:
     summary: Install frontend dependencies
     dir: frontend
     env:
-      # Some Windows automation shells strip drive-level variables.
-      # Keep caches out of frontend/%SystemDrive% by resolving ProgramData explicitly.
+      # Windows 自动化环境可能缺失系统路径变量；这里补齐，避免 npm/Go 缓存落到 frontend/%SystemDrive%。
       SystemDrive: '{{if eq OS "windows"}}{{env "SystemDrive" | default "C:"}}{{end}}'
       ProgramData: '{{if eq OS "windows"}}{{env "ProgramData" | default (printf "%s\\ProgramData" (env "SystemDrive" | default "C:"))}}{{end}}'
       SystemRoot: '{{if eq OS "windows"}}{{env "SystemRoot" | default "C:\\WINDOWS"}}{{end}}'
@@ -50,8 +49,7 @@ tasks:
     cmds:
       - go run ../scripts/envrun npm run {{.BUILD_COMMAND}} -q
     env:
-      # Some Windows automation shells strip drive-level variables.
-      # Keep caches out of frontend/%SystemDrive% by resolving ProgramData explicitly.
+      # 前端构建会同时调用 npm 和 Go 绑定生成，必须为 Windows shell 补齐两套缓存路径。
       SystemDrive: '{{if eq OS "windows"}}{{env "SystemDrive" | default "C:"}}{{end}}'
       ProgramData: '{{if eq OS "windows"}}{{env "ProgramData" | default (printf "%s\\ProgramData" (env "SystemDrive" | default "C:"))}}{{end}}'
       SystemRoot: '{{if eq OS "windows"}}{{env "SystemRoot" | default "C:\\WINDOWS"}}{{end}}'
@@ -75,7 +73,7 @@ tasks:
       - |
         set -euo pipefail
         mkdir -p frontend/public/puppertino
-        # If bundled Puppertino exists, prefer it. Otherwise, try to fetch, but don't fail build on error.
+        # 优先使用仓库内置 Puppertino；下载失败只降级告警，避免样式依赖阻断构建。
         if [ ! -f frontend/public/puppertino/puppertino.css ]; then
           echo "No bundled Puppertino found. Attempting to fetch from GitHub..."
           if curl -fsSL https://raw.githubusercontent.com/codedgar/Puppertino/main/dist/css/full.css -o frontend/public/puppertino/puppertino.css; then
@@ -91,7 +89,7 @@ tasks:
         INDEX_HTML=frontend/index.html
         if [ -f "$INDEX_HTML" ]; then
           if ! grep -q 'href="/puppertino/puppertino.css"' "$INDEX_HTML"; then
-            # Insert Puppertino link tag after style.css link
+            # 插入到 style.css 后面，确保模板默认样式先加载，Puppertino 再覆盖按钮类。
             awk '
               /href="\/style.css"\/?/ && !x { print; print "    <link rel=\"stylesheet\" href=\"/puppertino/puppertino.css\"/>"; x=1; next }1
             ' "$INDEX_HTML" > "$INDEX_HTML.tmp" && mv "$INDEX_HTML.tmp" "$INDEX_HTML"
@@ -105,8 +103,7 @@ tasks:
     label: generate:bindings (BUILD_FLAGS={{.BUILD_FLAGS}})
     summary: Generates bindings for the frontend
     env:
-      # Some Windows automation shells strip drive-level variables.
-      # Keep caches out of frontend/%SystemDrive% by resolving ProgramData explicitly.
+      # Wails 生成绑定会运行 Go 工具链；补齐 Windows 环境变量避免 GOCACHE/APPDATA 缺失。
       SystemDrive: '{{if eq OS "windows"}}{{env "SystemDrive" | default "C:"}}{{end}}'
       ProgramData: '{{if eq OS "windows"}}{{env "ProgramData" | default (printf "%s\\ProgramData" (env "SystemDrive" | default "C:"))}}{{end}}'
       SystemRoot: '{{if eq OS "windows"}}{{env "SystemRoot" | default "C:\\WINDOWS"}}{{end}}'
@@ -120,7 +117,7 @@ tasks:
     sources:
       - "**/*.[jt]s"
       - exclude: frontend/**/*
-      - frontend/bindings/**/*  # Rerun when switching between dev/production mode causes changes in output
+      - frontend/bindings/**/*  # dev/production tag 切换会改变绑定输出，需要重新生成。
       - "**/*.go"
       - go.mod
       - go.sum
@@ -145,8 +142,7 @@ tasks:
     summary: Runs the frontend in development mode
     dir: frontend
     env:
-      # Some Windows automation shells strip drive-level variables.
-      # Keep caches out of frontend/%SystemDrive% by resolving ProgramData explicitly.
+      # dev server 也通过 envrun 启动 npm，沿用同一组 Windows 路径兜底。
       SystemDrive: '{{if eq OS "windows"}}{{env "SystemDrive" | default "C:"}}{{end}}'
       ProgramData: '{{if eq OS "windows"}}{{env "ProgramData" | default (printf "%s\\ProgramData" (env "SystemDrive" | default "C:"))}}{{end}}'
       SystemRoot: '{{if eq OS "windows"}}{{env "SystemRoot" | default "C:\\WINDOWS"}}{{end}}'

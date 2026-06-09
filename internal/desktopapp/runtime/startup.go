@@ -1,25 +1,17 @@
-// ============================================================================
-// 文件: startup.go
-// 描述: 启动项和桌面快捷方式集成
-//
-// 功能概述:
-// - 根据 SQLite KV 设置同步 Wails3 开机自启
-// - 根据设置创建或删除桌面快捷图标
-// - 为开机自启隐藏到托盘生成启动参数
-// ============================================================================
+// 文件职责：按设置同步 Wails3 开机自启和当前用户桌面快捷方式。
 
 package runtime
 
 import (
-	"errors" // 错误匹配
-	"fmt"    // 格式化日志
+	"errors"
+	"fmt"
 
-	"github.com/chencn/go-desktop/internal/desktopapp/metadata" // 项目元数据
-	"github.com/chencn/go-desktop/internal/platform/shortcut"   // 桌面快捷方式平台层
-	"github.com/wailsapp/wails/v3/pkg/application"              // Wails3 自启 API
+	"github.com/chencn/go-desktop/internal/desktopapp/metadata"
+	"github.com/chencn/go-desktop/internal/platform/shortcut"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-// startupHiddenArg 声明 处理启动参数、待安装更新和托盘隐藏策略 使用的固定配置值。
+// startupHiddenArg 是自启入口使用的隐藏启动参数。
 const startupHiddenArg = "--startup-hidden"
 
 // desktopShortcutArg 标记本次启动来自应用创建的桌面快捷图标。
@@ -91,7 +83,8 @@ func desktopShortcutSettingsChanged(previous Settings, next Settings) bool {
 	return previous.CreateDesktopShortcut != next.CreateDesktopShortcut
 }
 
-// applyAutostartIntegration 封装 处理启动参数、待安装更新和托盘隐藏策略 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// applyAutostartIntegration 同步 Wails Autostart。
+// force=false 只修补缺失项；force=true 来自保存设置，会重写自启参数以反映 LaunchHiddenToTray。
 func (s *Runtime) applyAutostartIntegration(wailsApp *application.App, settings Settings, force bool) error {
 	if settings.AutoLaunch {
 		if !force {
@@ -143,7 +136,8 @@ func (s *Runtime) applyAutostartIntegration(wailsApp *application.App, settings 
 	return nil
 }
 
-// applyDesktopShortcutIntegration 封装 处理启动参数、待安装更新和托盘隐藏策略 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// applyDesktopShortcutIntegration 同步当前用户桌面快捷方式。
+// 快捷方式会携带 --desktop-shortcut，便于启动日志区分入口来源。
 func (s *Runtime) applyDesktopShortcutIntegration(settings Settings, force bool) error {
 	if settings.CreateDesktopShortcut {
 		if !force {
@@ -200,7 +194,7 @@ func (s *Runtime) applyDesktopShortcutIntegration(settings Settings, force bool)
 	return nil
 }
 
-// recordAutostartError 修改 处理启动参数、待安装更新和托盘隐藏策略 管理的状态、文件或外部副作用，并把失败原因向上返回。
+// recordAutostartError 记录自启平台错误；不支持自启的平台降级为 info。
 func (s *Runtime) recordAutostartError(prefix string, err error) {
 	severity := "warning"
 	if errors.Is(err, application.ErrAutostartNotSupported) {
@@ -209,7 +203,7 @@ func (s *Runtime) recordAutostartError(prefix string, err error) {
 	s.RecordLogWithSeverity("startup", fmt.Sprintf("%s：%s", prefix, err), severity)
 }
 
-// recordShortcutError 修改 处理启动参数、待安装更新和托盘隐藏策略 管理的状态、文件或外部副作用，并把失败原因向上返回。
+// recordShortcutError 记录桌面快捷方式平台错误；不支持快捷方式的平台降级为 info。
 func (s *Runtime) recordShortcutError(prefix string, err error) {
 	severity := "warning"
 	if errors.Is(err, shortcut.ErrShortcutNotSupported) {

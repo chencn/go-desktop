@@ -14,15 +14,14 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings" // 字符串处理，用于日志过滤
-	"time"    // 时间包，用于日志时间戳
+	"strings"
+	"time"
 
 	applogging "github.com/chencn/go-desktop/internal/desktopapp/logging"
 	appsettings "github.com/chencn/go-desktop/internal/desktopapp/settings"
 )
 
-// ListLogs API 方法，返回所有日志条目
-// 返回值的副本，避免外部修改内部状态
+// ListLogs API 方法，返回当前内存视图中的日志副本。
 func (api *API) ListLogs() (logs []LogEntry, err error) {
 	defer api.recoverError("读取日志", &err)
 	if err := api.requireAuthorized(); err != nil {
@@ -31,15 +30,15 @@ func (api *API) ListLogs() (logs []LogEntry, err error) {
 	return api.runtime.ListLogs(), nil
 }
 
-// ListLogs 返回内存中所有日志的副本
-// 使用 RLock 保护并发读取
+// ListLogs 返回内存 ring buffer 副本；不会读取历史每日文件日志。
 func (s *Runtime) ListLogs() []LogEntry {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return append([]LogEntry(nil), s.logs...)
 }
 
-// QueryLogs API 方法，支持分页和过滤查询。
+// QueryLogs API 方法，支持单文件来源的分页和过滤查询。
+// 这里不写 api-trace，避免日志页刷新自身制造 QueryLogs 噪音。
 func (api *API) QueryLogs(query LogQuery) (response LogResponse, err error) {
 	defer api.recoverError("查询日志", &err)
 	if err := api.requireAuthorized(); err != nil {
@@ -71,12 +70,7 @@ func (api *API) ListLogFiles() (files []LogFileInfo, err error) {
 	return files, nil
 }
 
-// ClearLogs API 方法，清空指定作用域的日志
-// 参数:
-//   - scope: 日志作用域，为空或 "all" 时清空所有日志
-//
-// 返回:
-//   - bool: 操作是否成功
+// ClearLogs API 方法，清空当前前端日志视图；文件日志保留给历史查询和保留策略处理。
 func (api *API) ClearLogs(scope string) (cleared bool, err error) {
 	defer api.recoverError("清空日志", &err)
 	if err := api.requireAuthorized(); err != nil {
@@ -86,13 +80,13 @@ func (api *API) ClearLogs(scope string) (cleared bool, err error) {
 }
 
 // ClearLogs 清空当前前端视图，不删除或截断每日文件日志。
+// 为了让后续文件查询也尊重“已清空视图”，这里记录按 scope 的清空时间。
 func (s *Runtime) ClearLogs(scope string) bool {
 	scope = strings.ToLower(strings.TrimSpace(scope))
 	if scope == "" {
 		scope = "all"
 	}
 
-	// 清空内存日志
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if s.logViewClearedAt == nil {
@@ -104,7 +98,6 @@ func (s *Runtime) ClearLogs(scope string) bool {
 		return true
 	}
 
-	// 保留非指定作用域的日志
 	remaining := make([]LogEntry, 0, len(s.logs))
 	for _, entry := range s.logs {
 		if strings.ToLower(entry.Scope) != scope {
@@ -115,18 +108,14 @@ func (s *Runtime) ClearLogs(scope string) bool {
 	return true
 }
 
-// RecordLog 记录信息级别日志
-// 参数:
-//   - scope: 日志作用域（如 "app", "window", "storage"）
-//   - message: 日志消息
+// RecordLog 记录 info 级别日志。
 func (s *Runtime) RecordLog(scope, message string) {
 	s.RecordLogWithSeverity(scope, message, "info")
 }
 
 // RecordLogWithSeverity 记录指定严重级别的日志。
-// 日志通过 slog 写入每日 JSONL 文件，并由 runtime handler 同步到当前内存视图。
+// 低于当前 LogLevel 的日志会被丢弃；文件不可写或 logger 未就绪时降级写入内存视图。
 func (s *Runtime) RecordLogWithSeverity(scope, message, severity string) {
-	// 标准化严重级别
 	severity = normaliseLogSeverity(severity)
 	if !s.shouldRecordLogSeverity(severity) {
 		return
@@ -166,6 +155,7 @@ func (s *Runtime) RecordLogWithSeverity(scope, message, severity string) {
 	}
 }
 
+// shouldRecordLogSeverity 按当前设置中的最小日志级别过滤应用日志。
 func (s *Runtime) shouldRecordLogSeverity(severity string) bool {
 	s.lock.RLock()
 	level := s.settings.LogLevel
@@ -173,12 +163,12 @@ func (s *Runtime) shouldRecordLogSeverity(severity string) bool {
 	return logSeverityRank(severity) >= logSeverityRank(normaliseLogLevel(level))
 }
 
-// normaliseLogSeverity 标准化严重级别字符串
-// 将各种格式统一为 "error", "warning", "info"
+// normaliseLogSeverity 标准化严重级别字符串，兼容 panic/fatal/critical/warn 等输入。
 func normaliseLogSeverity(severity string) string {
 	return applogging.NormalizeSeverity(severity)
 }
 
+// normaliseLogLevel 标准化设置里的最小记录级别。
 func normaliseLogLevel(level string) string {
 	return appsettings.NormalizeLogLevel(level)
 }
@@ -188,12 +178,12 @@ func SlogLevelFromLogLevel(level string) slog.Level {
 	return applogging.SlogLevelFromLogLevel(level)
 }
 
+// logSeverityRank 返回日志级别排序值，用于最小级别过滤。
 func logSeverityRank(severity string) int {
 	return applogging.SeverityRank(severity)
 }
 
-// calculateLogStats 计算日志统计信息
-// 统计总数量、信息数量、警告数量、错误数量
+// calculateLogStats 基于过滤后的日志集合计算统计信息。
 func calculateLogStats(logs []LogEntry) LogStats {
 	stats := LogStats{Total: len(logs)}
 	for _, entry := range logs {

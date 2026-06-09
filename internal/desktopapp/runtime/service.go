@@ -1,88 +1,69 @@
-// ============================================================================
-// 文件: app/service.go
-// 描述: 应用核心运行时服务，管理应用程序的生命周期和状态
-//
-// 功能概述:
-// - 运行时初始化和配置管理
-// - 应用信息与环境信息获取
-// - 设置持久化和加载
-// - 日志记录和当前更新状态跟踪
-// - 更新状态管理
-// - 多实例处理
-// ============================================================================
+// 文件职责：创建桌面 Runtime，集中持有设置、日志、更新、授权、窗口和 Wails API 状态。
 
 package runtime
 
 import (
-	"context"  // 上下文接口，用于停止后台任务
-	"log/slog" // 结构化日志框架
+	"context"
+	"log/slog"
 	"path/filepath"
-	goruntime "runtime" // 运行时信息，获取操作系统和架构
+	goruntime "runtime"
 	"strings"
-	"sync" // 同步原语，保护并发访问
-	"time" // 时间包，用于时间戳
+	"sync"
+	"time"
 
-	// 项目内部包
-	"github.com/chencn/go-desktop/internal/adapters/configstore"      // 存储层（SQLite）
-	"github.com/chencn/go-desktop/internal/adapters/filelog"          // 文件日志适配层
-	"github.com/chencn/go-desktop/internal/adapters/githubrelease"    // GitHub 版本检查模块
-	"github.com/chencn/go-desktop/internal/desktopapp/display"        // 显示偏好模型
-	"github.com/chencn/go-desktop/internal/desktopapp/metadata"       // 项目元数据常量
-	updater "github.com/chencn/go-desktop/internal/desktopapp/update" // 更新管理器
+	"github.com/chencn/go-desktop/internal/adapters/configstore"
+	"github.com/chencn/go-desktop/internal/adapters/filelog"
+	"github.com/chencn/go-desktop/internal/adapters/githubrelease"
+	"github.com/chencn/go-desktop/internal/desktopapp/display"
+	"github.com/chencn/go-desktop/internal/desktopapp/metadata"
+	updater "github.com/chencn/go-desktop/internal/desktopapp/update"
 	"github.com/chencn/go-desktop/internal/platform/paths"
 	processutil "github.com/chencn/go-desktop/internal/platform/process"
 
-	// Wails v3 框架
-	"github.com/wailsapp/wails/v3/pkg/application" // Wails 应用主包
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-// ============================================================================
-// 配置结构体
-// ============================================================================
-
-// ServiceOptions 定义 Runtime 的初始化配置
-// 所有字段都是可选的，空值会使用默认值填充
-// ServiceOptions 是运行时服务的配置选项
+// ServiceOptions 定义 Runtime 初始化依赖。
+// 生产入口只传必要覆盖项；空字段会在 NewRuntime 中补项目默认值或平台默认路径。
 type ServiceOptions struct {
 	// AppName 应用程序名称
 	// 用于窗口标题、单实例标识、默认路径等
-	AppName string // AppName 保存 AppName 对应的数据，供当前实体的调用方读取或持久化。
+	AppName string
 
 	// Version 当前应用版本号
 	// 格式: semver (如 "1.0.0")，用于更新检查
-	Version string // Version 保存 Version 对应的数据，供当前实体的调用方读取或持久化。
+	Version string
 
 	// Description 应用描述
 	// 显示在关于页面和元数据中
-	Description string // Description 保存 Description 对应的数据，供当前实体的调用方读取或持久化。
+	Description string
 
 	// Repository GitHub 仓库地址
 	// 用于更新检查和关于页面链接
-	Repository string // Repository 保存 Repository 对应的数据，供当前实体的调用方读取或持久化。
+	Repository string
 
 	// DatabasePath SQLite 数据库文件路径
 	// 只存储 config_items 配置项
-	DatabasePath string // DatabasePath 保存 DatabasePath 对应的数据，供当前实体的调用方读取或持久化。
+	DatabasePath string
 
 	// LogDirPath 文件日志目录
 	// 为空时可由 LogFilePath 兼容映射；桌面入口会传入默认路径所在目录
-	LogDirPath string // LogDirPath 保存 LogDirPath 对应的数据，供当前实体的调用方读取或持久化。
+	LogDirPath string
 
 	// LogFilePath 兼容旧调用的文件日志路径
 	// 新实现只取其目录，实际日志文件按 appName-YYYY-MM-DD.log 写入
-	LogFilePath string // LogFilePath 保存 LogFilePath 对应的数据，供当前实体的调用方读取或持久化。
+	LogFilePath string
 
 	// CrashReporter 最早期崩溃日志器
 	// main.go 在 Runtime 创建前安装，用于捕获 Runtime/Wails 尚未可用时的退出线索
-	CrashReporter *CrashReporter // CrashReporter 保存 CrashReporter 对应的数据，供当前实体的调用方读取或持久化。
+	CrashReporter *CrashReporter
 
 	// CachePath 缓存目录路径
 	// 用于存储下载的更新包等临时文件
-	CachePath string // CachePath 保存 CachePath 对应的数据，供当前实体的调用方读取或持久化。
+	CachePath string
 
-	// ReleaseChecker GitHub 版本检查器实例
-	// 如果为空，会自动创建默认实例
-	ReleaseChecker *githubrelease.Checker // ReleaseChecker 保存 ReleaseChecker 对应的数据，供当前实体的调用方读取或持久化。
+	// ReleaseChecker 是默认 GitHub Release 检查器；设置切到 local 或自定义 GitHub 配置时会动态创建新检查器。
+	ReleaseChecker *githubrelease.Checker
 
 	// LocalUpdateBaseURL 本地静态升级根地址
 	// 为空时使用项目元数据默认值
@@ -92,9 +73,8 @@ type ServiceOptions struct {
 	// 为空时使用项目元数据默认值
 	LocalUpdateManifestPath string
 
-	// UpdateManager 更新管理器实例
-	// 如果为空，会自动创建默认实例
-	UpdateManager *updater.Manager // UpdateManager 保存 UpdateManager 对应的数据，供当前实体的调用方读取或持久化。
+	// UpdateManager 负责下载、校验和启动安装器；为空时使用 CachePath 创建默认实例。
+	UpdateManager *updater.Manager
 
 	// StartupIntegrationApplier 可选的启动集成同步函数，用于替换默认平台集成实现。
 	StartupIntegrationApplier func(previous Settings, next Settings) error
@@ -112,75 +92,69 @@ type ServiceOptions struct {
 	LicenseDeviceCodeSource func() string
 }
 
-// ============================================================================
-// 核心运行时结构体
-// ============================================================================
-
-// Runtime 是应用的核心运行时，管理所有应用状态和服务
-// 线程安全：所有公开方法都使用锁保护并发访问
+// Runtime 是桌面应用的进程级状态容器。
+// lock 保护可变状态；耗时更新操作额外由 updateOperationLock 串行化。
 type Runtime struct {
 	// options 初始化配置（只读，初始化后不变）
-	options ServiceOptions // options 保存 options 对应的数据，供当前实体的调用方读取或持久化。
+	options ServiceOptions
 
-	// releaseChecker GitHub 版本检查器
-	// 用于检查是否有新版本发布
-	releaseChecker *githubrelease.Checker // releaseChecker 保存 releaseChecker 对应的数据，供当前实体的调用方读取或持久化。
+	// releaseChecker 是默认 GitHub 源检查器；非默认设置会由 updateChecker 临时构造检查器。
+	releaseChecker *githubrelease.Checker
 
 	// startedAt 应用启动时间（UTC）
 	// 用于计算运行时长和日志时间戳
-	startedAt time.Time // startedAt 保存 startedAt 对应的数据，供当前实体的调用方读取或持久化。
+	startedAt time.Time
 
 	// databasePath 数据库文件路径
-	databasePath string // databasePath 保存 databasePath 对应的数据，供当前实体的调用方读取或持久化。
+	databasePath string
 
 	// logger 是应用统一结构化日志入口。
-	logger *slog.Logger // logger 保存 logger 对应的数据，供当前实体的调用方读取或持久化。
+	logger *slog.Logger
 
 	// shuttingDown 表示运行时正在释放资源，禁止重新打开日志文件。
 	shuttingDown bool
 
 	// logLevel 允许设置变更时动态调整 slog 过滤级别。
-	logLevel *slog.LevelVar // logLevel 保存 logLevel 对应的数据，供当前实体的调用方读取或持久化。
+	logLevel *slog.LevelVar
 
 	// logWriter 是每日文件 writer，只负责按日期切文件。
-	logWriter *filelog.DailyWriter // logWriter 保存 logWriter 对应的数据，供当前实体的调用方读取或持久化。
+	logWriter *filelog.DailyWriter
 
 	// logDirPath 文件日志目录。
-	logDirPath string // logDirPath 保存 logDirPath 对应的数据，供当前实体的调用方读取或持久化。
+	logDirPath string
 
 	// logFilePattern 描述每日文件命名规则，便于环境信息展示和排查。
-	logFilePattern string // logFilePattern 保存 logFilePattern 对应的数据，供当前实体的调用方读取或持久化。
+	logFilePattern string
 
 	// logCleanupStop 停止启动期日志保留清理任务。
-	logCleanupStop context.CancelFunc // logCleanupStop 保存 logCleanupStop 对应的数据，供当前实体的调用方读取或持久化。
+	logCleanupStop context.CancelFunc
 
 	// crashReporter 最早期崩溃日志器
 	// error/panic 和 Wails 生命周期异常会同步写入，避免 Runtime 日志不可用时丢线索
-	crashReporter *CrashReporter // crashReporter 保存 crashReporter 对应的数据，供当前实体的调用方读取或持久化。
+	crashReporter *CrashReporter
 
 	// processCapture 当前 stdout/stderr 捕获器
 	// 用于把非 log/slog 的进程标准流输出也接入日志页
-	processCapture *processutil.StreamCapture // processCapture 保存 processCapture 对应的数据，供当前实体的调用方读取或持久化。
+	processCapture *processutil.StreamCapture
 
 	// processLogRestore 记录安装进程日志捕获前的全局 log/slog 状态
 	// Shutdown 会用它恢复标准库日志和结构化日志，避免留下跨运行时副作用
-	processLogRestore *processLogRestore // processLogRestore 保存 processLogRestore 对应的数据，供当前实体的调用方读取或持久化。
+	processLogRestore *processLogRestore
 
-	// cachePath 缓存目录路径
-	cachePath string // cachePath 保存 cachePath 对应的数据，供当前实体的调用方读取或持久化。
+	// cachePath 是更新包和更新状态文件的根目录。
+	cachePath string
 
 	// store SQLite 数据库实例
 	// 只用于持久化配置项
-	store *configstore.Store // store 保存 store 对应的数据，供当前实体的调用方读取或持久化。
+	store *configstore.Store
 
 	// configDefaultsEnsured 标记当前 store 是否已经写入过配置默认项元数据
 	configDefaultsEnsured bool // configDefaultsEnsured 避免每次设置保存都重复刷新全部默认配置项。
 
-	// updateManager 更新管理器
-	// 处理更新下载、安装等操作
-	updateManager *updater.Manager // updateManager 保存 updateManager 对应的数据，供当前实体的调用方读取或持久化。
+	// updateManager 处理安装包下载、校验和安装器启动。
+	updateManager *updater.Manager
 
-	// updateOperationLock 串行化下载、安排和安装，避免同一安装包临时文件并发写入。
+	// updateOperationLock 串行化下载、安排和安装，避免同一 .download 临时文件和 pending/verified 状态被并发改写。
 	updateOperationLock sync.Mutex
 
 	// licenseMode 授权模式；只有 required 会触发授权。
@@ -195,21 +169,20 @@ type Runtime struct {
 	// licenseDeviceCodeSource 可选设备码生成函数，主要用于测试。
 	licenseDeviceCodeSource func() string
 
-	// lock 读写锁，保护并发访问
-	// 读操作使用 RLock，写操作使用 Lock
-	lock sync.RWMutex // lock 保存 lock 对应的数据，供当前实体的调用方读取或持久化。
+	// lock 保护 Runtime 可变状态；不要在持锁期间执行网络、文件下载或 Wails 退出等耗时副作用。
+	lock sync.RWMutex
 
 	// wailsApp Wails 应用实例
 	// 用于访问窗口、托盘等 GUI 功能
-	wailsApp *application.App // wailsApp 保存 wailsApp 对应的数据，供当前实体的调用方读取或持久化。
+	wailsApp *application.App
 
 	// mainWindow 主窗口实例
 	// 用于窗口操作（显示、隐藏、事件发送等）
-	mainWindow *application.WebviewWindow // mainWindow 保存 mainWindow 对应的数据，供当前实体的调用方读取或持久化。
+	mainWindow *application.WebviewWindow
 
 	// settings 当前应用设置
 	// 包含 GitHub 配置、更新间隔、日志保留等
-	settings Settings // settings 保存 settings 对应的数据，供当前实体的调用方读取或持久化。
+	settings Settings
 
 	// updateSchedulerStop 停止后台更新检查任务。
 	updateSchedulerStop context.CancelFunc
@@ -221,149 +194,130 @@ type Runtime struct {
 
 	// logs 内存中的日志条目
 	// 用于当前前端视图和文件不可读时兜底
-	logs []LogEntry // logs 保存 logs 对应的数据，供当前实体的调用方读取或持久化。
+	logs []LogEntry
 
 	// logViewClearedAt 记录当前前端视图的清空时间，不删除文件日志。
-	logViewClearedAt map[string]time.Time // logViewClearedAt 保存 logViewClearedAt 对应的数据，供当前实体的调用方读取或持久化。
+	logViewClearedAt map[string]time.Time
 
-	// latestUpdateCheck 当前进程最近一次更新检查结果。
-	latestUpdateCheck githubrelease.CheckResult // latestUpdateCheck 保存 latestUpdateCheck 对应的数据，供当前实体的调用方读取或持久化。
+	// latestUpdateCheck 是当前进程最近一次更新检查结果，只供 DownloadUpdate 消费，不从磁盘恢复。
+	latestUpdateCheck githubrelease.CheckResult
 
 	// hasUpdateCheck 标记 latestUpdateCheck 是否可用；重启后不从数据库恢复。
-	hasUpdateCheck bool // hasUpdateCheck 保存 hasUpdateCheck 对应的数据，供当前实体的调用方读取或持久化。
+	hasUpdateCheck bool
 
-	// updateState 当前更新状态
-	// 反映更新下载/安装的进度和结果
-	updateState UpdateStatus // updateState 保存 updateState 对应的数据，供当前实体的调用方读取或持久化。
+	// updateState 当前内存更新状态；静止态可由 verified.json 恢复。
+	updateState UpdateStatus
 
 	// forceQuit 强制退出标志
 	// 为 true 时，关闭窗口直接退出而不是隐藏到托盘
-	forceQuit bool // forceQuit 保存 forceQuit 对应的数据，供当前实体的调用方读取或持久化。
+	forceQuit bool
 
 	// secondStart 多实例启动记录
 	// 当用户第二次启动应用时记录参数
-	secondStart []SecondInstanceRecord // secondStart 保存 secondStart 对应的数据，供当前实体的调用方读取或持久化。
+	secondStart []SecondInstanceRecord
 }
 
-// ============================================================================
-// API 结构体
-// ============================================================================
-
-// API 是前端调用的服务接口
-// 所有方法都会被 Wails 自动暴露给前端
+// API 是 Wails 暴露给前端的服务对象。
+// 多数 API 方法会先调用 requireAuthorized；授权状态和激活接口除外。
 type API struct {
-	// runtime 运行时实例引用
-	runtime *Runtime // runtime 保存 runtime 对应的数据，供当前实体的调用方读取或持久化。
+	// runtime 是内部 Runtime 引用，不直接暴露给前端模型。
+	runtime *Runtime
 }
 
-// ============================================================================
-// 应用信息结构体
-// ============================================================================
-
-// AppInfo 应用基本信息
-// 前端调用 GetAppInfo() 获取
+// AppInfo 是前端关于页和首页使用的应用基本信息。
 type AppInfo struct {
 	// Name 应用名称
-	Name string `json:"name"` // Name 保存 name 对应的数据，供当前实体的调用方读取或持久化。
+	Name string `json:"name"`
 
 	// Version 当前版本号
-	Version string `json:"version"` // Version 保存 version 对应的数据，供当前实体的调用方读取或持久化。
+	Version string `json:"version"`
 
 	// Description 应用描述
-	Description string `json:"description"` // Description 保存 description 对应的数据，供当前实体的调用方读取或持久化。
+	Description string `json:"description"`
 
 	// Repository GitHub 仓库地址
-	Repository string `json:"repository"` // Repository 保存 repository 对应的数据，供当前实体的调用方读取或持久化。
+	Repository string `json:"repository"`
 
 	// StartedAt 启动时间（ISO 8601 格式）
-	StartedAt string `json:"startedAt"` // StartedAt 保存 startedAt 对应的数据，供当前实体的调用方读取或持久化。
+	StartedAt string `json:"startedAt"`
 }
 
-// EnvironmentInfo 环境信息
-// 前端调用 GetEnvironmentInfo() 获取
+// EnvironmentInfo 是前端展示和诊断使用的运行环境快照。
 type EnvironmentInfo struct {
 	// OS 操作系统（如 "windows", "darwin", "linux"）
-	OS string `json:"os"` // OS 保存 os 对应的数据，供当前实体的调用方读取或持久化。
+	OS string `json:"os"`
 
 	// Arch CPU 架构（如 "amd64", "arm64"）
-	Arch string `json:"arch"` // Arch 保存 arch 对应的数据，供当前实体的调用方读取或持久化。
+	Arch string `json:"arch"`
 
 	// GoVersion Go 运行时版本
-	GoVersion string `json:"goVersion"` // GoVersion 保存 goVersion 对应的数据，供当前实体的调用方读取或持久化。
+	GoVersion string `json:"goVersion"`
 
 	// WailsVersion Wails 框架版本
-	WailsVersion string `json:"wailsVersion"` // WailsVersion 保存 wailsVersion 对应的数据，供当前实体的调用方读取或持久化。
+	WailsVersion string `json:"wailsVersion"`
 
 	// DatabasePath 数据库文件路径
-	DatabasePath string `json:"databasePath"` // DatabasePath 保存 databasePath 对应的数据，供当前实体的调用方读取或持久化。
+	DatabasePath string `json:"databasePath"`
 
-	// DatabaseReady SQLite 配置库是否已打开并完成默认配置初始化
-	DatabaseReady bool `json:"databaseReady"` // DatabaseReady 保存 databaseReady 对应的数据，供当前实体的调用方读取或持久化。
+	// DatabaseReady 表示 SQLite 配置库已打开且默认配置项已初始化。
+	DatabaseReady bool `json:"databaseReady"`
 
 	// DatabaseStatus SQLite 配置库状态，供首页监控直接消费。
-	DatabaseStatus string `json:"databaseStatus"` // DatabaseStatus 保存 databaseStatus 对应的数据，供当前实体的调用方读取或持久化。
+	DatabaseStatus string `json:"databaseStatus"`
 
 	// DatabaseMessage SQLite 配置库状态说明。
-	DatabaseMessage string `json:"databaseMessage"` // DatabaseMessage 保存 databaseMessage 对应的数据，供当前实体的调用方读取或持久化。
+	DatabaseMessage string `json:"databaseMessage"`
 
 	// LogFilePath 文件日志路径
-	LogFilePath string `json:"logFilePath"` // LogFilePath 保存 logFilePath 对应的数据，供当前实体的调用方读取或持久化。
+	LogFilePath string `json:"logFilePath"`
 
 	// CachePath 缓存目录路径
-	CachePath string `json:"cachePath"` // CachePath 保存 cachePath 对应的数据，供当前实体的调用方读取或持久化。
+	CachePath string `json:"cachePath"`
 }
 
-// ============================================================================
-// 设置结构体
-// ============================================================================
-
-// Settings 应用设置
-// 所有字段都可通过前端修改并持久化
+// Settings 是前端可修改并持久化到 SQLite KV 的应用设置。
 type Settings struct {
-	// UpdateSource 更新源：github 或 local
-	// 决定检查更新时只访问 GitHub Release 还是本地静态 manifest
-	UpdateSource string `json:"updateSource"` // UpdateSource 保存 updateSource 对应的数据，供当前实体的调用方读取或持久化。
+	// UpdateSource 更新源：github 或 local。
+	UpdateSource string `json:"updateSource"`
 
 	// GitHubOwner GitHub 仓库所有者（用户名或组织名）
 	// 用于检查更新时的 API 请求
-	GitHubOwner string `json:"githubOwner"` // GitHubOwner 保存 githubOwner 对应的数据，供当前实体的调用方读取或持久化。
+	GitHubOwner string `json:"githubOwner"`
 
 	// GitHubRepo GitHub 仓库名称
-	GitHubRepo string `json:"githubRepo"` // GitHubRepo 保存 githubRepo 对应的数据，供当前实体的调用方读取或持久化。
+	GitHubRepo string `json:"githubRepo"`
 
-	// GitHubProxyBase GitHub API 代理地址
-	// 用于国内加速，为空则使用官方 API
-	GitHubProxyBase string `json:"githubProxyBase"` // GitHubProxyBase 保存 githubProxyBase 对应的数据，供当前实体的调用方读取或持久化。
+	// GitHubProxyBase 会作为 GitHub API、安装资产和 .sha256 URL 的统一前缀；local 源不使用它。
+	GitHubProxyBase string `json:"githubProxyBase"`
 
-	// UpdateCheckIntervalHours 自动更新检查间隔（小时）
-	// 0 或负数表示禁用自动检查
-	UpdateCheckIntervalHours int `json:"updateCheckIntervalHours"` // UpdateCheckIntervalHours 保存 updateCheckIntervalHours 对应的数据，供当前实体的调用方读取或持久化。
+	// UpdateCheckIntervalHours 自动更新检查间隔（小时）；0 或负数会回退到 metadata 默认值。
+	UpdateCheckIntervalHours int `json:"updateCheckIntervalHours"`
 
 	// MinimizeToTray 关闭窗口时隐藏到系统托盘
 	// true: 点击关闭时隐藏窗口到托盘
 	// false: 点击关闭时直接关闭窗口
-	MinimizeToTray bool `json:"minimizeToTray"` // MinimizeToTray 保存 minimizeToTray 对应的数据，供当前实体的调用方读取或持久化。
+	MinimizeToTray bool `json:"minimizeToTray"`
 
 	// LogRetentionDays 日志保留天数
 	// -1 表示永久保留
 	// 0 使用默认值（通常 30 天）
-	LogRetentionDays int `json:"logRetentionDays"` // LogRetentionDays 保存 logRetentionDays 对应的数据，供当前实体的调用方读取或持久化。
+	LogRetentionDays int `json:"logRetentionDays"`
 
 	// LogLevel 最小记录日志级别
 	// 支持 debug、info、warning、error；error/panic 永远优先保留。
-	LogLevel string `json:"logLevel"` // LogLevel 保存 logLevel 对应的数据，供当前实体的调用方读取或持久化。
+	LogLevel string `json:"logLevel"`
 
 	// AutoLaunch 开机自启
 	// true 时 Runtime 会通过 Wails3 Autostart 注册当前应用
-	AutoLaunch bool `json:"autoLaunch"` // AutoLaunch 保存 autoLaunch 对应的数据，供当前实体的调用方读取或持久化。
+	AutoLaunch bool `json:"autoLaunch"`
 
 	// CreateDesktopShortcut 创建桌面快捷图标
 	// true 时 Runtime 会在当前用户桌面创建应用快捷方式
-	CreateDesktopShortcut bool `json:"createDesktopShortcut"` // CreateDesktopShortcut 保存 createDesktopShortcut 对应的数据，供当前实体的调用方读取或持久化。
+	CreateDesktopShortcut bool `json:"createDesktopShortcut"`
 
 	// LaunchHiddenToTray 开机自启时隐藏到托盘
 	// 仅在 AutoLaunch 开启且启动参数来自自启入口时生效
-	LaunchHiddenToTray bool `json:"launchHiddenToTray"` // LaunchHiddenToTray 保存 launchHiddenToTray 对应的数据，供当前实体的调用方读取或持久化。
+	LaunchHiddenToTray bool `json:"launchHiddenToTray"`
 }
 
 // ============================================================================
@@ -373,17 +327,17 @@ type Settings struct {
 // LogEntry 单条日志记录
 type LogEntry struct {
 	// Time 日志时间（ISO 8601 格式，UTC）
-	Time string `json:"time"` // Time 保存 time 对应的数据，供当前实体的调用方读取或持久化。
+	Time string `json:"time"`
 
 	// Scope 日志作用域（如 "app", "window", "storage"）
 	// 用于日志分类和过滤
-	Scope string `json:"scope"` // Scope 保存 scope 对应的数据，供当前实体的调用方读取或持久化。
+	Scope string `json:"scope"`
 
 	// Message 日志内容
-	Message string `json:"message"` // Message 保存 message 对应的数据，供当前实体的调用方读取或持久化。
+	Message string `json:"message"`
 
 	// Severity 日志级别（"info", "warning", "error"）
-	Severity string `json:"severity"` // Severity 保存 severity 对应的数据，供当前实体的调用方读取或持久化。
+	Severity string `json:"severity"`
 }
 
 // LogFileInfo 描述一个可在前端选择的每日文件日志。
@@ -413,43 +367,43 @@ type LogQuery struct {
 	FileName string `json:"fileName"`
 
 	// Scope 按作用域过滤（空表示全部）
-	Scope string `json:"scope"` // Scope 保存 scope 对应的数据，供当前实体的调用方读取或持久化。
+	Scope string `json:"scope"`
 
 	// Severity 按级别过滤（空表示全部）
-	Severity string `json:"severity"` // Severity 保存 severity 对应的数据，供当前实体的调用方读取或持久化。
+	Severity string `json:"severity"`
 
 	// Keyword 按关键词搜索（匹配 Message 字段）
-	Keyword string `json:"keyword"` // Keyword 保存 keyword 对应的数据，供当前实体的调用方读取或持久化。
+	Keyword string `json:"keyword"`
 
 	// Page 页码（从 1 开始）
-	Page int `json:"page"` // Page 保存 page 对应的数据，供当前实体的调用方读取或持久化。
+	Page int `json:"page"`
 
 	// PageSize 每页条数
-	PageSize int `json:"pageSize"` // PageSize 保存 pageSize 对应的数据，供当前实体的调用方读取或持久化。
+	PageSize int `json:"pageSize"`
 }
 
 // LogStats 日志统计信息
 type LogStats struct {
 	// Total 总日志数
-	Total int `json:"total"` // Total 保存 total 对应的数据，供当前实体的调用方读取或持久化。
+	Total int `json:"total"`
 
 	// Debug 调试级别日志数
-	Debug int `json:"debug"` // Debug 保存 debug 对应的数据，供当前实体的调用方读取或持久化。
+	Debug int `json:"debug"`
 
 	// Info 信息级别日志数
-	Info int `json:"info"` // Info 保存 info 对应的数据，供当前实体的调用方读取或持久化。
+	Info int `json:"info"`
 
 	// Warning 警告级别日志数
-	Warning int `json:"warning"` // Warning 保存 warning 对应的数据，供当前实体的调用方读取或持久化。
+	Warning int `json:"warning"`
 
 	// Error 错误级别日志数
-	Error int `json:"error"` // Error 保存 error 对应的数据，供当前实体的调用方读取或持久化。
+	Error int `json:"error"`
 }
 
 // LogResponse 日志查询响应
 type LogResponse struct {
 	// Logs 当前页的日志列表
-	Logs []LogEntry `json:"logs"` // Logs 保存 logs 对应的数据，供当前实体的调用方读取或持久化。
+	Logs []LogEntry `json:"logs"`
 
 	// Source 日志来源，file 表示每日文件，memory 表示文件不可用时的内存降级。
 	Source string `json:"source"`
@@ -461,67 +415,66 @@ type LogResponse struct {
 	FilePath string `json:"filePath"`
 
 	// Total 符合条件的总日志数
-	Total int `json:"total"` // Total 保存 total 对应的数据，供当前实体的调用方读取或持久化。
+	Total int `json:"total"`
 
 	// Page 当前页码
-	Page int `json:"page"` // Page 保存 page 对应的数据，供当前实体的调用方读取或持久化。
+	Page int `json:"page"`
 
 	// PageSize 每页条数
-	PageSize int `json:"pageSize"` // PageSize 保存 pageSize 对应的数据，供当前实体的调用方读取或持久化。
+	PageSize int `json:"pageSize"`
 
 	// HasMore 是否有下一页
-	HasMore bool `json:"hasMore"` // HasMore 保存 hasMore 对应的数据，供当前实体的调用方读取或持久化。
+	HasMore bool `json:"hasMore"`
 
 	// Stats 日志统计信息
-	Stats LogStats `json:"stats"` // Stats 保存 stats 对应的数据，供当前实体的调用方读取或持久化。
+	Stats LogStats `json:"stats"`
 }
 
 // ============================================================================
 // 更新状态结构体
 // ============================================================================
 
-// UpdateStatus 更新状态信息
-// 前端通过轮询或事件获取此状态
+// UpdateStatus 是前端轮询和 update:status:changed 事件共用的更新状态机快照。
 type UpdateStatus struct {
-	// Status 更新状态（"idle", "checking", "downloading", "installing", "completed", "error"）
-	Status string `json:"status"` // Status 保存 status 对应的数据，供当前实体的调用方读取或持久化。
+	// Status 更新状态：idle、update_available、downloading、verifying、verified、pending_install、installing、install_started、no_update、skipped、error。
+	Status string `json:"status"`
 
 	// Message 状态描述（用户可读）
-	Message string `json:"message"` // Message 保存 message 对应的数据，供当前实体的调用方读取或持久化。
+	Message string `json:"message"`
 
-	// Version 目标版本号（检查更新时）
-	Version string `json:"version,omitempty"` // Version 保存 version 对应的数据，供当前实体的调用方读取或持久化。
+	// Version 是检查到或已下载的目标版本号。
+	Version string `json:"version,omitempty"`
 
 	// AssetName 下载的文件名
-	AssetName string `json:"assetName,omitempty"` // AssetName 保存 assetName 对应的数据，供当前实体的调用方读取或持久化。
+	AssetName string `json:"assetName,omitempty"`
 
-	// FilePath 下载文件的本地路径
-	FilePath string `json:"filePath,omitempty"` // FilePath 保存 filePath 对应的数据，供当前实体的调用方读取或持久化。
+	// FilePath 是缓存目录内已校验安装包路径。
+	FilePath string `json:"filePath,omitempty"`
 
 	// DownloadedBytes 已下载字节数
-	DownloadedBytes int64 `json:"downloadedBytes,omitempty"` // DownloadedBytes 保存 downloadedBytes 对应的数据，供当前实体的调用方读取或持久化。
+	DownloadedBytes int64 `json:"downloadedBytes,omitempty"`
 
 	// TotalBytes 总字节数
-	TotalBytes int64 `json:"totalBytes,omitempty"` // TotalBytes 保存 totalBytes 对应的数据，供当前实体的调用方读取或持久化。
+	TotalBytes int64 `json:"totalBytes,omitempty"`
 
 	// ProgressPercent 下载进度（0-100）
-	ProgressPercent float64 `json:"progressPercent,omitempty"` // ProgressPercent 保存 progressPercent 对应的数据，供当前实体的调用方读取或持久化。
+	ProgressPercent float64 `json:"progressPercent,omitempty"`
 
 	// Sha256 文件 SHA256 校验和
 	// 用于验证下载文件的完整性
-	Sha256 string `json:"sha256,omitempty"` // Sha256 保存 sha256 对应的数据，供当前实体的调用方读取或持久化。
+	Sha256 string `json:"sha256,omitempty"`
 
-	// Verified 是否通过完整性验证
-	Verified bool `json:"verified"` // Verified 保存 verified 对应的数据，供当前实体的调用方读取或持久化。
+	// Verified 表示 FilePath 指向的安装包曾通过 SHA256 校验；安装前仍会复验。
+	Verified bool `json:"verified"`
 
 	// ErrorReason 错误原因（状态为 error 时）
-	ErrorReason string `json:"errorReason,omitempty"` // ErrorReason 保存 errorReason 对应的数据，供当前实体的调用方读取或持久化。
+	ErrorReason string `json:"errorReason,omitempty"`
 
 	// Source 更新源：github 或 local
-	Source string `json:"source,omitempty"` // Source 保存 source 对应的数据，供当前实体的调用方读取或持久化。
+	Source string `json:"source,omitempty"`
 
 	// UpdatedAt 状态更新时间（ISO 8601 格式）
-	UpdatedAt string `json:"updatedAt"` // UpdatedAt 保存 updatedAt 对应的数据，供当前实体的调用方读取或持久化。
+	UpdatedAt string `json:"updatedAt"`
 }
 
 // ============================================================================
@@ -532,13 +485,13 @@ type UpdateStatus struct {
 // 当用户第二次启动应用时创建
 type SecondInstanceRecord struct {
 	// Args 命令行参数
-	Args []string `json:"args"` // Args 保存 args 对应的数据，供当前实体的调用方读取或持久化。
+	Args []string `json:"args"`
 
 	// WorkingDir 工作目录
-	WorkingDir string `json:"workingDir"` // WorkingDir 保存 workingDir 对应的数据，供当前实体的调用方读取或持久化。
+	WorkingDir string `json:"workingDir"`
 
 	// ReceivedAt 接收时间
-	ReceivedAt string `json:"receivedAt"` // ReceivedAt 保存 receivedAt 对应的数据，供当前实体的调用方读取或持久化。
+	ReceivedAt string `json:"receivedAt"`
 }
 
 // ============================================================================
@@ -549,13 +502,13 @@ type SecondInstanceRecord struct {
 // 用于处理应用退出逻辑（正常退出、强制退出、更新退出等）
 type ExitRequest struct {
 	// Present 是否有退出请求
-	Present bool // Present 保存 Present 对应的数据，供当前实体的调用方读取或持久化。
+	Present bool
 
 	// Force 是否强制退出（不保存状态）
-	Force bool // Force 保存 Force 对应的数据，供当前实体的调用方读取或持久化。
+	Force bool
 
 	// Source 退出来源（如 "user", "update", "system"）
-	Source string // Source 保存 Source 对应的数据，供当前实体的调用方读取或持久化。
+	Source string
 }
 
 // ============================================================================

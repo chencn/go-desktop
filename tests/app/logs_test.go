@@ -1,5 +1,4 @@
-// 文件职责：验证 logs_test.go 覆盖的生产行为、结构约束或构建脚本约束。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：验证运行日志查询、文件日志、进程级捕获、崩溃状态和保留清理。
 
 package app_test
 
@@ -485,7 +484,6 @@ func TestRuntimeLogLevelFiltersLowSeverityLogs(t *testing.T) {
 	}
 }
 
-// assertLogResponseContains 封装 验证 logs_test.go 覆盖的生产行为、结构约束或构建脚本约束 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func assertLogResponseContains(t *testing.T, response app.LogResponse, required ...string) {
 	t.Helper()
 	for _, entry := range response.Logs {
@@ -526,7 +524,7 @@ func writeCrashStateFixture(t *testing.T, path string, state app.CrashState) {
 	}
 }
 
-// waitForProcessLogs 封装 验证 logs_test.go 覆盖的生产行为、结构约束或构建脚本约束 中的一段独立逻辑，调用方通过它复用同一业务规则。
+// waitForProcessLogs 等待异步 stdout/stderr 捕获写入 Runtime 日志视图。
 func waitForProcessLogs(t *testing.T, runtime *app.Runtime, required ...string) app.LogResponse {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
@@ -571,7 +569,6 @@ func writeJSONLogFixture(t *testing.T, path string, prefix string, count int) {
 	}
 }
 
-// logResponseContainsAll 封装 验证 logs_test.go 覆盖的生产行为、结构约束或构建脚本约束 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func logResponseContainsAll(response app.LogResponse, required ...string) bool {
 	for _, value := range required {
 		found := false

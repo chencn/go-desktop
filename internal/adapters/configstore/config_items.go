@@ -13,6 +13,7 @@ import (
 
 // EnsureConfigItems 确保默认配置项存在。
 // 已存在的配置项只刷新标题、描述、类型、默认值和排序，不覆盖用户当前 value。
+// nil Store 被视为无可用存储，读取路径可降级，写入路径由上层决定是否报错。
 func (s *Store) EnsureConfigItems(ctx context.Context, defaults []ConfigItem) error {
 	if s == nil || s.db == nil {
 		return nil
@@ -51,7 +52,7 @@ func (s *Store) EnsureConfigItems(ctx context.Context, defaults []ConfigItem) er
 	return tx.Commit()
 }
 
-// ListConfigItems 返回全部配置项。
+// ListConfigItems 返回全部配置项；nil Store 返回 nil slice 且不报错，方便启动读取降级。
 func (s *Store) ListConfigItems(ctx context.Context) ([]ConfigItem, error) {
 	if s == nil || s.db == nil {
 		return nil, nil
@@ -85,6 +86,7 @@ func (s *Store) UpsertConfigValue(ctx context.Context, key string, value string)
 }
 
 // UpsertConfigValues 批量更新配置项当前值。
+// 未预先定义的 key 会以 custom/string 元数据插入；空 key 是调用方错误并返回 error。
 func (s *Store) UpsertConfigValues(ctx context.Context, values map[string]string) error {
 	if s == nil || s.db == nil {
 		return nil
@@ -133,6 +135,7 @@ func (s *Store) UpsertConfigValues(ctx context.Context, values map[string]string
 	return tx.Commit()
 }
 
+// normaliseConfigItem 清理配置项元数据，并在 value 为空时使用 default_value 初始化。
 func normaliseConfigItem(item ConfigItem) ConfigItem {
 	item.Key = strings.TrimSpace(item.Key)
 	item.Category = strings.TrimSpace(item.Category)
@@ -154,6 +157,7 @@ func normaliseConfigItem(item ConfigItem) ConfigItem {
 	return item
 }
 
+// normaliseConfigValueType 只允许当前 UI/业务层能解析的基础类型。
 func normaliseConfigValueType(valueType string) string {
 	switch strings.ToLower(strings.TrimSpace(valueType)) {
 	case "bool", "int", "string":

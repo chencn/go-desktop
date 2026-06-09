@@ -1,5 +1,4 @@
-// 文件职责：调用 GitHub Release API、匹配安装资产并生成审计结果。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：验证 GitHub/local Release 清单解析、安装资产匹配和 SHA256 来源选择。
 
 package githubrelease_test
 
@@ -15,7 +14,6 @@ import (
 	"github.com/chencn/go-desktop/internal/adapters/githubrelease"
 )
 
-// roundTripFunc 定义 调用 GitHub Release API、匹配安装资产并生成审计结果 使用的数据实体，字段会直接参与校验、渲染、持久化或平台适配。
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func testAssetNames(version string) []string {
@@ -27,12 +25,11 @@ func testAssetNames(version string) []string {
 	}
 }
 
-// RoundTrip 封装 调用 GitHub Release API、匹配安装资产并生成审计结果 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return fn(req)
 }
 
-// TestCheckStaticSelectsNewestStableVersion 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckStaticSelectsNewestStableVersion 验证 draft、prerelease 和非法 tag 不参与最新稳定版本选择。
 func TestCheckStaticSelectsNewestStableVersion(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -121,7 +118,7 @@ func TestCheckStaticNormalizesShortReleaseTags(t *testing.T) {
 	}
 }
 
-// TestCheckStaticRejectsInvalidReleaseTags 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckStaticRejectsInvalidReleaseTags 验证没有可解析稳定版本时返回受控错误。
 func TestCheckStaticRejectsInvalidReleaseTags(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -144,7 +141,7 @@ func TestCheckStaticRejectsInvalidReleaseTags(t *testing.T) {
 	}
 }
 
-// TestCheckStaticTreatsVPrefixAsSameVersion 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckStaticTreatsVPrefixAsSameVersion 验证版本比较忽略 tag 的大小写 v 前缀。
 func TestCheckStaticTreatsVPrefixAsSameVersion(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -167,7 +164,7 @@ func TestCheckStaticTreatsVPrefixAsSameVersion(t *testing.T) {
 	}
 }
 
-// TestCheckStaticSelectsPrimaryWindowsAssetAndDigest 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckStaticSelectsPrimaryWindowsAssetAndDigest 验证资产名优先级选择主安装包，并优先使用 GitHub digest。
 func TestCheckStaticSelectsPrimaryWindowsAssetAndDigest(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -213,7 +210,7 @@ func TestCheckStaticSelectsPrimaryWindowsAssetAndDigest(t *testing.T) {
 	}
 }
 
-// TestCheckStaticNoUpdate 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckStaticNoUpdate 验证最新稳定版本不高于当前版本时返回 no_update。
 func TestCheckStaticNoUpdate(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -236,7 +233,7 @@ func TestCheckStaticNoUpdate(t *testing.T) {
 	}
 }
 
-// TestCheckStaticRequiresChecksumForUpdate 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckStaticRequiresChecksumForUpdate 验证可更新安装包必须带 digest 或同名 .sha256 资产。
 func TestCheckStaticRequiresChecksumForUpdate(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -265,7 +262,7 @@ func TestCheckStaticRequiresChecksumForUpdate(t *testing.T) {
 	}
 }
 
-// TestCheckStaticMarksSha256AssetFallback 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckStaticMarksSha256AssetFallback 验证静态解析能标记同名 .sha256 作为校验摘要来源。
 func TestCheckStaticMarksSha256AssetFallback(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -301,7 +298,7 @@ func TestCheckStaticMarksSha256AssetFallback(t *testing.T) {
 	}
 }
 
-// TestCheckFetchesSha256AssetFallback 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckFetchesSha256AssetFallback 验证联网检查会读取同 Release 的 .sha256 文件并保留审计字段。
 func TestCheckFetchesSha256AssetFallback(t *testing.T) {
 	sha := "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
 	var requested []string
@@ -408,7 +405,7 @@ func TestCheckReadsLocalManifestURL(t *testing.T) {
 	}
 }
 
-// TestParseSha256Text 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestParseSha256Text 验证兼容常见 “hash filename” 格式的 .sha256 文本。
 func TestParseSha256Text(t *testing.T) {
 	sha, ok := githubrelease.ParseSha256Text("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef  go-desktop.exe")
 	if !ok {
@@ -419,7 +416,7 @@ func TestParseSha256Text(t *testing.T) {
 	}
 }
 
-// TestCheckStaticRejectsDigestWithTrailingText 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckStaticRejectsDigestWithTrailingText 验证 GitHub digest 必须是完整 sha256:<64 hex>，不能接受尾随文本。
 func TestCheckStaticRejectsDigestWithTrailingText(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -451,7 +448,7 @@ func TestCheckStaticRejectsDigestWithTrailingText(t *testing.T) {
 	}
 }
 
-// TestProxiedURLIsIdempotent 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestProxiedURLIsIdempotent 验证已带同一代理前缀的下载 URL 不会被重复包一层代理。
 func TestProxiedURLIsIdempotent(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -484,7 +481,7 @@ func TestProxiedURLIsIdempotent(t *testing.T) {
 	}
 }
 
-// TestCheckReturnsIgnoredOfflineForNetworkFailure 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckReturnsIgnoredOfflineForNetworkFailure 验证离线检查返回 ignored/offline，避免误报成更新失败。
 func TestCheckReturnsIgnoredOfflineForNetworkFailure(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -512,7 +509,7 @@ func TestCheckReturnsIgnoredOfflineForNetworkFailure(t *testing.T) {
 	}
 }
 
-// TestCheckRecordsHTTPStatusAndErrorReason 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckRecordsHTTPStatusAndErrorReason 验证 HTTP 错误状态会进入结果，方便日志和 UI 排障。
 func TestCheckRecordsHTTPStatusAndErrorReason(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -540,7 +537,7 @@ func TestCheckRecordsHTTPStatusAndErrorReason(t *testing.T) {
 	}
 }
 
-// TestCheckKeepsReleaseContextWhenSha256AssetIsOffline 验证 调用 GitHub Release API、匹配安装资产并生成审计结果 的关键行为，避免后续重构破坏既有约束。
+// TestCheckKeepsReleaseContextWhenSha256AssetIsOffline 验证 .sha256 下载离线时仍保留已解析的版本和资产上下文。
 func TestCheckKeepsReleaseContextWhenSha256AssetIsOffline(t *testing.T) {
 	checker := githubrelease.NewChecker(githubrelease.Config{
 		Owner:          "chencn",
@@ -591,12 +588,10 @@ func TestCheckKeepsReleaseContextWhenSha256AssetIsOffline(t *testing.T) {
 	}
 }
 
-// fixedNow 封装 调用 GitHub Release API、匹配安装资产并生成审计结果 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func fixedNow() time.Time {
 	return time.Date(2026, 6, 2, 3, 0, 0, 0, time.UTC)
 }
 
-// jsonResponse 封装 调用 GitHub Release API、匹配安装资产并生成审计结果 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func jsonResponse(body string) *http.Response {
 	return &http.Response{
 		StatusCode: http.StatusOK,
@@ -605,7 +600,6 @@ func jsonResponse(body string) *http.Response {
 	}
 }
 
-// textResponse 封装 调用 GitHub Release API、匹配安装资产并生成审计结果 中的一段独立逻辑，调用方通过它复用同一业务规则。
 func textResponse(body string) *http.Response {
 	return &http.Response{
 		StatusCode: http.StatusOK,

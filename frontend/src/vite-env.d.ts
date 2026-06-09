@@ -1,13 +1,11 @@
-// 文件职责：vite-env.d.ts 中的业务流程、状态和数据结构。
-// 说明：注释覆盖文件、类型、方法和关键变量；代码执行路径保持不变。
+// 文件职责：补充 Vite 客户端类型和 .vue 单文件组件模块声明。
 
 /// <reference types="vite/client" />
 
 declare module '*.vue' {
   import type { DefineComponent } from 'vue'
 
-  // component 保存 vite-env.d.ts 中的业务流程、状态和数据结构 使用的配置、引用或中间结果。
+  // component 让 TypeScript 把 .vue 文件识别为 Vue 组件模块，具体 props/emit 由组件自身声明。
   const component: DefineComponent<object, object, unknown>
-  // default export 暴露 vite-env.d.ts 中的业务流程、状态和数据结构 的模块配置或组件定义，供构建工具加载。
   export default component
 }

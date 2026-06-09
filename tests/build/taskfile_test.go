@@ -1,5 +1,4 @@
-// 文件职责：验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束。
-// 说明：本文件的注释覆盖文件、实体、方法和关键状态，不改变任何运行逻辑。
+// 文件职责：验证 Taskfile、envrun、发布工作流和桌面入口的构建/启动结构约束。
 
 package build_test
 
@@ -10,7 +9,7 @@ import (
 	"testing"
 )
 
-// TestCommonTaskfileRunsNpmThroughWindowsEnvWrapper 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestCommonTaskfileRunsNpmThroughWindowsEnvWrapper 验证 npm 命令经过 envrun，避免 Windows/Codex 环境变量缺失。
 func TestCommonTaskfileRunsNpmThroughWindowsEnvWrapper(t *testing.T) {
 	source := readRootFile(t, "build", "Taskfile.yml")
 
@@ -26,7 +25,7 @@ func TestCommonTaskfileRunsNpmThroughWindowsEnvWrapper(t *testing.T) {
 	}
 }
 
-// TestTaskfilesProvideWindowsDriveEnvFallbacks 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestTaskfilesProvideWindowsDriveEnvFallbacks 验证 Task 模板为 Windows 基础目录提供兜底值。
 func TestTaskfilesProvideWindowsDriveEnvFallbacks(t *testing.T) {
 	files := map[string]string{
 		"Taskfile.yml":               readRootFile(t, "Taskfile.yml"),
@@ -47,7 +46,7 @@ func TestTaskfilesProvideWindowsDriveEnvFallbacks(t *testing.T) {
 	}
 }
 
-// TestRootTestTaskRunsGoAndFrontendTests 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestRootTestTaskRunsGoAndFrontendTests 验证顶层 test 任务覆盖独立 Go tests 模块和前端 Vitest。
 func TestRootTestTaskRunsGoAndFrontendTests(t *testing.T) {
 	source := readRootFile(t, "Taskfile.yml")
 
@@ -76,7 +75,7 @@ func TestRootDevCommandUsesEnvrun(t *testing.T) {
 	}
 }
 
-// TestDevFrontendStartsWithoutReinstallingDependencies 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestDevFrontendStartsWithoutReinstallingDependencies 验证 Wails dev 启动 Vite 时不重复安装依赖，避免拖慢启动窗口。
 func TestDevFrontendStartsWithoutReinstallingDependencies(t *testing.T) {
 	source := readRootFile(t, "build", "Taskfile.yml")
 	start := strings.Index(source, "  dev:frontend:")
@@ -93,7 +92,7 @@ func TestDevFrontendStartsWithoutReinstallingDependencies(t *testing.T) {
 	}
 }
 
-// TestWailsDevStartsFrontendAfterBuild 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestWailsDevStartsFrontendAfterBuild 验证 Wails dev 执行顺序是先构建、再启动前端、最后运行桌面壳。
 func TestWailsDevStartsFrontendAfterBuild(t *testing.T) {
 	source := readRootFile(t, "build", "config.yml")
 	buildIndex := strings.Index(source, "cmd: go run ./scripts/envrun wails3 task windows:build DEV=true")
@@ -107,7 +106,7 @@ func TestWailsDevStartsFrontendAfterBuild(t *testing.T) {
 	}
 }
 
-// TestEnvrunProvidesWindowsProcessEnvFallbacks 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestEnvrunProvidesWindowsProcessEnvFallbacks 验证 envrun 补齐 Node/Go 在 Windows 下依赖的关键进程环境变量。
 func TestEnvrunProvidesWindowsProcessEnvFallbacks(t *testing.T) {
 	source := readRootFile(t, "scripts", "envrun", "main.go")
 
@@ -206,7 +205,7 @@ func TestGitHubReleaseSetsLicenseEnvironment(t *testing.T) {
 	}
 }
 
-// TestTrayMenuOnlyShowsDisplayAndExit 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestTrayMenuOnlyShowsDisplayAndExit 验证托盘菜单只保留窗口显示和退出，不承载更新等业务入口。
 func TestTrayMenuOnlyShowsDisplayAndExit(t *testing.T) {
 	source := readRootFile(t, "main.go")
 	start := strings.Index(source, "trayMenu := wailsApp.NewMenu()")
@@ -235,7 +234,7 @@ func TestTrayMenuOnlyShowsDisplayAndExit(t *testing.T) {
 	}
 }
 
-// TestCloseToTrayDoesNotHijackMinimiseButton 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
+// TestCloseToTrayDoesNotHijackMinimiseButton 验证关闭到托盘只挂在关闭事件，不劫持最小化按钮。
 func TestCloseToTrayDoesNotHijackMinimiseButton(t *testing.T) {
 	source := readRootFile(t, "main.go")
 	if !strings.Contains(source, "WindowClosing") || !strings.Contains(source, "ShouldHideOnClose()") {
@@ -246,7 +245,6 @@ func TestCloseToTrayDoesNotHijackMinimiseButton(t *testing.T) {
 	}
 }
 
-// readRootFile 读取、解析或归一化 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 需要的数据，并把结果返回给调用方。
 func readRootFile(t *testing.T, parts ...string) string {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(append([]string{"..", ".."}, parts...)...))

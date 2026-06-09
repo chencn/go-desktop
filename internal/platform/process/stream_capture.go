@@ -10,8 +10,11 @@ import (
 	"sync"
 )
 
+// maxCapturedLineBytes 限制单行捕获长度，避免长日志行无限占用内存。
 const maxCapturedLineBytes = 1024 * 1024
 
+// StreamCapture 临时接管进程级 stdout/stderr，把输出镜像回原流并按行回调。
+// 它修改的是全局 os.Stdout/os.Stderr，调用方必须在不再捕获时调用 Close。
 type StreamCapture struct {
 	oldStdout    *os.File
 	oldStderr    *os.File
@@ -25,6 +28,8 @@ type StreamCapture struct {
 	closeOnce    sync.Once
 }
 
+// NewStreamCapture 开始捕获 stdout/stderr。
+// onLine 收到 stream 名称和去掉换行的文本；创建 pipe 失败时会返回错误且不接管输出。
 func NewStreamCapture(onLine func(stream, line string), onError func(stream string, err error)) (*StreamCapture, error) {
 	stdoutReader, stdoutWriter, err := os.Pipe()
 	if err != nil {
@@ -54,6 +59,7 @@ func NewStreamCapture(onLine func(stream, line string), onError func(stream stri
 	return capture, nil
 }
 
+// copyLines 从 pipe 读出完整行，镜像到原始输出，并对超长行做截断标记。
 func (c *StreamCapture) copyLines(stream string, reader *os.File, mirror *os.File) {
 	defer c.wait.Done()
 	buffered := bufio.NewReaderSize(reader, 64*1024)
@@ -95,6 +101,7 @@ func (c *StreamCapture) copyLines(stream string, reader *os.File, mirror *os.Fil
 	}
 }
 
+// emitLine 写回原始输出并通知回调；truncated=true 时追加截断标记。
 func (c *StreamCapture) emitLine(stream string, mirror *os.File, raw []byte, truncated bool) {
 	line := strings.TrimRight(string(raw), "\r\n")
 	if truncated {
@@ -108,6 +115,7 @@ func (c *StreamCapture) emitLine(stream string, mirror *os.File, raw []byte, tru
 	}
 }
 
+// Close 恢复 stdout/stderr，关闭 pipe，并等待后台复制协程结束；可重复调用。
 func (c *StreamCapture) Close() {
 	c.closeOnce.Do(func() {
 		if os.Stdout == c.stdoutWriter {
