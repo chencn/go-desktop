@@ -90,4 +90,21 @@ describe('wails api fallback boundaries', () => {
       },
     })
   })
+
+  it('预览模式下授权状态默认关闭并允许进入应用', async () => {
+    vi.stubEnv('VITE_PREVIEW', 'true')
+    const { getLicenseStatus } = await import('../../frontend/src/api/wails')
+
+    await expect(getLicenseStatus()).resolves.toMatchObject({
+      required: false,
+      authorized: true,
+    })
+  })
+
+  it('预览模式下激活授权不能假成功', async () => {
+    vi.stubEnv('VITE_PREVIEW', 'true')
+    const { activateLicense } = await import('../../frontend/src/api/wails')
+
+    await expect(activateLicense('GD1-test')).rejects.toThrow('激活授权失败：Wails 服务不可用。')
+  })
 })

@@ -144,6 +144,9 @@ func (s *Runtime) recordStartupLaunch(launch StartupLaunch, suffix string) {
 // GetSecondInstanceRecords API 方法，获取第二实例记录
 func (api *API) GetSecondInstanceRecords() (records []SecondInstanceRecord, err error) {
 	defer api.recoverError("读取第二实例记录", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return nil, err
+	}
 	return api.runtime.GetSecondInstanceRecords(), nil
 }
 

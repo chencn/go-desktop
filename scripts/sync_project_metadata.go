@@ -281,20 +281,20 @@ tasks:
   build:
     summary: Builds the application
     cmds:
-      - task: "{{OS}}:build"
+      - go run ./scripts/envrun wails3 task {{OS}}:build
 
   package:
     summary: Packages Windows installer and stages local static update files
     cmds:
-      - task: windows:package
+      - go run ./scripts/envrun wails3 task windows:package
       - go build -o ".tmp/local-release-stage.exe" ./scripts/stage_local_update.go
       - '.tmp/local-release-stage.exe -version "{{.APP_VERSION}}" -installer "{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe" -out "{{.BIN_DIR}}/{{.APP_NAME}}" -arch amd64'
-      - powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe','{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe','{{.BIN_DIR}}/local-release-stage.exe','.tmp/local-release-stage.exe' -Force -ErrorAction SilentlyContinue"
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe') { Remove-Item -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe' -Force }; if (Test-Path -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe') { Remove-Item -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe' -Force }; if (Test-Path -LiteralPath '{{.BIN_DIR}}/local-release-stage.exe') { Remove-Item -LiteralPath '{{.BIN_DIR}}/local-release-stage.exe' -Force }; if (Test-Path -LiteralPath '.tmp/local-release-stage.exe') { Remove-Item -LiteralPath '.tmp/local-release-stage.exe' -Force }"
 
   package:github:
     summary: Packages a production build for GitHub Release
     cmds:
-      - task: windows:package
+      - go run ./scripts/envrun wails3 task windows:package
 
   run:
     summary: Runs the application
@@ -315,7 +315,7 @@ tasks:
       APPDATA: '{{if eq OS "windows"}}{{env "APPDATA" | default (printf "%%s\\AppData\\Roaming" (env "USERPROFILE"))}}{{end}}'
       GOCACHE: '{{if eq OS "windows"}}{{env "GOCACHE" | default (printf "%%s\\AppData\\Local\\go-build" (env "USERPROFILE"))}}{{end}}'
     cmds:
-      - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
+      - go run ./scripts/envrun wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
   test:
     summary: Runs the isolated Go and frontend test modules
@@ -798,7 +798,7 @@ dev_mode:
       - "*.ts"
     git_ignore: true
   executes:
-    - cmd: wails3 build DEV=true
+    - cmd: go run ./scripts/envrun wails3 task windows:build DEV=true
       type: blocking
     - cmd: wails3 task common:dev:frontend
       type: background
@@ -2291,6 +2291,8 @@ jobs:
       WAILS_VERSION: %s
       APP_NAME: %s
       ARCH: amd64
+      GO_DESKTOP_LICENSE_MODE: required
+      GO_DESKTOP_LICENSE_PUBLIC_KEY: ${{ vars.GO_DESKTOP_LICENSE_PUBLIC_KEY }}
 
     steps:
       - name: 检出代码
@@ -2312,6 +2314,13 @@ jobs:
           "version=$version" >> $env:GITHUB_OUTPUT
           "APP_VERSION=$version" >> $env:GITHUB_ENV
           "APP_VERSION_MODE=github" >> $env:GITHUB_ENV
+
+      - name: 校验授权配置
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:GO_DESKTOP_LICENSE_PUBLIC_KEY)) {
+            throw "GO_DESKTOP_LICENSE_PUBLIC_KEY 未配置，禁止发布授权版"
+          }
 
       - name: 设置 Go
         uses: actions/setup-go@v5

@@ -97,7 +97,7 @@ func TestMainInstallsProcessLoggingAndDefaultLogFilePath(t *testing.T) {
 	for _, required := range []string{
 		"LogFilePath:",
 		"desktopapp.DefaultLogFilePath(metadata.AppName)",
-		"CrashReporter: crashReporter",
+		"CrashReporter:",
 		"appRuntime.InstallProcessLogCapture()",
 	} {
 		if !strings.Contains(source, required) {
@@ -261,6 +261,23 @@ func TestSettingsAPIsExposeErrorChannelAndRecoverPanic(t *testing.T) {
 	} {
 		if !strings.Contains(apiSafetySource, required) {
 			t.Fatalf("api_safety.go should convert API panic to error: missing %q", required)
+		}
+	}
+}
+
+// TestLicenseAPIsStayBehindAppFacade 验证授权 API 通过 app facade 暴露，不泄漏 internal 类型。
+func TestLicenseAPIsStayBehindAppFacade(t *testing.T) {
+	source := readRootFile(t, "app", "service.go")
+
+	for _, want := range []string{
+		"type LicenseStatus struct",
+		"func (r *Runtime) GetLicenseStatus() LicenseStatus",
+		"func (r *Runtime) ActivateLicense(licenseKey string) (LicenseStatus, error)",
+		"func (api *API) GetLicenseStatus() (LicenseStatus, error)",
+		"func (api *API) ActivateLicense(licenseKey string) (LicenseStatus, error)",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("app facade 必须暴露授权 API 且不泄漏 internal 类型：缺少 %q", want)
 		}
 	}
 }

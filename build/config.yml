@@ -31,7 +31,7 @@ dev_mode:
       - "*.ts"
     git_ignore: true
   executes:
-    - cmd: wails3 build DEV=true
+    - cmd: go run ./scripts/envrun wails3 task windows:build DEV=true
       type: blocking
     - cmd: wails3 task common:dev:frontend
       type: background

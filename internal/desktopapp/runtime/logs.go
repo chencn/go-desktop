@@ -25,6 +25,9 @@ import (
 // 返回值的副本，避免外部修改内部状态
 func (api *API) ListLogs() (logs []LogEntry, err error) {
 	defer api.recoverError("读取日志", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return nil, err
+	}
 	return api.runtime.ListLogs(), nil
 }
 
@@ -39,6 +42,9 @@ func (s *Runtime) ListLogs() []LogEntry {
 // QueryLogs API 方法，支持分页和过滤查询。
 func (api *API) QueryLogs(query LogQuery) (response LogResponse, err error) {
 	defer api.recoverError("查询日志", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return LogResponse{}, err
+	}
 	response = api.runtime.QueryLogs(query)
 	return response, nil
 }
@@ -56,6 +62,9 @@ func (s *Runtime) QueryLogs(query LogQuery) LogResponse {
 // ListLogFiles API 方法，返回日志目录下可选择的每日文件。
 func (api *API) ListLogFiles() (files []LogFileInfo, err error) {
 	defer api.recoverError("读取日志文件列表", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return nil, err
+	}
 	api.runtime.RecordLogWithSeverity("api-trace", "ListLogFiles：后端收到请求", "debug")
 	files = api.runtime.ListLogFiles()
 	api.runtime.RecordLogWithSeverity("api-trace", fmt.Sprintf("ListLogFiles：后端返回成功 files=%d", len(files)), "debug")
@@ -70,6 +79,9 @@ func (api *API) ListLogFiles() (files []LogFileInfo, err error) {
 //   - bool: 操作是否成功
 func (api *API) ClearLogs(scope string) (cleared bool, err error) {
 	defer api.recoverError("清空日志", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return false, err
+	}
 	return api.runtime.ClearLogs(scope), nil
 }
 

@@ -4,9 +4,11 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 
@@ -40,6 +42,8 @@ func resolveLocalVersion(configPath, explicitVersion, tag string) string {
 	}
 	if value := strings.TrimSpace(tag); value != "" {
 		candidates = append(candidates, value)
+	} else {
+		candidates = append(candidates, currentHeadVersionTags()...)
 	}
 	if len(candidates) == 0 {
 		exitf("没有可用版本来源")
@@ -56,6 +60,26 @@ func resolveLocalVersion(configPath, explicitVersion, tag string) string {
 		}
 	}
 	return selected
+}
+
+func currentHeadVersionTags() []string {
+	cmd := exec.Command("git", "tag", "--points-at", "HEAD")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	var tags []string
+	for _, line := range strings.Split(string(output), "\n") {
+		tag := strings.TrimSpace(line)
+		if tag == "" || semver.Normalize(tag) == "" {
+			continue
+		}
+		tags = append(tags, tag)
+	}
+	return tags
 }
 
 func resolveGitHubVersion(explicitVersion, tag string) string {

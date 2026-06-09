@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,7 +28,7 @@ func main() {
 	}
 
 	cmd := exec.Command(command, os.Args[2:]...)
-	cmd.Env = windowsEnvWithDefaults(os.Environ())
+	cmd.Env = windowsEnvWithDefaults(mergeDotEnv(os.Environ(), findDotEnv()))
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -39,6 +40,53 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+// findDotEnv 从当前目录向上查找仓库级 .env，兼容 frontend、build 等子目录执行场景。
+func findDotEnv() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		return ".env"
+	}
+	for {
+		candidate := filepath.Join(dir, ".env")
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return filepath.Join(dir, ".env")
+		}
+		dir = parent
+	}
+}
+
+// mergeDotEnv 读取可选 .env；进程环境变量优先于 .env。
+func mergeDotEnv(env []string, path string) []string {
+	file, err := os.Open(path)
+	if err != nil {
+		return env
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.Trim(strings.TrimSpace(value), `"'`)
+		if key == "" || envValue(env, key) != "" {
+			continue
+		}
+		env = append(env, key+"="+value)
+	}
+	return env
 }
 
 // windowsEnvWithDefaults 封装 从 .env 文件加载环境变量后执行指定命令 中的一段独立逻辑，调用方通过它复用同一业务规则。

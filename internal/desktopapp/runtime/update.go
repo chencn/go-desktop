@@ -19,6 +19,9 @@ import (
 // CheckUpdate API 方法，检查 GitHub Release 更新。
 func (api *API) CheckUpdate() (result githubrelease.CheckResult, err error) {
 	defer api.recoverError("检查更新", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return githubrelease.CheckResult{}, err
+	}
 	return api.runtime.CheckUpdate(), nil
 }
 
@@ -97,6 +100,9 @@ func (s *Runtime) RecordUpdateCheckResult(result githubrelease.CheckResult) {
 // GetUpdateStatus API 方法，返回当前更新状态。
 func (api *API) GetUpdateStatus() (status UpdateStatus, err error) {
 	defer api.recoverError("读取更新状态", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return UpdateStatus{}, err
+	}
 	api.runtime.RecordLogWithSeverity("api-trace", "GetUpdateStatus：后端收到请求", "debug")
 	status = api.runtime.GetUpdateStatus()
 	api.runtime.RecordLogWithSeverity("api-trace", fmt.Sprintf("GetUpdateStatus：后端返回成功 status=%q", status.Status), "debug")
@@ -137,6 +143,9 @@ func (s *Runtime) GetUpdateStatus() UpdateStatus {
 // DownloadUpdate API 方法，下载并校验最近一次检查发现的更新包。
 func (api *API) DownloadUpdate() (status UpdateStatus, err error) {
 	defer api.recoverError("下载更新", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return UpdateStatus{}, err
+	}
 	return api.runtime.DownloadUpdate(), nil
 }
 
@@ -256,6 +265,9 @@ func (s *Runtime) downloadUpdateForCheck(check githubrelease.CheckResult, ok boo
 // ScheduleDownloadedUpdateOnStartup API 方法，把已校验更新包标记为下次启动安装。
 func (api *API) ScheduleDownloadedUpdateOnStartup() (status UpdateStatus, err error) {
 	defer api.recoverError("安排下次启动安装更新", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return UpdateStatus{}, err
+	}
 	return api.runtime.ScheduleDownloadedUpdateOnStartup(), nil
 }
 
@@ -283,6 +295,9 @@ func (s *Runtime) ScheduleDownloadedUpdateOnStartup() UpdateStatus {
 // InstallDownloadedUpdate API 方法，安装当前已校验更新包。
 func (api *API) InstallDownloadedUpdate() (status UpdateStatus, err error) {
 	defer api.recoverError("安装已下载更新", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return UpdateStatus{}, err
+	}
 	return api.runtime.InstallDownloadedUpdate(), nil
 }
 

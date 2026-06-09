@@ -29,7 +29,17 @@ type configItemMap map[string]configstore.ConfigItem
 func allConfigDefinitions() []configstore.ConfigItem {
 	definitions := appsettings.Definitions()
 	definitions = append(definitions, display.Definitions()...)
+	definitions = append(definitions, licenseDefinitions()...)
 	return definitions
+}
+
+func licenseDefinitions() []configstore.ConfigItem {
+	return []configstore.ConfigItem{
+		{Key: licenseKeyConfig, Category: "license", Title: "授权码", Description: "当前设备保存的授权码", ValueType: "string", SortOrder: 900},
+		{Key: licenseDeviceCodeConfig, Category: "license", Title: "授权设备码", Description: "最近一次授权成功时使用的设备码", ValueType: "string", SortOrder: 901},
+		{Key: licenseValidatedAtConfig, Category: "license", Title: "授权校验时间", Description: "最近一次授权码校验通过的 UTC 时间", ValueType: "string", SortOrder: 902},
+		{Key: licenseLastErrorConfig, Category: "license", Title: "授权错误", Description: "最近一次授权校验失败原因", ValueType: "string", SortOrder: 903},
+	}
 }
 
 // ensureConfigDefaults 把缺失配置项写入 SQLite，并刷新已有配置项的展示元数据。

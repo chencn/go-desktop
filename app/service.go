@@ -59,6 +59,16 @@ type EnvironmentInfo struct {
 	CachePath       string `json:"cachePath"`
 }
 
+type LicenseStatus struct {
+	Enabled    bool   `json:"enabled"`
+	Required   bool   `json:"required"`
+	Authorized bool   `json:"authorized"`
+	DeviceCode string `json:"deviceCode"`
+	Message    string `json:"message"`
+	ExpiresAt  string `json:"expiresAt,omitempty"`
+	LastError  string `json:"lastError,omitempty"`
+}
+
 type Settings struct {
 	UpdateSource             string `json:"updateSource"`
 	GitHubOwner              string `json:"githubOwner"`
@@ -215,6 +225,15 @@ func (r *Runtime) GetEnvironmentInfo() EnvironmentInfo {
 	return EnvironmentInfo(r.Runtime.GetEnvironmentInfo())
 }
 
+func (r *Runtime) GetLicenseStatus() LicenseStatus {
+	return LicenseStatus(r.Runtime.GetLicenseStatus())
+}
+
+func (r *Runtime) ActivateLicense(licenseKey string) (LicenseStatus, error) {
+	status, err := r.Runtime.ActivateLicense(licenseKey)
+	return LicenseStatus(status), err
+}
+
 func (r *Runtime) GetSecondInstanceRecords() []SecondInstanceRecord {
 	return toSecondInstanceRecords(r.Runtime.GetSecondInstanceRecords())
 }
@@ -284,6 +303,16 @@ func (api *API) GetDisplayPreferences() (DisplayPreferences, error) {
 func (api *API) GetEnvironmentInfo() (EnvironmentInfo, error) {
 	info, err := api.inner.GetEnvironmentInfo()
 	return EnvironmentInfo(info), err
+}
+
+func (api *API) GetLicenseStatus() (LicenseStatus, error) {
+	status, err := api.inner.GetLicenseStatus()
+	return LicenseStatus(status), err
+}
+
+func (api *API) ActivateLicense(licenseKey string) (LicenseStatus, error) {
+	status, err := api.inner.ActivateLicense(licenseKey)
+	return LicenseStatus(status), err
 }
 
 func (api *API) GetSecondInstanceRecords() ([]SecondInstanceRecord, error) {

@@ -61,6 +61,21 @@ func TestRootTestTaskRunsGoAndFrontendTests(t *testing.T) {
 	}
 }
 
+// TestRootDevCommandUsesEnvrun 验证本地开发启动也读取仓库 .env。
+func TestRootDevCommandUsesEnvrun(t *testing.T) {
+	source := readRootFile(t, "Taskfile.yml")
+
+	for _, want := range []string{
+		"go run ./scripts/envrun wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}",
+		"go run ./scripts/envrun wails3 task {{OS}}:build",
+		"go run ./scripts/envrun wails3 task windows:package",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("Taskfile.yml build/dev/package 任务必须先经过 envrun 再进入 wails task，确保 .env 在 Task 模板展开前生效：缺少 %q", want)
+		}
+	}
+}
+
 // TestDevFrontendStartsWithoutReinstallingDependencies 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
 func TestDevFrontendStartsWithoutReinstallingDependencies(t *testing.T) {
 	source := readRootFile(t, "build", "Taskfile.yml")
@@ -81,7 +96,7 @@ func TestDevFrontendStartsWithoutReinstallingDependencies(t *testing.T) {
 // TestWailsDevStartsFrontendAfterBuild 验证 taskfile_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
 func TestWailsDevStartsFrontendAfterBuild(t *testing.T) {
 	source := readRootFile(t, "build", "config.yml")
-	buildIndex := strings.Index(source, "cmd: wails3 build DEV=true")
+	buildIndex := strings.Index(source, "cmd: go run ./scripts/envrun wails3 task windows:build DEV=true")
 	frontendIndex := strings.Index(source, "cmd: wails3 task common:dev:frontend")
 	runIndex := strings.Index(source, "cmd: wails3 task run")
 	if buildIndex < 0 || frontendIndex < 0 || runIndex < 0 {
@@ -109,6 +124,84 @@ func TestEnvrunProvidesWindowsProcessEnvFallbacks(t *testing.T) {
 	} {
 		if !strings.Contains(source, want) {
 			t.Fatalf("scripts/envrun/main.go should provide Windows env fallback %q", want)
+		}
+	}
+}
+
+// TestEnvrunLoadsDotEnvWhenPresent 验证 envrun 会读取仓库 .env，且进程环境变量优先于 .env。
+func TestEnvrunLoadsDotEnvWhenPresent(t *testing.T) {
+	source := readRootFile(t, "scripts", "envrun", "main.go")
+
+	for _, want := range []string{
+		"mergeDotEnv",
+		"findDotEnv",
+		".env",
+		`strings.Cut(line, "=")`,
+		"进程环境变量优先于 .env",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("scripts/envrun/main.go 必须读取可选 .env，并保持进程环境变量优先级：缺少 %q", want)
+		}
+	}
+}
+
+// TestWindowsBuildCommandsUseEnvrunForGoBuild 验证 Windows Go 构建命令会经过 envrun，从而读取本地 .env。
+func TestWindowsBuildCommandsUseEnvrunForGoBuild(t *testing.T) {
+	source := readRootFile(t, "build", "windows", "Taskfile.yml")
+
+	for _, want := range []string{
+		"go run ./scripts/envrun go build",
+		"go run ../scripts/envrun go run ./windows/scripts/write_info_version.go",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("build/windows/Taskfile.yml 的 Windows 构建命令必须经过 envrun：缺少 %q", want)
+		}
+	}
+}
+
+// TestDotEnvExampleDocumentsLicenseVariables 验证仓库提供可提交的 .env 示例。
+func TestDotEnvExampleDocumentsLicenseVariables(t *testing.T) {
+	source := readRootFile(t, ".env.example")
+
+	for _, want := range []string{
+		"# 不配置 GO_DESKTOP_LICENSE_MODE 时授权关闭",
+		"GO_DESKTOP_LICENSE_MODE=",
+		"GO_DESKTOP_LICENSE_PUBLIC_KEY=",
+		"GO_DESKTOP_LICENSE_MODE=required",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf(".env.example 必须说明授权环境变量和默认关闭规则：缺少 %q", want)
+		}
+	}
+}
+
+// TestWindowsBuildInjectsLicenseLdflags 验证授权构建变量会注入到 Windows 二进制。
+func TestWindowsBuildInjectsLicenseLdflags(t *testing.T) {
+	source := readRootFile(t, "build", "windows", "Taskfile.yml")
+
+	for _, want := range []string{
+		`-X main.licenseMode={{env "GO_DESKTOP_LICENSE_MODE"}}`,
+		`-X main.licensePublicKey={{env "GO_DESKTOP_LICENSE_PUBLIC_KEY"}}`,
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("Windows 构建参数必须注入授权构建变量：缺少 %q", want)
+		}
+	}
+}
+
+// TestGitHubReleaseSetsLicenseEnvironment 验证官方 GitHub Release 打包会启用授权模式、注入公钥并拒绝空公钥发布。
+func TestGitHubReleaseSetsLicenseEnvironment(t *testing.T) {
+	source := readRootFile(t, ".github", "workflows", "release.yml")
+
+	for _, want := range []string{
+		"GO_DESKTOP_LICENSE_MODE: required",
+		"GO_DESKTOP_LICENSE_PUBLIC_KEY: ${{ vars.GO_DESKTOP_LICENSE_PUBLIC_KEY }}",
+		"- name: 校验授权配置",
+		"[string]::IsNullOrWhiteSpace($env:GO_DESKTOP_LICENSE_PUBLIC_KEY)",
+		"GO_DESKTOP_LICENSE_PUBLIC_KEY 未配置，禁止发布授权版",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("release workflow 必须设置官方授权发行版环境变量：缺少 %q", want)
 		}
 	}
 }

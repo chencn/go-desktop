@@ -20,20 +20,20 @@ tasks:
   build:
     summary: Builds the application
     cmds:
-      - task: "{{OS}}:build"
+      - go run ./scripts/envrun wails3 task {{OS}}:build
 
   package:
     summary: Packages Windows installer and stages local static update files
     cmds:
-      - task: windows:package
+      - go run ./scripts/envrun wails3 task windows:package
       - go build -o ".tmp/local-release-stage.exe" ./scripts/stage_local_update.go
       - '.tmp/local-release-stage.exe -version "{{.APP_VERSION}}" -installer "{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe" -out "{{.BIN_DIR}}/{{.APP_NAME}}" -arch amd64'
-      - powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe','{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe','{{.BIN_DIR}}/local-release-stage.exe','.tmp/local-release-stage.exe' -Force -ErrorAction SilentlyContinue"
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe') { Remove-Item -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe' -Force }; if (Test-Path -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe') { Remove-Item -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe' -Force }; if (Test-Path -LiteralPath '{{.BIN_DIR}}/local-release-stage.exe') { Remove-Item -LiteralPath '{{.BIN_DIR}}/local-release-stage.exe' -Force }; if (Test-Path -LiteralPath '.tmp/local-release-stage.exe') { Remove-Item -LiteralPath '.tmp/local-release-stage.exe' -Force }"
 
   package:github:
     summary: Packages a production build for GitHub Release
     cmds:
-      - task: windows:package
+      - go run ./scripts/envrun wails3 task windows:package
 
   run:
     summary: Runs the application
@@ -54,7 +54,7 @@ tasks:
       APPDATA: '{{if eq OS "windows"}}{{env "APPDATA" | default (printf "%s\\AppData\\Roaming" (env "USERPROFILE"))}}{{end}}'
       GOCACHE: '{{if eq OS "windows"}}{{env "GOCACHE" | default (printf "%s\\AppData\\Local\\go-build" (env "USERPROFILE"))}}{{end}}'
     cmds:
-      - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
+      - go run ./scripts/envrun wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
   test:
     summary: Runs the isolated Go and frontend test modules

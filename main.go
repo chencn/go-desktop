@@ -47,7 +47,11 @@ var appIcon []byte
 
 // appVersion 从项目元数据读取的当前版本号
 // 格式: semver (如 "1.0.0")
-var appVersion = metadata.DefaultVersion
+var (
+	appVersion       = metadata.DefaultVersion
+	licenseMode      = ""
+	licensePublicKey = ""
+)
 
 // main 是命令入口，负责解析启动上下文、装配依赖并启动核心流程。
 func main() {
@@ -63,14 +67,16 @@ func main() {
 
 	crashReporter.Phase("创建 Runtime")
 	appRuntime := desktopapp.NewRuntime(desktopapp.ServiceOptions{
-		AppName:       metadata.AppName,
-		Version:       appVersion,
-		Description:   metadata.Description,
-		Repository:    metadata.RepositoryURL,
-		DatabasePath:  desktopapp.DefaultDatabasePath(metadata.AppName),
-		LogFilePath:   desktopapp.DefaultLogFilePath(metadata.AppName),
-		CrashReporter: crashReporter,
-		CachePath:     desktopapp.DefaultCachePath(metadata.AppName),
+		AppName:          metadata.AppName,
+		Version:          appVersion,
+		Description:      metadata.Description,
+		Repository:       metadata.RepositoryURL,
+		DatabasePath:     desktopapp.DefaultDatabasePath(metadata.AppName),
+		LogFilePath:      desktopapp.DefaultLogFilePath(metadata.AppName),
+		CrashReporter:    crashReporter,
+		CachePath:        desktopapp.DefaultCachePath(metadata.AppName),
+		LicenseMode:      licenseMode,
+		LicensePublicKey: licensePublicKey,
 		ReleaseChecker: githubrelease.NewChecker(githubrelease.Config{
 			Owner:          metadata.GitHubOwner,
 			Repo:           metadata.GitHubRepo,
@@ -149,6 +155,32 @@ func main() {
 	crashReporter.Phase("启动期系统集成")
 	appRuntime.ApplyStartupIntegrations()
 	startHidden := appRuntime.ShouldStartHidden(startupLaunch)
+	var splashWindow *application.WebviewWindow
+	if !startHidden {
+		crashReporter.Phase("创建启动加载窗口")
+		splashWindow = wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+			Name:             "splash",
+			Title:            "",
+			Width:            120,
+			Height:           72,
+			MinWidth:         120,
+			MinHeight:        72,
+			MaxWidth:         120,
+			MaxHeight:        72,
+			AlwaysOnTop:      true,
+			DisableResize:    true,
+			Frameless:        true,
+			InitialPosition:  application.WindowCentered,
+			BackgroundType:   application.BackgroundTypeTransparent,
+			BackgroundColour: application.NewRGBA(0, 0, 0, 0),
+			HTML:             splashHTML(metadata.AppName),
+			Windows: application.WindowsWindow{
+				DisableIcon:                       true,
+				DisableFramelessWindowDecorations: true,
+				HiddenOnTaskbar:                   true,
+			},
+		})
+	}
 	crashReporter.Phase("创建主窗口")
 	mainWindow = wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:            "main",
@@ -159,7 +191,7 @@ func main() {
 		MinHeight:       768,
 		StartState:      application.WindowStateMaximised,
 		InitialPosition: application.WindowCentered,
-		Hidden:          startHidden,
+		Hidden:          startHidden || splashWindow != nil,
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			Backdrop:                application.MacBackdropTranslucent,
@@ -172,6 +204,20 @@ func main() {
 		URL:              "/",
 	})
 	appRuntime.SetMainWindow(mainWindow)
+
+	mainWindow.OnWindowEvent(events.Common.WindowRuntimeReady, func(_ *application.WindowEvent) {
+		defer appRuntime.RecoverPanic("窗口运行时就绪钩子")
+		if startHidden {
+			appRuntime.RecordLog("window", "窗口内容已加载，按启动策略保持隐藏")
+			return
+		}
+		appRuntime.ShowMainWindow()
+		if splashWindow != nil {
+			splashWindow.Close()
+			splashWindow = nil
+		}
+		appRuntime.RecordLog("window", "主窗口内容已加载，启动加载窗口已关闭")
+	})
 
 	mainWindow.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
 		defer appRuntime.RecoverPanic("窗口关闭钩子")
@@ -218,6 +264,119 @@ func main() {
 	}
 	crashReporter.Append("app", "Wails 主循环已返回")
 	appRuntime.RecordLogWithSeverity("app", "Wails 主循环已返回", "warning")
+}
+
+func splashHTML(_ string) string {
+	return `<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: transparent;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+      }
+
+      .splash {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 120px;
+        height: 72px;
+        color: #1890ff;
+      }
+
+      .ant-spin-dot {
+        position: relative;
+        display: inline-block;
+        width: 32px;
+        height: 32px;
+        animation: ant-spin-rotate 1.2s linear infinite;
+      }
+
+      .ant-spin-dot-item {
+        position: absolute;
+        display: block;
+        width: 14px;
+        height: 14px;
+        border-radius: 100%;
+        background-color: currentColor;
+        opacity: 0.3;
+        animation: ant-spin-move 1s linear infinite alternate;
+      }
+
+      .ant-spin-dot-item:nth-child(1) {
+        top: 0;
+        left: 0;
+      }
+
+      .ant-spin-dot-item:nth-child(2) {
+        top: 0;
+        right: 0;
+        animation-delay: 0.4s;
+      }
+
+      .ant-spin-dot-item:nth-child(3) {
+        right: 0;
+        bottom: 0;
+        animation-delay: 0.8s;
+      }
+
+      .ant-spin-dot-item:nth-child(4) {
+        bottom: 0;
+        left: 0;
+        animation-delay: 1.2s;
+      }
+
+      .ant-spin-text {
+        color: rgba(0, 0, 0, 0.65);
+        font-size: 14px;
+        line-height: 1.5715;
+        letter-spacing: 0;
+        white-space: nowrap;
+      }
+
+      @keyframes ant-spin-rotate {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes ant-spin-move {
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="splash" role="status" aria-live="polite">
+      <span class="ant-spin-dot" aria-hidden="true">
+        <i class="ant-spin-dot-item"></i>
+        <i class="ant-spin-dot-item"></i>
+        <i class="ant-spin-dot-item"></i>
+        <i class="ant-spin-dot-item"></i>
+      </span>
+      <span class="ant-spin-text">正在加载</span>
+    </main>
+  </body>
+</html>`
 }
 
 func releaseAssetNames(version string) []string {

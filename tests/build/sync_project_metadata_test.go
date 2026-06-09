@@ -109,11 +109,19 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 		"Taskfile.yml": {
 			`APP_NAME: "go-desktop"`,
 			`go run ./scripts/resolve_app_version.go -mode '{{env "APP_VERSION_MODE" | default "local"}}' -config build/config.yml`,
+			`go run ./scripts/envrun wails3 task {{OS}}:build`,
+			`go run ./scripts/envrun wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}`,
 			`package:github:`,
-			`- task: windows:package`,
+			`go run ./scripts/envrun wails3 task windows:package`,
 			`go build -o ".tmp/local-release-stage.exe" ./scripts/stage_local_update.go`,
 			`.tmp/local-release-stage.exe -version "{{.APP_VERSION}}"`,
-			`Remove-Item -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe','{{.BIN_DIR}}/{{.APP_NAME}}-v{{.APP_VERSION}}-windows-amd64.exe','{{.BIN_DIR}}/local-release-stage.exe','.tmp/local-release-stage.exe'`,
+			`if (Test-Path -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe') { Remove-Item -LiteralPath '{{.BIN_DIR}}/{{.APP_NAME}}.exe' -Force }`,
+			`if (Test-Path -LiteralPath '.tmp/local-release-stage.exe') { Remove-Item -LiteralPath '.tmp/local-release-stage.exe' -Force }`,
+		},
+		"build/config.yml": {
+			`cmd: go run ./scripts/envrun wails3 task windows:build DEV=true`,
+			`cmd: wails3 task common:dev:frontend`,
+			`cmd: wails3 task run`,
 		},
 		"frontend/src/shared/project.ts": {
 			`"defaultSource": "github"`,
@@ -137,6 +145,11 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 		},
 		".github/workflows/release.yml": {
 			`- "v*"`,
+			`GO_DESKTOP_LICENSE_MODE: required`,
+			`GO_DESKTOP_LICENSE_PUBLIC_KEY: ${{ vars.GO_DESKTOP_LICENSE_PUBLIC_KEY }}`,
+			`- name: 校验授权配置`,
+			`[string]::IsNullOrWhiteSpace($env:GO_DESKTOP_LICENSE_PUBLIC_KEY)`,
+			`GO_DESKTOP_LICENSE_PUBLIC_KEY 未配置，禁止发布授权版`,
 			`"APP_VERSION_MODE=github" >> $env:GITHUB_ENV`,
 			`wails3 generate bindings -f '-tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui -X main.appVersion=${{ steps.version.outputs.version }}"' -clean=false -ts`,
 			`run: wails3 task package:github`,
@@ -218,6 +231,41 @@ func TestResolveAppVersionNormalizesAndSelectsLargestCandidate(t *testing.T) {
 	}
 	if got := strings.TrimSpace(string(output)); got != "1.2.0" {
 		t.Fatalf("expected normalized largest version 1.2.0, got %q", got)
+	}
+}
+
+func TestResolveAppVersionLocalModeUsesCurrentGitTagWhenTagEnvIsMissing(t *testing.T) {
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "config.yml")
+	config := "info:\n  version: \"1.0.0\"\n"
+	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
+		t.Fatalf("write config fixture: %v", err)
+	}
+
+	runGit(t, tempDir, "init")
+	runGit(t, tempDir, "config", "user.email", "test@example.com")
+	runGit(t, tempDir, "config", "user.name", "Test User")
+	if err := os.WriteFile(filepath.Join(tempDir, "README.md"), []byte("fixture"), 0o644); err != nil {
+		t.Fatalf("write git fixture: %v", err)
+	}
+	runGit(t, tempDir, "add", "README.md")
+	runGit(t, tempDir, "commit", "-m", "init")
+	runGit(t, tempDir, "tag", "v1.2.1")
+
+	cmd := exec.Command("go", "run", "./scripts/resolve_app_version.go", "-mode", "local", "-config", configPath)
+	cmd.Dir = rootPath()
+	cmd.Env = append(os.Environ(),
+		"GIT_DIR="+filepath.Join(tempDir, ".git"),
+		"GIT_WORK_TREE="+tempDir,
+	)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	output, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("resolve_app_version failed: %v\n%s", err, stderr.String())
+	}
+	if got := strings.TrimSpace(string(output)); got != "1.2.1" {
+		t.Fatalf("expected current git tag version 1.2.1, got %q", got)
 	}
 }
 
@@ -442,6 +490,17 @@ func requireInOrder(t *testing.T, path string, source string, values ...string) 
 			t.Fatalf("%s should contain %q after offset %d", path, value, offset)
 		}
 		offset += index + len(value)
+	}
+}
+
+func runGit(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if output, err := cmd.Output(); err != nil {
+		t.Fatalf("git %s failed: %v\nstdout: %s\nstderr: %s", strings.Join(args, " "), err, output, stderr.String())
 	}
 }
 

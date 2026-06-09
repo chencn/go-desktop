@@ -7,11 +7,13 @@ import {
   checkUpdate as checkUpdateApi,
   clearLogs,
   downloadUpdate,
+  activateLicense,
   getAppInfo,
   defaultDisplayPreferences,
   defaultRuntimeSettings,
   getDisplayPreferences,
   getEnvironmentInfo,
+  getLicenseStatus,
   getSettings,
   getUpdateStatus,
   installDownloadedUpdate as installDownloadedUpdateApi,
@@ -21,6 +23,7 @@ import {
   saveDisplayPreferences,
   saveSettings,
   type DisplayPreferences,
+  type LicenseStatus,
   type LogQuery,
   type Settings,
   type UpdateStatus,
@@ -37,6 +40,21 @@ function updateStatusFromEventData(data: UpdateStatus | UpdateStatus[]) {
 
 function isUpdateTerminalStatus(status?: string) {
   return !['downloading', 'verifying', 'installing'].includes(String(status ?? ''))
+}
+
+function failedLicenseStatus(message = '授权状态读取失败'): LicenseStatus {
+  return {
+    enabled: true,
+    required: true,
+    authorized: false,
+    deviceCode: '',
+    message,
+    lastError: message,
+  }
+}
+
+function normaliseLicenseKey(value: string) {
+  return value.split(/\s+/).join('')
 }
 
 // useAppStore 保存 Pinia store 实例，集中访问应用共享状态和动作。
@@ -82,6 +100,20 @@ export const useAppStore = defineStore('app', {
             errors.push(`${label}失败：${message}`)
           }
         }
+      }
+
+      let initialLicenseStatus: LicenseStatus | undefined
+      await readStartupApi('licenseStatus', 'GetLicenseStatus', getLicenseStatus, (licenseStatus) => {
+        initialLicenseStatus = licenseStatus
+        this.applyAction({ type: 'licenseStatusApplied', payload: licenseStatus })
+      }, () => {
+        initialLicenseStatus = failedLicenseStatus()
+        this.applyAction({ type: 'licenseStatusApplied', payload: initialLicenseStatus })
+      })
+      const licenseStatus = initialLicenseStatus ?? failedLicenseStatus()
+      if (licenseStatus.required && !licenseStatus.authorized) {
+        this.applyAction({ type: 'loadingSet', payload: false })
+        return
       }
 
       await Promise.allSettled([
@@ -170,6 +202,41 @@ export const useAppStore = defineStore('app', {
 
     async refreshUpdateStatus() {
       this.applyAction({ type: 'updateStatusApplied', payload: await getUpdateStatus() })
+    },
+
+    async loadLicenseStatus() {
+      this.applyAction({ type: 'licenseLoadingSet', payload: true })
+      this.applyAction({ type: 'licenseErrorSet', payload: '' })
+      try {
+        const status = await getLicenseStatus()
+        this.applyAction({ type: 'licenseStatusApplied', payload: status })
+        return status
+      } catch (error) {
+        const message = toMessage(error)
+        this.applyAction({ type: 'licenseErrorSet', payload: message })
+        throw error
+      } finally {
+        this.applyAction({ type: 'licenseLoadingSet', payload: false })
+      }
+    },
+
+    async activateLicenseKey(licenseKey: string) {
+      this.applyAction({ type: 'licenseLoadingSet', payload: true })
+      this.applyAction({ type: 'licenseErrorSet', payload: '' })
+      try {
+        const status = await activateLicense(normaliseLicenseKey(licenseKey))
+        this.applyAction({ type: 'licenseStatusApplied', payload: status })
+        if (status.authorized) {
+          void this.initialise()
+        }
+        return status
+      } catch (error) {
+        const message = toMessage(error)
+        this.applyAction({ type: 'licenseErrorSet', payload: message })
+        throw error
+      } finally {
+        this.applyAction({ type: 'licenseLoadingSet', payload: false })
+      }
     },
 
     async downloadLatestUpdate() {

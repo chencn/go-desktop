@@ -40,6 +40,13 @@ vi.mock('../../frontend/src/api/wails', () => {
 
   return {
     defaultRuntimeSettings,
+    defaultLicenseStatus: {
+      enabled: false,
+      required: false,
+      authorized: true,
+      deviceCode: '',
+      message: '授权未启用',
+    },
     defaultDisplayPreferences: {
       ...defaultShadcnDisplayProfile,
       displayScheme: 'shadcn',
@@ -57,6 +64,7 @@ import {
   appReducer,
   initialAppState,
   statusFromCheckResult,
+  toMessage,
 } from '../../frontend/src/app/state'
 import type {
   LogResponse,
@@ -76,6 +84,12 @@ const checkResult: UpdateCheckResult = {
 }
 
 describe('app state reducer', () => {
+  it('normalizes Wails runtime error payloads to readable messages', () => {
+    expect(toMessage('{"message":"授权码格式无效","cause":{},"kind":"RuntimeError"}')).toBe('授权码格式无效')
+    expect(toMessage(new Error('{"message":"授权码格式无效","cause":{},"kind":"RuntimeError"}'))).toBe('授权码格式无效')
+    expect(toMessage({ message: '授权码签名无效', cause: {}, kind: 'RuntimeError' })).toBe('授权码签名无效')
+  })
+
   it('maps update checks without sha256 to a guarded error state', () => {
     expect(statusFromCheckResult(checkResult)).toMatchObject({
       status: 'error',
@@ -93,6 +107,26 @@ describe('app state reducer', () => {
     expect(next.latestUpdateCheck?.latestVersion).toBe('0.0.2')
     expect(next.updateStatus?.status).toBe('update_available')
     expect(next.updateStatus?.source).toBe('local')
+  })
+
+  it('stores license status and activation errors independently', () => {
+    const next = appReducer(initialAppState, {
+      type: 'licenseStatusApplied',
+      payload: {
+        enabled: true,
+        required: true,
+        authorized: false,
+        deviceCode: 'GD-7K3F-9P2X-MQ8C',
+        message: '需要授权',
+      },
+    })
+
+    expect(next.licenseStatus?.required).toBe(true)
+    expect(next.licenseStatus?.authorized).toBe(false)
+    expect(next.licenseError).toBe('')
+
+    const failed = appReducer(next, { type: 'licenseErrorSet', payload: '授权码签名无效' })
+    expect(failed.licenseError).toBe('授权码签名无效')
   })
 
   it('applies paged log responses as one immutable state update', () => {

@@ -125,6 +125,31 @@ func TestShadcnPrimitivesAreGloballyRegistered(t *testing.T) {
 	}
 }
 
+// TestDialogsDoNotCloseFromOutsideClick 验证项目级弹窗 wrapper 拦截外部点击关闭，避免业务弹窗被误关。
+func TestDialogsDoNotCloseFromOutsideClick(t *testing.T) {
+	dialog := readRootFile(t, "frontend", "src", "shared", "ui", "Dialog.vue")
+	alertDialog := readRootFile(t, "frontend", "src", "shared", "ui", "AlertDialog.vue")
+	alertDialogPrimitive := readRootFile(t, "frontend", "src", "components", "ui", "alert-dialog", "AlertDialogContent.vue")
+
+	for _, content := range []struct {
+		name string
+		body string
+	}{
+		{name: "UiDialog", body: dialog},
+		{name: "UiAlertDialog", body: alertDialog},
+	} {
+		if strings.Contains(content.body, `@pointer-down-outside="emit('close')"`) {
+			t.Fatalf("%s must not close when users click outside the dialog", content.name)
+		}
+		if !strings.Contains(content.body, "@pointer-down-outside") || !strings.Contains(content.body, "event.preventDefault()") {
+			t.Fatalf("%s should prevent outside pointer dismissal", content.name)
+		}
+	}
+	if strings.Contains(alertDialogPrimitive, "@pointer-down-outside") {
+		t.Fatalf("alert dialog primitive must stay CLI-owned; keep project outside-click behavior in shared/ui wrapper")
+	}
+}
+
 // TestShadcnCompositionReplacesHandRolledControls 验证 app_structure_test.go 覆盖的生产行为、结构约束或构建脚本约束 的关键行为，避免后续重构破坏既有约束。
 func TestShadcnCompositionReplacesHandRolledControls(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
@@ -343,11 +368,175 @@ func TestUpdateHeaderIconReflectsLifecycleAndMotion(t *testing.T) {
 func TestUpdateDialogDoesNotInstallWhenOpened(t *testing.T) {
 	updateDialog := readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.vue")
 
-	if !strings.Contains(updateDialog, `@click="installNow"`) {
-		t.Fatalf("update dialog should keep explicit install action on the install button")
+	for _, required := range []string{
+		"async function installNow()",
+		"async function runPrimaryAction()",
+		"await installNow()",
+		`@click="runPrimaryAction"`,
+	} {
+		if !strings.Contains(updateDialog, required) {
+			t.Fatalf("update dialog should keep explicit user-triggered install action %q", required)
+		}
 	}
-	if strings.Contains(updateDialog, "await installNow()") {
+	watchBlockStart := strings.Index(updateDialog, "watch(() => props.open")
+	watchBlockEnd := strings.Index(updateDialog, "// isTransferState")
+	if watchBlockStart < 0 || watchBlockEnd <= watchBlockStart {
+		t.Fatalf("update dialog should keep an open watcher that only refreshes status")
+	}
+	if strings.Contains(updateDialog[watchBlockStart:watchBlockEnd], "installNow") {
 		t.Fatalf("opening the update dialog must not start installation automatically")
+	}
+}
+
+func TestUpdateDialogUsesUserFocusedStatusView(t *testing.T) {
+	updateDialog := readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.vue")
+	updateStyles := readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.css")
+
+	for _, required := range []string{
+		"user-version-line",
+		"versionLine()",
+		"更新包已准备好",
+		"当前已是最新版本",
+		"更新失败",
+		"重新检查",
+		`<p v-if="description">{{ description }}</p>`,
+		"if (canInstall.value) return ''",
+		"当前版本 ${currentVersion.value} · 最新版本 ${latestVersion.value}",
+	} {
+		if !strings.Contains(updateDialog, required) {
+			t.Fatalf("update dialog should keep user-focused status view %q", required)
+		}
+	}
+
+	for _, forbidden := range []string{
+		`class="data-list"`,
+		`safety-card neutral`,
+		`<footer class="dialog-footer">`,
+		"technical-details",
+		"技术详情",
+		"user-version-summary",
+		"UiBadge",
+		"trust-notice",
+		"SHA256",
+		"更新包已下载并通过校验，可以现在安装，也可以下次启动时再安装。",
+	} {
+		if strings.Contains(updateDialog, forbidden) {
+			t.Fatalf("update dialog should not keep audit-style default content %q", forbidden)
+		}
+	}
+
+	for _, required := range []string{
+		".user-version-line",
+	} {
+		if !strings.Contains(updateStyles, required) {
+			t.Fatalf("update dialog styles should support user-focused layout %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		".technical-details",
+		".technical-row",
+		".user-version-summary",
+		".trust-notice",
+	} {
+		if strings.Contains(updateStyles, forbidden) {
+			t.Fatalf("update dialog styles should not keep technical/card layout %q", forbidden)
+		}
+	}
+}
+
+func TestUpdateDialogClosesAfterSchedulingNextStartup(t *testing.T) {
+	updateDialog := readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.vue")
+	start := strings.Index(updateDialog, "async function scheduleOnStartup()")
+	end := strings.Index(updateDialog, "// closeDialog")
+	if start < 0 || end <= start {
+		t.Fatalf("update dialog should keep scheduleOnStartup before closeDialog")
+	}
+	scheduleBlock := updateDialog[start:end]
+	for _, required := range []string{
+		"await appStore.scheduleDownloadedUpdateOnStartup()",
+		"closeDialog()",
+	} {
+		if !strings.Contains(scheduleBlock, required) {
+			t.Fatalf("scheduling next-start update should close the dialog after success: missing %q", required)
+		}
+	}
+}
+
+// TestFrontendHasLicenseGate 验证授权页是独立业务页面，App 根组件只负责门禁装配。
+func TestFrontendHasLicenseGate(t *testing.T) {
+	appRoot := readRootFile(t, "frontend", "src", "App.vue")
+	appStore := readRootFile(t, "frontend", "src", "stores", "app.ts")
+	wailsAPI := readRootFile(t, "frontend", "src", "api", "wails.ts")
+	licensePage := readRootFile(t, "frontend", "src", "features", "license", "LicensePage.vue")
+	licenseStyles := readRootFile(t, "frontend", "src", "features", "license", "LicensePage.css")
+
+	for _, path := range []string{
+		filepath.Join("frontend", "src", "features", "license", "LicensePage.vue"),
+		filepath.Join("frontend", "src", "features", "license", "LicensePage.css"),
+	} {
+		if _, err := os.Stat(rootPath(path)); err != nil {
+			t.Fatalf("expected license feature file %s to exist: %v", path, err)
+		}
+	}
+
+	for _, required := range []string{
+		"LicensePage",
+		"licenseStatus?.required",
+		"!appStore.licenseStatus?.authorized",
+	} {
+		if !strings.Contains(appRoot, required) {
+			t.Fatalf("App.vue should gate the main UI behind license status: missing %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		"getLicenseStatus",
+		"activateLicense",
+		"LicenseStatus",
+		"defaultLicenseStatus",
+	} {
+		if !strings.Contains(wailsAPI, required) {
+			t.Fatalf("frontend/src/api/wails.ts should expose license API helper %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		"loadLicenseStatus",
+		"activateLicenseKey",
+		"failedLicenseStatus",
+		"licenseStatus.required && !licenseStatus.authorized",
+		"normaliseLicenseKey",
+		"授权状态读取失败",
+		"licenseStatusApplied",
+		"licenseErrorSet",
+	} {
+		if !strings.Contains(appStore, required) {
+			t.Fatalf("frontend/src/stores/app.ts should own license state flow %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		"<textarea",
+		`id="license-key"`,
+		`v-model="licenseKey"`,
+		`rows="5"`,
+	} {
+		if !strings.Contains(licensePage, required) {
+			t.Fatalf("LicensePage.vue 授权码输入必须支持多行展示：缺少 %q", required)
+		}
+	}
+	if strings.Contains(licensePage, `@keydown.enter.prevent="submitLicense"`) {
+		t.Fatalf("LicensePage.vue 授权码多行输入不应拦截 Enter 直接提交")
+	}
+	for _, required := range []string{
+		".license-textarea",
+		"min-height",
+		"resize: vertical",
+		"overflow-wrap: anywhere",
+	} {
+		if !strings.Contains(licenseStyles, required) {
+			t.Fatalf("LicensePage.css 授权码输入样式必须适配多行展示：缺少 %q", required)
+		}
 	}
 }
 

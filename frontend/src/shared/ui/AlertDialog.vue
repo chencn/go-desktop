@@ -35,7 +35,7 @@ const dialogOpen = computed({
 
 <template>
   <AlertDialog v-model:open="dialogOpen">
-    <AlertDialogContent>
+    <AlertDialogContent @pointer-down-outside="(event) => event.preventDefault()">
       <AlertDialogHeader>
         <AlertDialogTitle>{{ title }}</AlertDialogTitle>
         <AlertDialogDescription>{{ description }}</AlertDialogDescription>

@@ -98,6 +98,18 @@ type ServiceOptions struct {
 
 	// StartupIntegrationApplier 可选的启动集成同步函数，用于替换默认平台集成实现。
 	StartupIntegrationApplier func(previous Settings, next Settings) error
+
+	// LicenseMode 授权模式；只有 required 会启用授权检查，空值表示关闭。
+	LicenseMode string
+
+	// LicensePublicKey 授权公钥，required 模式下用于验证授权码签名。
+	LicensePublicKey string
+
+	// LicenseDeviceCode 测试或特殊场景下覆盖当前设备码；为空时按机器信息生成。
+	LicenseDeviceCode string
+
+	// LicenseDeviceCodeSource 测试或特殊场景下覆盖设备码生成函数；为空时按机器信息生成。
+	LicenseDeviceCodeSource func() string
 }
 
 // ============================================================================
@@ -170,6 +182,18 @@ type Runtime struct {
 
 	// updateOperationLock 串行化下载、安排和安装，避免同一安装包临时文件并发写入。
 	updateOperationLock sync.Mutex
+
+	// licenseMode 授权模式；只有 required 会触发授权。
+	licenseMode string
+
+	// licensePublicKey 授权公钥，来自构建期注入。
+	licensePublicKey string
+
+	// licenseDeviceCode 可选设备码覆盖，主要用于测试。
+	licenseDeviceCode string
+
+	// licenseDeviceCodeSource 可选设备码生成函数，主要用于测试。
+	licenseDeviceCodeSource func() string
 
 	// lock 读写锁，保护并发访问
 	// 读操作使用 RLock，写操作使用 Lock
@@ -576,19 +600,23 @@ func NewRuntime(options ServiceOptions) *Runtime {
 
 	// 创建运行时实例
 	runtime := &Runtime{
-		options:              options,
-		releaseChecker:       options.ReleaseChecker,
-		startedAt:            time.Now().UTC(),
-		databasePath:         options.DatabasePath,
-		logDirPath:           logDirPath,
-		logFilePattern:       logFilePattern,
-		crashReporter:        options.CrashReporter,
-		cachePath:            options.CachePath,
-		settings:             defaultSettings(),
-		displayPreferencesV2: display.DefaultV2(),
-		displayPreferences:   defaultDisplayPreferences(),
-		logViewClearedAt:     map[string]time.Time{},
-		updateState:          idleUpdateStatus(),
+		options:                 options,
+		releaseChecker:          options.ReleaseChecker,
+		startedAt:               time.Now().UTC(),
+		databasePath:            options.DatabasePath,
+		logDirPath:              logDirPath,
+		logFilePattern:          logFilePattern,
+		crashReporter:           options.CrashReporter,
+		cachePath:               options.CachePath,
+		settings:                defaultSettings(),
+		displayPreferencesV2:    display.DefaultV2(),
+		displayPreferences:      defaultDisplayPreferences(),
+		logViewClearedAt:        map[string]time.Time{},
+		updateState:             idleUpdateStatus(),
+		licenseMode:             strings.TrimSpace(options.LicenseMode),
+		licensePublicKey:        strings.TrimSpace(options.LicensePublicKey),
+		licenseDeviceCode:       strings.TrimSpace(options.LicenseDeviceCode),
+		licenseDeviceCodeSource: options.LicenseDeviceCodeSource,
 	}
 
 	// 设置默认缓存路径

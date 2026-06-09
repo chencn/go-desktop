@@ -7,6 +7,7 @@ import {
   type AppInfo,
   type DisplayPreferences,
   type EnvironmentInfo,
+  type LicenseStatus,
   type LogEntry,
   type LogFileInfo,
   type LogQuery,
@@ -17,7 +18,7 @@ import {
   type UpdateStatus,
 } from '../api/wails'
 
-export type StartupApiKey = 'settings' | 'displayPreferences' | 'appInfo' | 'environmentInfo' | 'updateStatus' | 'logFiles' | 'logs'
+export type StartupApiKey = 'settings' | 'displayPreferences' | 'appInfo' | 'environmentInfo' | 'licenseStatus' | 'updateStatus' | 'logFiles' | 'logs'
 export type StartupApiCallState = 'idle' | 'loading' | 'ok' | 'error'
 
 export type StartupApiStatus = {
@@ -32,6 +33,9 @@ export type StartupApiStatusMap = Record<StartupApiKey, StartupApiStatus>
 export type AppState = {
   appInfo?: AppInfo
   environmentInfo?: EnvironmentInfo
+  licenseStatus?: LicenseStatus
+  licenseLoading: boolean
+  licenseError: string
   settings?: Settings
   displayPreferences?: DisplayPreferences
   latestUpdateCheck?: UpdateCheckResult
@@ -58,6 +62,7 @@ export type AppState = {
 export type InitialPayload = {
   appInfo: AppInfo
   environmentInfo: EnvironmentInfo
+  licenseStatus: LicenseStatus
   settings: Settings
   displayPreferences: DisplayPreferences
   updateStatus: UpdateStatus
@@ -71,6 +76,9 @@ export type AppAction =
   | { type: 'checkingSet'; payload: boolean }
   | { type: 'downloadingSet'; payload: boolean }
   | { type: 'errorSet'; payload: string }
+  | { type: 'licenseLoadingSet'; payload: boolean }
+  | { type: 'licenseErrorSet'; payload: string }
+  | { type: 'licenseStatusApplied'; payload: LicenseStatus }
   | { type: 'startupApiStatusSet'; payload: { key: StartupApiKey; state: StartupApiCallState; message?: string } }
   | { type: 'initialised'; payload: InitialPayload }
   | { type: 'appInfoApplied'; payload: AppInfo }
@@ -87,6 +95,9 @@ export type AppAction =
 export const initialAppState: AppState = {
   appInfo: undefined,
   environmentInfo: undefined,
+  licenseStatus: undefined,
+  licenseLoading: false,
+  licenseError: '',
   settings: { ...defaultRuntimeSettings },
   displayPreferences: { ...defaultDisplayPreferences },
   latestUpdateCheck: undefined,
@@ -115,6 +126,7 @@ export function defaultStartupApiStatuses(): StartupApiStatusMap {
     displayPreferences: defaultStartupApiStatus(),
     appInfo: defaultStartupApiStatus(),
     environmentInfo: defaultStartupApiStatus(),
+    licenseStatus: defaultStartupApiStatus(),
     updateStatus: defaultStartupApiStatus(),
     logFiles: defaultStartupApiStatus(),
     logs: defaultStartupApiStatus(),
@@ -172,12 +184,38 @@ export function statusFromCheckResult(result: UpdateCheckResult): UpdateStatus {
 // toMessage 统一把底层异常转成 UI 可展示消息。
 export function toMessage(error: unknown) {
   if (error instanceof Error) {
-    return error.message
+    return normalizeErrorMessage(error.message)
   }
   if (typeof error === 'string') {
-    return error
+    return normalizeErrorMessage(error)
+  }
+  const objectMessage = messageFromObject(error)
+  if (objectMessage) {
+    return objectMessage
   }
   return '操作失败，请查看日志。'
+}
+
+function normalizeErrorMessage(message: string) {
+  const trimmed = message.trim()
+  if (!trimmed) return '操作失败，请查看日志。'
+  const parsedMessage = messageFromJsonString(trimmed)
+  return parsedMessage || trimmed
+}
+
+function messageFromJsonString(value: string) {
+  if (!value.startsWith('{') || !value.endsWith('}')) return ''
+  try {
+    return messageFromObject(JSON.parse(value))
+  } catch {
+    return ''
+  }
+}
+
+function messageFromObject(value: unknown) {
+  if (!value || typeof value !== 'object') return ''
+  const message = (value as { message?: unknown }).message
+  return typeof message === 'string' && message.trim() ? message.trim() : ''
 }
 
 // appReducer 只做同步状态变换；异步 API 调用放在 stores/app.ts。
@@ -194,6 +232,15 @@ export function appReducer(state: AppState, action: AppAction): AppState {
   if (action.type === 'errorSet') {
     return { ...state, errorMessage: action.payload }
   }
+  if (action.type === 'licenseLoadingSet') {
+    return { ...state, licenseLoading: action.payload }
+  }
+  if (action.type === 'licenseErrorSet') {
+    return { ...state, licenseError: action.payload }
+  }
+  if (action.type === 'licenseStatusApplied') {
+    return { ...state, licenseStatus: action.payload, licenseError: '' }
+  }
   if (action.type === 'startupApiStatusSet') {
     return {
       ...state,
@@ -208,11 +255,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     }
   }
   if (action.type === 'initialised') {
-    const { appInfo, environmentInfo, settings, displayPreferences, updateStatus, logFiles, logResponse } = action.payload
+    const { appInfo, environmentInfo, licenseStatus, settings, displayPreferences, updateStatus, logFiles, logResponse } = action.payload
     return {
       ...state,
       appInfo,
       environmentInfo,
+      licenseStatus,
       settings,
       displayPreferences,
       updateStatus,

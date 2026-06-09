@@ -19,6 +19,8 @@ jobs:
       WAILS_VERSION: "v3.0.0-alpha.97"
       APP_NAME: go-desktop
       ARCH: amd64
+      GO_DESKTOP_LICENSE_MODE: required
+      GO_DESKTOP_LICENSE_PUBLIC_KEY: ${{ vars.GO_DESKTOP_LICENSE_PUBLIC_KEY }}
 
     steps:
       - name: 检出代码
@@ -40,6 +42,13 @@ jobs:
           "version=$version" >> $env:GITHUB_OUTPUT
           "APP_VERSION=$version" >> $env:GITHUB_ENV
           "APP_VERSION_MODE=github" >> $env:GITHUB_ENV
+
+      - name: 校验授权配置
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:GO_DESKTOP_LICENSE_PUBLIC_KEY)) {
+            throw "GO_DESKTOP_LICENSE_PUBLIC_KEY 未配置，禁止发布授权版"
+          }
 
       - name: 设置 Go
         uses: actions/setup-go@v5

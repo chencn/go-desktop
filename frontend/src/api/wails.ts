@@ -62,6 +62,37 @@ export type EnvironmentInfo = {
 }
 
 // ============================================================================
+// 授权状态类型
+// ============================================================================
+
+/** 当前客户端授权状态 */
+export type LicenseStatus = {
+  /** 授权功能是否被构建配置启用 */
+  enabled: boolean
+  /** 当前发行版是否要求授权 */
+  required: boolean
+  /** 当前设备是否已通过授权码验签 */
+  authorized: boolean
+  /** 当前设备短码，用于生成授权码 */
+  deviceCode: string
+  /** 可展示给用户的授权状态说明 */
+  message: string
+  /** 授权码过期时间，空字符串或缺失表示永久 */
+  expiresAt?: string
+  /** 最近一次授权失败原因 */
+  lastError?: string
+}
+
+/** 前端预览模式默认不启用授权，避免浏览器预览被授权页拦住。 */
+export const defaultLicenseStatus: LicenseStatus = {
+  enabled: false,
+  required: false,
+  authorized: true,
+  deviceCode: '',
+  message: '授权未启用',
+}
+
+// ============================================================================
 // 更新检查类型
 // ============================================================================
 
@@ -376,6 +407,10 @@ export type ServiceBinding = {
   GetAppInfo?: () => Promise<AppInfo>
   /** 获取运行环境信息 */
   GetEnvironmentInfo?: () => Promise<EnvironmentInfo>
+  /** 获取当前授权状态 */
+  GetLicenseStatus?: () => Promise<LicenseStatus>
+  /** 激活授权码 */
+  ActivateLicense?: (licenseKey: string) => Promise<LicenseStatus>
   /** 获取当前设置 */
   GetSettings?: () => Promise<Settings>
   /** 保存设置 */
@@ -431,6 +466,10 @@ function isExplicitPreview() {
   return import.meta.env.VITE_PREVIEW === 'true'
 }
 
+function isSettingsTraceEnabled() {
+  return import.meta.env.VITE_SETTINGS_TRACE === 'true'
+}
+
 function binding<K extends keyof ServiceBinding>(method: K): NonNullable<ServiceBinding[K]> {
   if (isExplicitPreview()) {
     throw new WailsBindingUnavailableError(String(method))
@@ -454,6 +493,7 @@ function shouldUseDisplayPreferencesPreviewStore(error: unknown) {
 }
 
 function traceFrontend(message: string, payload?: unknown) {
+  if (!isSettingsTraceEnabled()) return
   if (payload === undefined) {
     console.info(`[settings-trace] ${message}`)
     return
@@ -552,6 +592,24 @@ export async function getEnvironmentInfo(): Promise<EnvironmentInfo> {
       logFilePath: '前端预览模式',
       cachePath: '前端预览模式',
     }), error)
+  }
+}
+
+/** 获取当前授权状态 */
+export async function getLicenseStatus(): Promise<LicenseStatus> {
+  try {
+    return await binding('GetLicenseStatus')()
+  } catch (error) {
+    return previewFallback(() => ({ ...defaultLicenseStatus }), error)
+  }
+}
+
+/** 激活授权码；预览模式下必须失败，避免误以为已写入授权。 */
+export async function activateLicense(licenseKey: string): Promise<LicenseStatus> {
+  try {
+    return await binding('ActivateLicense')(licenseKey)
+  } catch (error) {
+    throwSaveError('激活授权', error)
   }
 }
 

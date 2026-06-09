@@ -8,6 +8,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { viewComponents } from '@/app/routes'
 import { useAppStore } from './stores/app'
 import AppChrome from './features/layout/AppChrome.vue'
+import LicensePage from './features/license/LicensePage.vue'
 import type { ViewKey } from './shared/views'
 
 // appStore 保存 Pinia store 实例，集中访问应用共享状态和动作。
@@ -36,7 +37,8 @@ onUnmounted(() => {
 
 <template>
   <!-- 模板结构：声明当前组件对外呈现的布局、插槽和交互入口。 -->
-  <AppChrome :active-view="activeView" @navigate="navigate">
+  <LicensePage v-if="appStore.licenseStatus?.required && !appStore.licenseStatus?.authorized" />
+  <AppChrome v-else-if="appStore.licenseStatus" :active-view="activeView" @navigate="navigate">
     <component :is="activeViewComponent" />
   </AppChrome>
 </template>

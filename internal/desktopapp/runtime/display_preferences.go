@@ -62,6 +62,9 @@ type DisplayPreferences struct {
 // GetDisplayPreferences API 方法，返回当前显示偏好快照。
 func (api *API) GetDisplayPreferences() (preferences DisplayPreferences, err error) {
 	defer api.recoverError("读取显示偏好", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return DisplayPreferences{}, err
+	}
 	api.runtime.RecordLogWithSeverity("settings-trace", "GetDisplayPreferences：后端收到读取请求", "debug")
 	preferences = api.runtime.DisplayPreferencesSnapshot()
 	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("GetDisplayPreferences：后端返回 scheme=%q style=%q theme=%q base=%q themeColor=%q accent=%q chart=%q radius=%q density=%q cardBorder=%q",
@@ -82,6 +85,9 @@ func (api *API) GetDisplayPreferences() (preferences DisplayPreferences, err err
 // SaveDisplayPreferences API 方法，保存显示偏好到 SQLite JSON KV 配置项。
 func (api *API) SaveDisplayPreferences(preferences DisplayPreferences) (saved DisplayPreferences, err error) {
 	defer api.recoverError("保存显示偏好", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return DisplayPreferences{}, err
+	}
 	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("SaveDisplayPreferences：后端收到保存请求 scheme=%q style=%q theme=%q base=%q themeColor=%q accent=%q chart=%q radius=%q density=%q cardBorder=%q",
 		preferences.DisplayScheme,
 		preferences.UIStyle,

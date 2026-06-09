@@ -32,7 +32,7 @@ const dialogOpen = computed({
         placement === 'top-right' && 'ui-dialog-content-top-right',
       )"
       @escape-key-down="emit('close')"
-      @pointer-down-outside="emit('close')"
+      @pointer-down-outside="(event) => event.preventDefault()"
     >
       <DialogTitle class="sr-only">{{ label }}</DialogTitle>
       <slot />

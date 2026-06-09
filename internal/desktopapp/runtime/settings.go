@@ -23,6 +23,9 @@ import (
 // 返回的是副本，修改不会影响内部状态
 func (api *API) GetSettings() (settings Settings, err error) {
 	defer api.recoverError("读取设置", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return Settings{}, err
+	}
 	api.runtime.RecordLogWithSeverity("settings-trace", "GetSettings：后端收到读取请求", "debug")
 	settings = api.runtime.SettingsSnapshot()
 	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("GetSettings：后端返回 source=%q owner=%q repo=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
@@ -47,6 +50,9 @@ func (api *API) GetSettings() (settings Settings, err error) {
 //   - Settings: 保存后的设置（经过标准化处理）
 func (api *API) SaveSettings(settings Settings) (saved Settings, err error) {
 	defer api.recoverError("保存设置", &err)
+	if err := api.requireAuthorized(); err != nil {
+		return Settings{}, err
+	}
 	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("SaveSettings：后端收到保存请求 source=%q owner=%q repo=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
 		settings.UpdateSource,
 		settings.GitHubOwner,

@@ -5,6 +5,7 @@ package app_test
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/chencn/go-desktop/app"
@@ -91,5 +92,42 @@ func TestRecordStartupLaunchLogsDesktopShortcutSource(t *testing.T) {
 	logs = runtimeService.QueryLogs(app.LogQuery{Scope: "startup"})
 	if logs.Total != 1 {
 		t.Fatalf("expected manual startup source to stay silent, got %#v", logs.Logs)
+	}
+}
+
+// TestMainDefinesLicenseBuildVariables 验证主入口定义授权构建变量并传给 Runtime。
+func TestMainDefinesLicenseBuildVariables(t *testing.T) {
+	source := readRootFile(t, "main.go")
+
+	for _, want := range []string{
+		`licenseMode`,
+		`licensePublicKey`,
+		"LicenseMode:      licenseMode",
+		"LicensePublicKey: licensePublicKey",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("main.go 必须定义并传递授权构建变量：缺少 %q", want)
+		}
+	}
+}
+
+// TestReadmeDocumentsLicenseUsage 验证 README 有单独授权章节说明本地和 GitHub 用法。
+func TestReadmeDocumentsLicenseUsage(t *testing.T) {
+	source := readRootFile(t, "README.md")
+
+	for _, want := range []string{
+		"## 授权码模式",
+		".env.example",
+		"GO_DESKTOP_LICENSE_MODE=required",
+		"GO_DESKTOP_LICENSE_PUBLIC_KEY",
+		"GO_DESKTOP_LICENSE_PRIVATE_KEY",
+		"GitHub Repository Variable",
+		"go run ./scripts/envrun wails3 task dev",
+		"go run ./scripts/envrun wails3 task package",
+		"license_issue.go",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("README 授权码模式章节缺少 %q", want)
+		}
 	}
 }
