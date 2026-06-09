@@ -36,6 +36,7 @@ func TestInternalUsesLayeredTwoLevelLayout(t *testing.T) {
 		"desktopapp": {
 			"crash":    true,
 			"display":  true,
+			"license":  true,
 			"logging":  true,
 			"metadata": true,
 			"runtime":  true,
