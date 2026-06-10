@@ -39,7 +39,6 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
-
 :root,
 :root[data-theme="day"] {
   color-scheme: light;
@@ -609,6 +608,7 @@ html[data-text-size="large"], :root[data-text-size="large"] {
   --runtime-color-teal: var(--color-display-teal);
 }
 
+:root[data-theme-color="neutral"] { --runtime-theme-color: var(--runtime-color-neutral); }
 :root[data-theme-color="stone"] { --runtime-theme-color: var(--runtime-color-stone); }
 :root[data-theme-color="zinc"] { --runtime-theme-color: var(--runtime-color-zinc); }
 :root[data-theme-color="mauve"] { --runtime-theme-color: var(--runtime-color-mauve); }
@@ -627,6 +627,7 @@ html[data-text-size="large"], :root[data-text-size="large"] {
 :root[data-theme-color="sky"] { --runtime-theme-color: var(--runtime-color-sky); }
 :root[data-theme-color="teal"] { --runtime-theme-color: var(--runtime-color-teal); }
 
+:root[data-accent-color="neutral"] { --runtime-accent-color: var(--runtime-color-neutral); }
 :root[data-accent-color="stone"] { --runtime-accent-color: var(--runtime-color-stone); }
 :root[data-accent-color="zinc"] { --runtime-accent-color: var(--runtime-color-zinc); }
 :root[data-accent-color="mauve"] { --runtime-accent-color: var(--runtime-color-mauve); }
@@ -645,6 +646,7 @@ html[data-text-size="large"], :root[data-text-size="large"] {
 :root[data-accent-color="sky"] { --runtime-accent-color: var(--runtime-color-sky); }
 :root[data-accent-color="teal"] { --runtime-accent-color: var(--runtime-color-teal); }
 
+:root[data-chart-color="neutral"] { --runtime-chart-color: var(--runtime-color-neutral); }
 :root[data-chart-color="stone"] { --runtime-chart-color: var(--runtime-color-stone); }
 :root[data-chart-color="zinc"] { --runtime-chart-color: var(--runtime-color-zinc); }
 :root[data-chart-color="mauve"] { --runtime-chart-color: var(--runtime-color-mauve); }
@@ -663,7 +665,7 @@ html[data-text-size="large"], :root[data-text-size="large"] {
 :root[data-chart-color="sky"] { --runtime-chart-color: var(--runtime-color-sky); }
 :root[data-chart-color="teal"] { --runtime-chart-color: var(--runtime-color-teal); }
 
-:root:not([data-theme-color="neutral"])[data-theme-color] {
+:root[data-theme-color] {
   --primary: var(--runtime-theme-color);
   --primary-foreground: var(--runtime-theme-foreground, var(--color-value-oklch-0p985-0-0));
   --ring: var(--runtime-theme-color);
@@ -671,14 +673,14 @@ html[data-text-size="large"], :root[data-text-size="large"] {
   --sidebar-primary-foreground: var(--runtime-theme-foreground, var(--color-value-oklch-0p985-0-0));
 }
 
-:root:not([data-accent-color="neutral"])[data-accent-color] {
+:root[data-accent-color] {
   --accent: color-mix(in oklch, var(--runtime-accent-color) 14%, var(--background));
   --accent-foreground: var(--runtime-accent-color);
   --sidebar-accent: color-mix(in oklch, var(--runtime-accent-color) 14%, var(--background));
   --sidebar-accent-foreground: var(--runtime-accent-color);
 }
 
-:root:not([data-chart-color="neutral"])[data-chart-color] {
+:root[data-chart-color] {
   --chart-1: var(--runtime-chart-color);
   --chart-2: color-mix(in oklch, var(--runtime-chart-color) 74%, var(--color-white-solid));
   --chart-3: color-mix(in oklch, var(--runtime-chart-color) 62%, var(--color-black-solid));

@@ -16,7 +16,7 @@ import (
 )
 
 // main 根据运行场景输出规范化版本号。
-// local 模式会比较 build/config.yml、显式版本和当前 HEAD 标签；github 模式只信任显式版本或发布标签。
+// local 模式会比较 build/config.yml、显式版本和本地版本标签；github 模式只信任显式版本或发布标签。
 func main() {
 	mode := flag.String("mode", "local", "version resolution mode: local or github")
 	configPath := flag.String("config", "build/config.yml", "Wails build config path")
@@ -35,7 +35,7 @@ func main() {
 }
 
 // resolveLocalVersion 选择本地打包可用的最大版本。
-// 来源优先收集 build/config.yml 的 info.version、APP_VERSION、GITHUB_REF_NAME 或当前 HEAD 标签，再统一规范化比较。
+// 来源优先收集 build/config.yml 的 info.version、APP_VERSION、GITHUB_REF_NAME 或本地版本标签，再统一规范化比较。
 func resolveLocalVersion(configPath, explicitVersion, tag string) string {
 	candidates := []string{}
 	if value := strings.TrimSpace(readInfoVersion(configPath)); value != "" {
@@ -47,7 +47,7 @@ func resolveLocalVersion(configPath, explicitVersion, tag string) string {
 	if value := strings.TrimSpace(tag); value != "" {
 		candidates = append(candidates, value)
 	} else {
-		candidates = append(candidates, currentHeadVersionTags()...)
+		candidates = append(candidates, localVersionTags()...)
 	}
 	if len(candidates) == 0 {
 		exitf("没有可用版本来源")
@@ -66,9 +66,9 @@ func resolveLocalVersion(configPath, explicitVersion, tag string) string {
 	return selected
 }
 
-// currentHeadVersionTags 返回当前 HEAD 上可解析的版本标签；git 不可用或查询失败时静默返回空列表。
-func currentHeadVersionTags() []string {
-	cmd := exec.Command("git", "tag", "--points-at", "HEAD")
+// localVersionTags 返回本地仓库中可解析的版本标签；git 不可用或查询失败时静默返回空列表。
+func localVersionTags() []string {
+	cmd := exec.Command("git", "tag", "--list")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	output, err := cmd.Output()

@@ -722,14 +722,19 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
           <div class="aesthetic-field-col">
             <label class="aesthetic-field-title">侧边导航风格 (Sidebar Style)</label>
             <p class="field-desc-para">选择左侧主导航栏的底色模式与半透明模糊度。</p>
-            <UiSelect :model-value="display.menu.value" :disabled="!displayReady" @update:model-value="asMenu">
-              <UiSelectTrigger class="settings-control-select" aria-label="菜单风格">
-                <UiSelectValue placeholder="菜单风格" />
-              </UiSelectTrigger>
-              <UiSelectContent>
-                <UiSelectItem v-for="[value, label] in menuOptions" :key="value" :value="value">{{ label }}</UiSelectItem>
-              </UiSelectContent>
-            </UiSelect>
+            <div class="visual-segmented-control">
+              <button
+                v-for="[value, label] in menuOptions"
+                :key="value"
+                type="button"
+                class="visual-segment-btn"
+                :class="{ 'is-active': display.menu.value === value }"
+                :disabled="!displayReady"
+                @click="asMenu(value)"
+              >
+                <span>{{ label }}</span>
+              </button>
+            </div>
           </div>
 
           <!-- 组件风格基底 -->

@@ -109,14 +109,13 @@ function calculateLogPageSize(listElement?: HTMLElement | null, paginationElemen
   if (typeof window === 'undefined' || !listElement || !paginationElement) return 0
   const isDesktop = window.matchMedia('(min-width: 768px)').matches
   const maxRows = isDesktop ? 40 : 30
-  const listBounds = listElement?.getBoundingClientRect()
-  const tableBounds = listElement?.querySelector('[data-slot="table-container"]')?.getBoundingClientRect()
-  const paginationHeight = paginationElement?.getBoundingClientRect().height ?? 58
-  const listTop = tableBounds?.top ?? listBounds?.top ?? (isDesktop ? 300 : 320)
   const headerHeight = listElement?.querySelector('thead')?.getBoundingClientRect().height ?? (isDesktop ? 38 : 0)
   const rowElement = listElement?.querySelector('tbody tr:not(.log-empty-row)')
   const rowHeight = rowElement?.getBoundingClientRect().height || (isDesktop ? 48 : 56)
-  const available = Math.max(0, window.innerHeight - listTop - headerHeight - paginationHeight - 24)
+
+  // 两种模式现在都使用受 Grid 约束的稳定容器高度来进行精确计算
+  const available = Math.max(0, listElement.getBoundingClientRect().height - headerHeight - 6)
+
   return Math.max(1, Math.min(maxRows, Math.floor(available / rowHeight)))
 }
 

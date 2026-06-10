@@ -233,7 +233,7 @@ func TestResolveAppVersionNormalizesAndSelectsLargestCandidate(t *testing.T) {
 	}
 }
 
-func TestResolveAppVersionLocalModeUsesCurrentGitTagWhenTagEnvIsMissing(t *testing.T) {
+func TestResolveAppVersionLocalModeUsesLatestGitTagWhenTagEnvIsMissing(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "config.yml")
 	config := "info:\n  version: \"1.0.0\"\n"
@@ -250,6 +250,11 @@ func TestResolveAppVersionLocalModeUsesCurrentGitTagWhenTagEnvIsMissing(t *testi
 	runGit(t, tempDir, "add", "README.md")
 	runGit(t, tempDir, "commit", "-m", "init")
 	runGit(t, tempDir, "tag", "v1.2.1")
+	if err := os.WriteFile(filepath.Join(tempDir, "README.md"), []byte("fixture changed"), 0o644); err != nil {
+		t.Fatalf("update git fixture: %v", err)
+	}
+	runGit(t, tempDir, "add", "README.md")
+	runGit(t, tempDir, "commit", "-m", "next")
 
 	cmd := exec.Command("go", "run", "./scripts/resolve_app_version.go", "-mode", "local", "-config", configPath)
 	cmd.Dir = rootPath()
@@ -264,7 +269,7 @@ func TestResolveAppVersionLocalModeUsesCurrentGitTagWhenTagEnvIsMissing(t *testi
 		t.Fatalf("resolve_app_version failed: %v\n%s", err, stderr.String())
 	}
 	if got := strings.TrimSpace(string(output)); got != "1.2.1" {
-		t.Fatalf("expected current git tag version 1.2.1, got %q", got)
+		t.Fatalf("expected latest git tag version 1.2.1, got %q", got)
 	}
 }
 

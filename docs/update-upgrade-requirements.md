@@ -131,9 +131,15 @@ GitHub 自动打包：
 本地打包：
 
 - 版本来自本地 `info.version`。
-- 如果本地打包时能同时拿到 GitHub tag 版本，则比较 `info.version` 和 tag 版本。
+- 如果本地仓库存在可解析的版本 tag，则比较 `info.version` 和本地最高版本 tag。
 - 本地打包使用二者规范化后较大的版本。
 - 本地打包产物、Windows 版本资源、安装包文件名、`latest.json`、`.sha256` 都使用最终选出的版本。
+- 本地静态升级目录只由根任务 `wails3 task package` 生成；`wails3 task windows:package` 只生成 Windows 安装器，GitHub Release 任务也只消费安装器。
+
+本地开发和本地构建：
+
+- `wails3 task dev` 和 `wails3 task build` 使用与本地打包相同的本地版本解析规则。
+- 当前运行时版本通过 `main.appVersion` 注入，前端 `GetAppInfo`、更新检查当前版本、Windows 版本资源都必须看到同一个最终版本。
 
 ## 更新检查和后台任务
 

@@ -264,6 +264,20 @@
   pointer-events: none;
 }
 
+.aesthetic-field-col[aria-disabled="true"] {
+  opacity: 0.72;
+}
+
+.aesthetic-field-col[aria-disabled="true"] .field-desc-para,
+.aesthetic-field-col[aria-disabled="true"] .managed-badge {
+  color: var(--muted-foreground);
+}
+
+.is-managed-palette {
+  opacity: 0.58;
+  pointer-events: none;
+}
+
 .color-dot-btn {
   display: flex;
   align-items: center;
@@ -280,6 +294,14 @@
 
 .color-dot-btn:hover {
   transform: scale(1.12);
+}
+
+.color-dot-btn:disabled {
+  cursor: not-allowed;
+}
+
+.color-dot-btn:disabled:hover {
+  transform: none;
 }
 
 .color-dot-btn.is-selected {

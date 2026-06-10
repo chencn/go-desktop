@@ -119,7 +119,7 @@
 }
 
 /* 根据用户选定颜色动态计算 Primary 变量 */
-:root[data-display-scheme="artistic"]:not([data-theme-color="neutral"])[data-theme-color] {
+:root[data-display-scheme="artistic"][data-theme-color] {
   --artistic-primary: var(--runtime-theme-color);
   --artistic-primary-hover: color-mix(in oklch, var(--runtime-theme-color) 80%, var(--color-white-solid));
   --artistic-primary-active: color-mix(in oklch, var(--runtime-theme-color) 80%, var(--color-black-solid));
@@ -129,7 +129,7 @@
   --sidebar-primary: var(--runtime-theme-color);
 }
 
-:root[data-display-scheme="artistic"]:not([data-accent-color="neutral"])[data-accent-color] {
+:root[data-display-scheme="artistic"][data-accent-color] {
   --accent: color-mix(in oklch, var(--runtime-accent-color) 12%, var(--background));
   --accent-foreground: var(--runtime-accent-color);
   --sidebar-accent: color-mix(in oklch, var(--runtime-accent-color) 10%, var(--background));

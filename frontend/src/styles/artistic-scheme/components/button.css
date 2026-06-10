@@ -75,9 +75,9 @@
   color: var(--accent-foreground) !important;
 }
 
-/* 危险按钮：蔷薇红渐变 */
+/* 危险按钮：珊瑚红纯色 */
 :root[data-display-scheme="artistic"] [data-slot="button"][data-variant="destructive"] {
-  background: linear-gradient(135deg, var(--artistic-error), var(--color-value-be123c)) !important;
+  background: var(--artistic-error) !important;
   color: var(--color-white-solid) !important;
   border: 0 !important;
   box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--artistic-error) 35%, var(--color-transparent)) !important;

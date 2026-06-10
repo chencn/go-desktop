@@ -32,3 +32,9 @@
   background: var(--color-value-rgba-245-158-11-0p1) !important;
   color: var(--color-value-f59e0b) !important;
 }
+
+:root[data-display-scheme="artistic"] [data-slot="badge"].log-level-badge {
+  border-color: color-mix(in oklch, var(--log-level-color) 28%, var(--border)) !important;
+  background: color-mix(in oklch, var(--log-level-color) 9%, var(--color-transparent)) !important;
+  color: var(--log-level-color) !important;
+}

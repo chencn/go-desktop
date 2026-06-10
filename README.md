@@ -68,10 +68,10 @@ wails3 task common:generate:bindings
 
 ```powershell
 go run ./scripts/envrun wails3 task windows:build
-go run ./scripts/envrun wails3 task windows:package
+go run ./scripts/envrun wails3 task package
 ```
 
-Windows 构建和打包，打包默认走 NSIS。通过 `scripts/envrun` 启动 Wails task，确保本地 `.env` 在 Taskfile 变量展开前生效。
+Windows 构建和本地打包，打包默认走 NSIS，并生成本地静态升级目录 `bin/go-desktop/releases/latest.json` 与 `releases/download/vX.Y.Z/`。只运行 `windows:package` 只会生成 Windows 安装器，不会生成本地升级 manifest。通过 `scripts/envrun` 启动 Wails task，确保本地 `.env` 在 Taskfile 变量展开前生效。
 
 ```powershell
 cd D:\app\go\go-desktop\tests

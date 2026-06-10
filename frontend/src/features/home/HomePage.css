@@ -146,6 +146,7 @@
   justify-content: center;
   border-radius: var(--radius-md);
   background: var(--secondary);
+  color: var(--foreground);
   transition: transform 220ms ease, background-color 220ms ease, color 220ms ease;
 }
 
@@ -156,28 +157,6 @@
 .software-status-card:hover .software-status-icon svg {
   transform: scale(1.1);
 }
-
-.software-status-icon.icon-tone-indigo {
-  background: color-mix(in oklch, var(--primary) 8%, var(--color-transparent));
-  color: var(--primary);
-}
-.software-status-icon.icon-tone-green {
-  background: color-mix(in oklch, var(--icon-green) 10%, var(--color-transparent));
-  color: var(--icon-green);
-}
-.software-status-icon.icon-tone-orange {
-  background: color-mix(in oklch, var(--icon-orange) 10%, var(--color-transparent));
-  color: var(--icon-orange);
-}
-.software-status-icon.icon-tone-purple {
-  background: color-mix(in oklch, var(--primary) 10%, var(--color-transparent));
-  color: var(--primary);
-}
-
-.software-status-card:hover .software-status-icon.icon-tone-indigo { background: var(--primary); color: var(--primary-foreground); }
-.software-status-card:hover .software-status-icon.icon-tone-green { background: var(--icon-green); color: var(--color-white-solid); }
-.software-status-card:hover .software-status-icon.icon-tone-orange { background: var(--icon-orange); color: var(--color-white-solid); }
-.software-status-card:hover .software-status-icon.icon-tone-purple { background: var(--primary); color: var(--primary-foreground); }
 
 .software-status-main div {
   display: grid;

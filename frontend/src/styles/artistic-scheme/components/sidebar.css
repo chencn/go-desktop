@@ -15,11 +15,13 @@
 
 /* 反色 (全深色) */
 :root[data-display-scheme="artistic"][data-menu="inverted"] .app-sidebar {
-  background: color-mix(in oklch, var(--foreground) 95%, var(--color-transparent)) !important;
-  backdrop-filter: none !important;
-  border-right: 1px solid var(--color-white-alpha-080) !important;
-  /* 强制深色背景下的前景色与变量反白，解决亮色模式下文字看不清的问题 */
+  --sidebar: var(--color-value-rgba-20-16-25-0p95) !important;
   --sidebar-foreground: var(--color-white-alpha-800) !important;
+  --sidebar-border: var(--color-white-alpha-080) !important;
+  background: var(--sidebar) !important;
+  background-color: var(--sidebar) !important;
+  backdrop-filter: none !important;
+  border-right: 1px solid var(--sidebar-border) !important;
   color: var(--color-white-alpha-800) !important;
 }
 

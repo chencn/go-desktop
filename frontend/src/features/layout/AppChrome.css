@@ -103,6 +103,7 @@
   --sidebar-accent-foreground: var(--background);
   --sidebar-border: color-mix(in oklch, var(--background) 16%, var(--color-transparent));
   background: var(--sidebar);
+  background-color: var(--sidebar);
   color: var(--sidebar-foreground);
 }
 

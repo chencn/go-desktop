@@ -223,6 +223,16 @@ func TestShadcnCompositionReplacesHandRolledControls(t *testing.T) {
 			t.Fatalf("settings page should use shadcn-style primitive %q", required)
 		}
 	}
+	settingsStyles := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.css")
+	for _, required := range []string{
+		`.aesthetic-field-col[aria-disabled="true"]`,
+		".is-managed-palette",
+		".color-dot-btn:disabled",
+	} {
+		if !strings.Contains(settingsStyles, required) {
+			t.Fatalf("settings page should keep managed accent disabled styling in feature CSS for shadcn/artistic parity, missing %q", required)
+		}
+	}
 	if strings.Contains(settingsPage, "UiNativeSelect") {
 		t.Fatal("settings page should use shadcn Select for dropdowns instead of native select")
 	}
@@ -915,6 +925,26 @@ func TestSettingsPageUsesCurrentDisplayPreferenceControls(t *testing.T) {
 		}
 	}
 
+	sidebarStyleStart := strings.Index(settingsPage, "侧边导航风格 (Sidebar Style)")
+	uiStyleStart := strings.Index(settingsPage, "组件高矮风格 (UI Height Base)")
+	if sidebarStyleStart < 0 || uiStyleStart < 0 || !(sidebarStyleStart < uiStyleStart) {
+		t.Fatal("settings page should keep sidebar style before UI height base")
+	}
+	sidebarStyleBlock := settingsPage[sidebarStyleStart:uiStyleStart]
+	for _, required := range []string{
+		`<div class="visual-segmented-control">`,
+		`v-for="[value, label] in menuOptions"`,
+		`:class="{ 'is-active': display.menu.value === value }"`,
+		`@click="asMenu(value)"`,
+	} {
+		if !strings.Contains(sidebarStyleBlock, required) {
+			t.Fatalf("sidebar style should use segmented buttons like density, missing %q", required)
+		}
+	}
+	if strings.Contains(sidebarStyleBlock, "<UiSelect") {
+		t.Fatal("sidebar style has only two visual modes and should not render as a dropdown")
+	}
+
 	for _, forbidden := range []string{
 		"go-desktop-icon-library",
 		"setIconLibrary",
@@ -930,12 +960,15 @@ func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 	styles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "styles.css"), "\r\n", "\n")
 
 	for _, required := range []string{
+		`:root[data-theme-color="neutral"] { --runtime-theme-color: var(--runtime-color-neutral); }`,
+		`:root[data-accent-color="neutral"] { --runtime-accent-color: var(--runtime-color-neutral); }`,
+		`:root[data-chart-color="neutral"] { --runtime-chart-color: var(--runtime-color-neutral); }`,
 		`:root[data-theme-color="sky"] { --runtime-theme-color`,
 		`:root[data-accent-color="sky"] { --runtime-accent-color`,
 		`:root[data-chart-color="sky"] { --runtime-chart-color`,
-		`:root:not([data-theme-color="neutral"])[data-theme-color]`,
+		`:root[data-theme-color]`,
 		`--primary: var(--runtime-theme-color);`,
-		`:root:not([data-accent-color="neutral"])[data-accent-color]`,
+		`:root[data-accent-color]`,
 		`--accent: color-mix(in oklch, var(--runtime-accent-color)`,
 	} {
 		if !strings.Contains(styles, required) {
@@ -950,6 +983,9 @@ func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 		`:root[data-accent-color="blue"],`,
 		":root[data-chart-color=\"blue\"] {\n  --chart-1:",
 		":root[data-theme-color=\"blue\"] {\n  --primary:",
+		`:root:not([data-theme-color="neutral"])[data-theme-color]`,
+		`:root:not([data-accent-color="neutral"])[data-accent-color]`,
+		`:root:not([data-chart-color="neutral"])[data-chart-color]`,
 		"fonts.googleapis",
 		"@import url(",
 		"data-heading-font",
@@ -960,7 +996,7 @@ func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 		}
 	}
 
-	accentRuleStart := strings.Index(styles, `:root:not([data-accent-color="neutral"])[data-accent-color]`)
+	accentRuleStart := strings.Index(styles, `:root[data-accent-color]`)
 	if accentRuleStart < 0 {
 		t.Fatal("styles.css missing current accent color rule")
 	}
@@ -1112,9 +1148,6 @@ func TestDisplayPreferencePaletteUsesSingleRuntimeColorSource(t *testing.T) {
 			t.Fatalf("SettingsPage.css should render palette swatch %q through %s", color.token, runtimeVar)
 		}
 
-		if color.token == "neutral" {
-			continue
-		}
 		for _, axis := range []string{"theme", "accent", "chart"} {
 			axisRule := `:root[data-` + axis + `-color="` + color.token + `"] { --runtime-` + axis + `-color: var(` + runtimeVar + `);`
 			if !strings.Contains(styles, axisRule) {
@@ -1128,9 +1161,11 @@ func TestDisplayPreferencePaletteUsesSingleRuntimeColorSource(t *testing.T) {
 func TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
+	homeStyles := readRootFile(t, "frontend", "src", "features", "home", "HomePage.css")
 	appChrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
 	layoutStyles := readRootFile(t, "frontend", "src", "styles", "layout.css")
 	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
+	artisticCommonStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "common.css")
 
 	for _, required := range []string{
 		`data-icon icon-tone-orange`,
@@ -1164,6 +1199,51 @@ func TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation(t *testing.T) {
 		if !strings.Contains(appChrome+appChromeStyles+layoutStyles, required) {
 			t.Fatalf("active navigation icons should not keep colorful tone: missing %q", required)
 		}
+	}
+	for _, required := range []string{
+		`:root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-orange`,
+		`:root[data-icon-tone="colorful"] svg.icon-tone-orange`,
+		`:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-orange`,
+	} {
+		if !strings.Contains(layoutStyles+artisticCommonStyles, required) {
+			t.Fatalf("semantic icon tone CSS must be gated by the icon color style setting, missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		`.software-status-icon.icon-tone-indigo`,
+		`.software-status-icon.icon-tone-green`,
+		`.software-status-icon.icon-tone-orange`,
+		`.software-status-icon.icon-tone-purple`,
+	} {
+		if strings.Contains(homeStyles, forbidden) {
+			t.Fatalf("home page icon tone styles must respect data-icon-tone instead of always coloring icons, found %q", forbidden)
+		}
+	}
+	var ungatedRules []string
+	err := filepath.WalkDir(rootPath(filepath.Join("frontend", "src")), func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() || filepath.Ext(path) != ".css" {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		rel := mustRelRoot(t, path)
+		for index, line := range strings.Split(string(content), "\n") {
+			if strings.Contains(line, ".icon-tone-") && !strings.Contains(line, `data-icon-tone="colorful"`) {
+				ungatedRules = append(ungatedRules, fmt.Sprintf("%s:%d %s", filepath.ToSlash(rel), index+1, strings.TrimSpace(line)))
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("scan frontend icon tone CSS: %v", err)
+	}
+	if len(ungatedRules) > 0 {
+		t.Fatalf("icon tone CSS must be gated by data-icon-tone=\"colorful\"; first violations:\n%s", strings.Join(ungatedRules[:min(len(ungatedRules), 8)], "\n"))
 	}
 }
 
@@ -1276,6 +1356,7 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
 	logStyles := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.css")
 	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
+	alertDialogPrimitive := readRootFile(t, "frontend", "src", "components", "ui", "alert-dialog", "AlertDialogContent.vue")
 
 	for _, required := range []string{
 		"<Teleport to=\"body\"",
@@ -1334,13 +1415,24 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		".log-fullscreen .log-page-main",
 		".log-fullscreen.has-open-filters .log-page-main",
 		`.log-fullscreen .log-stream-panel [data-slot="table-container"]`,
-		"z-index: 2147483647",
+		"z-index: 40",
 		"height: 100dvh",
 		"background: var(--background)",
 	} {
 		if !strings.Contains(logStyles+appChromeStyles, required) {
 			t.Fatalf("logs page themed layout should define %q", required)
 		}
+	}
+	for _, required := range []string{
+		`data-slot="alert-dialog-content"`,
+		`z-50`,
+	} {
+		if !strings.Contains(alertDialogPrimitive, required) {
+			t.Fatalf("log fullscreen z-index should stay below alert dialog overlay/content, missing alert dialog primitive marker %q", required)
+		}
+	}
+	if strings.Contains(logStyles, "z-index: 2147483647") {
+		t.Fatal("log fullscreen must not use max z-index; alert dialogs still need to appear above focused logs")
 	}
 
 	for _, forbidden := range []string{
@@ -1381,13 +1473,12 @@ func TestLogsPageKeepsCloudInspiredPaginationAndTableDetails(t *testing.T) {
 		"displayedLogPage",
 		"displayedPageSize",
 		"watch(logPageSize",
-		"共 {{ appStore.logTotal }} 条",
-		"当前第 {{ displayedLogPage }} / {{ totalPages }} 页",
+		"logLayoutReady ? `共 ${appStore.logTotal} 条，每页 ${displayedPageSize} 条，当前第 ${displayedLogPage} / ${totalPages} 页` : ''",
 		`ref="logTableRef"`,
 		`ref="logPaginationRef"`,
 		`class="log-footer log-pagination-card"`,
-		`<UiTableRow v-if="appStore.logs.length === 0" class="log-empty-row">`,
-		`<UiTableCell colspan="4" class="log-empty-cell">暂无匹配日志</UiTableCell>`,
+		`<UiTableRow v-if="displayedLogs.length === 0" class="log-empty-row">`,
+		`<UiTableCell colspan="4" class="log-empty-cell">{{ logLayoutReady ? '暂无匹配日志' : '' }}</UiTableCell>`,
 		`class="log-level-badge"`,
 		"logLevelClass",
 	} {
@@ -1490,6 +1581,37 @@ func TestMenuAccentCssOnlyUsesSupportedValues(t *testing.T) {
 	}
 }
 
+// TestSidebarInvertedStyleFlipsBackgroundAndForeground 锁定侧边导航反色必须同时反背景和文字。
+func TestSidebarInvertedStyleFlipsBackgroundAndForeground(t *testing.T) {
+	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
+	artisticSidebarStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "sidebar.css")
+
+	for _, required := range []string{
+		`:root[data-menu="inverted"] .app-sidebar`,
+		`--sidebar: var(--foreground);`,
+		`--sidebar-foreground: var(--background);`,
+		`background-color: var(--sidebar);`,
+		`color: var(--sidebar-foreground);`,
+	} {
+		if !strings.Contains(appChromeStyles, required) {
+			t.Fatalf("base sidebar inverted style should flip background and foreground together: missing %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		`:root[data-display-scheme="artistic"][data-menu="inverted"] .app-sidebar`,
+		`--sidebar: var(--color-value-rgba-20-16-25-0p95) !important;`,
+		`--sidebar-foreground: var(--color-white-alpha-800) !important;`,
+		`background: var(--sidebar) !important;`,
+		`background-color: var(--sidebar) !important;`,
+		`color: var(--color-white-alpha-800) !important;`,
+	} {
+		if !strings.Contains(artisticSidebarStyles, required) {
+			t.Fatalf("artistic sidebar inverted style should not only flip text: missing %q", required)
+		}
+	}
+}
+
 // TestTopbarUsesSharedNavigationAndResponsiveUtilityRow 验证顶栏复用 shared views 导航数据，并在窄屏保留工具区布局。
 func TestTopbarUsesSharedNavigationAndResponsiveUtilityRow(t *testing.T) {
 	appRoot := readRootFile(t, "frontend", "src", "App.vue")
@@ -1521,11 +1643,12 @@ func TestTopbarUsesSharedNavigationAndResponsiveUtilityRow(t *testing.T) {
 		"pageSubtitle",
 		"topbar-utility",
 		"topbar-actions",
+		"window-controls",
 		"compact-nav",
-		"grid-template-columns: minmax(0, 1fr) auto",
+		"grid-template-columns: minmax(0, 1fr) auto auto",
 		"display: contents",
-		"grid-column: 2",
-		"grid-row: 1",
+		"grid-column: auto",
+		"grid-row: auto",
 		"grid-column: 1 / -1",
 		"grid-row: 2",
 		"justify-self: stretch",
@@ -1840,6 +1963,8 @@ func TestArtisticSchemeComponentDetailsMatchThemeTokens(t *testing.T) {
 		`var(--artistic-glass-border)`,
 		`var(--artistic-shadow-lg)`,
 		`justify-content: flex-end`,
+		`:root[data-display-scheme="artistic"] [data-slot="dialog-content"]:not(.ui-dialog-content-top-right)`,
+		`translate: -50% -50%`,
 	} {
 		if !strings.Contains(dialogStyles+alertDialogStyles, required) {
 			t.Fatalf("dialog styles should keep artistic modal detail %q", required)

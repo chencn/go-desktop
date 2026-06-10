@@ -75,6 +75,21 @@ func TestRootDevCommandUsesEnvrun(t *testing.T) {
 	}
 }
 
+// TestReadmeDocumentsRootPackageForLocalStaticUpdates 验证本地升级文档入口指向根 package 任务。
+func TestReadmeDocumentsRootPackageForLocalStaticUpdates(t *testing.T) {
+	source := readRootFile(t, "README.md")
+
+	for _, want := range []string{
+		"go run ./scripts/envrun wails3 task package",
+		"bin/go-desktop/releases/latest.json",
+		"releases/download/vX.Y.Z/",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("README 本地打包说明必须指向会生成本地静态升级文件的根 package 任务：缺少 %q", want)
+		}
+	}
+}
+
 // TestDevFrontendStartsWithoutReinstallingDependencies 验证 Wails dev 启动 Vite 时不重复安装依赖，避免拖慢启动窗口。
 func TestDevFrontendStartsWithoutReinstallingDependencies(t *testing.T) {
 	source := readRootFile(t, "build", "Taskfile.yml")
