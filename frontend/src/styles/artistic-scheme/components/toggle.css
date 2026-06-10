@@ -19,5 +19,5 @@
   background-color: color-mix(in srgb, var(--artistic-primary) 15%, var(--card)) !important;
   color: var(--artistic-primary) !important;
   border: 1px solid color-mix(in srgb, var(--artistic-primary) 30%, var(--border)) !important;
-  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
 }

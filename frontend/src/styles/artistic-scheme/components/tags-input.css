@@ -3,19 +3,19 @@
 :root[data-display-scheme="artistic"] [data-slot="tags-input"] {
   border: 1px solid var(--border) !important;
   border-radius: var(--radius) !important;
-  background: rgba(255, 255, 255, 0.5) !important;
+  background: var(--color-white-alpha-500) !important;
   padding: 6px 12px !important;
   transition: border-color 220ms ease, box-shadow 220ms ease !important;
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] [data-slot="tags-input"] {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: var(--color-white-alpha-040) !important;
+  border-color: var(--color-white-alpha-080) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="tags-input"]:has(input:focus-visible) {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
 }
 
 /* 内部 Tag 标签小芯片 */
@@ -39,5 +39,5 @@
 
 :root[data-display-scheme="artistic"] [data-slot="tags-input-item-delete"]:hover {
   background-color: var(--artistic-error) !important;
-  color: #ffffff !important;
+  color: var(--color-white-solid) !important;
 }

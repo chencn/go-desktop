@@ -4,7 +4,7 @@
   place-items: center;
   padding: 32px;
   background:
-    linear-gradient(135deg, rgb(245 247 250) 0%, rgb(255 255 255) 48%, rgb(238 246 255) 100%);
+    linear-gradient(135deg, var(--color-value-rgb-245-247-250) 0%, var(--color-white-solid) 48%, var(--color-value-rgb-238-246-255) 100%);
 }
 
 .license-panel {
@@ -16,7 +16,7 @@
   border-radius: 8px;
   background: var(--card);
   color: var(--card-foreground);
-  box-shadow: 0 20px 50px rgb(15 23 42 / 10%);
+  box-shadow: 0 20px 50px var(--color-value-rgb-15-23-42-alpha-10pct);
 }
 
 .license-heading {
@@ -34,7 +34,7 @@
   justify-content: center;
   flex: 0 0 auto;
   border-radius: 8px;
-  background: color-mix(in oklch, var(--primary) 10%, transparent);
+  background: color-mix(in oklch, var(--primary) 10%, var(--color-transparent));
   color: var(--primary);
 }
 
@@ -61,16 +61,16 @@
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: color-mix(in oklch, var(--muted) 50%, transparent);
+  background: color-mix(in oklch, var(--muted) 50%, var(--color-transparent));
   color: var(--foreground);
   font-size: 14px;
   line-height: 1.5;
 }
 
 .license-status.is-error {
-  border-color: rgb(239 68 68 / 32%);
-  background: rgb(254 242 242);
-  color: rgb(153 27 27);
+  border-color: var(--color-value-rgb-239-68-68-alpha-32pct);
+  background: var(--color-value-fef2f2);
+  color: var(--color-value-rgb-153-27-27);
 }
 
 .license-status svg {
@@ -108,7 +108,7 @@
   padding: 8px 12px;
   border: 1px solid var(--input);
   border-radius: 8px;
-  background: transparent;
+  background: var(--color-transparent);
   color: var(--foreground);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 14px;
@@ -124,7 +124,7 @@
 
 .license-textarea:focus-visible {
   border-color: var(--ring);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 25%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 25%, var(--color-transparent));
 }
 
 .license-textarea:disabled {

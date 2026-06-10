@@ -3,11 +3,16 @@
 package frontend_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
+
+const frontendColorTokenFile = "frontend/src/colors.css"
 
 var displayPreferencePaletteColors = []struct {
 	token string
@@ -32,6 +37,13 @@ var displayPreferencePaletteColors = []struct {
 	{token: "sky", value: "oklch(0.588 0.158 241.966)"},
 	{token: "teal", value: "oklch(0.6 0.118 184.704)"},
 }
+
+var rawColorLiteralPattern = regexp.MustCompile(`(?i)#[0-9a-f]{3,8}\b|oklch\([^;\n]*?\)|rgba?\([^;\n]*?\)|hsla?\([^;\n]*?\)`)
+var rawNamedColorPattern = regexp.MustCompile(`(?i)(^|[^a-z0-9_-])(transparent|white|black)([^a-z0-9_-]|$)`)
+var colorTokenDeclarationPattern = regexp.MustCompile(`(?m)^\s*(--color-[a-z0-9-]+):\s*([^;]+);`)
+var colorTokenNameShapePattern = regexp.MustCompile(`^--color-(transparent|(display|black|white|value)-[a-z0-9-]+)$`)
+var monochromeAlphaTokenNamePattern = regexp.MustCompile(`^--color-(black|white)-alpha-([0-9]{3})$`)
+var rgbaColorValuePattern = regexp.MustCompile(`^rgba\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9.]+)\s*\)$`)
 
 // TestAppRootStaysAsCompositionRoot 验证 App.vue 只装配全局状态、门禁和页面出口，不回流具体业务流程。
 func TestAppRootStaysAsCompositionRoot(t *testing.T) {
@@ -412,6 +424,55 @@ func TestUpdateHeaderIconReflectsLifecycleAndMotion(t *testing.T) {
 		if !strings.Contains(appStore, required) {
 			t.Fatalf("stores/app.ts should clear busy flags when update reaches terminal status: missing %q", required)
 		}
+	}
+}
+
+// TestFrontendInitialiseShowsMainWindowAfterLoading 验证前端初始化完成后才通知后端显示主窗口。
+// 这条链路用于避免 Wails runtime ready 后主窗口先露出空白内容。
+func TestFrontendInitialiseShowsMainWindowAfterLoading(t *testing.T) {
+	appStore := readRootFile(t, "frontend", "src", "stores", "app.ts")
+	wailsAPI := readRootFile(t, "frontend", "src", "api", "wails.ts")
+
+	for _, required := range []string{
+		"showMainWindow,",
+	} {
+		if !strings.Contains(appStore, required) {
+			t.Fatalf("frontend/src/stores/app.ts 必须在初始化完成后调用 showMainWindow：缺少 %q", required)
+		}
+	}
+	if calls := strings.Count(appStore, "await showMainWindow()"); calls < 2 {
+		t.Fatalf("frontend/src/stores/app.ts 必须覆盖授权提前返回和正常初始化完成两条显示路径，当前 showMainWindow 调用次数=%d", calls)
+	}
+	for _, required := range []string{
+		"export async function showMainWindow()",
+		"binding('ShowMainWindow')",
+	} {
+		if !strings.Contains(wailsAPI, required) {
+			t.Fatalf("frontend/src/api/wails.ts 必须封装 ShowMainWindow 绑定：缺少 %q", required)
+		}
+	}
+
+	finallyIdx := strings.Index(appStore, "} finally {")
+	if finallyIdx < 0 {
+		t.Fatal("frontend/src/stores/app.ts 缺少初始化 finally 收尾逻辑")
+	}
+	finallyBlock := appStore[finallyIdx:]
+	loadingSetIdx := strings.Index(finallyBlock, "type: 'loadingSet', payload: false")
+	showMainWindowIdx := strings.Index(finallyBlock, "await showMainWindow()")
+	if loadingSetIdx < 0 || showMainWindowIdx < 0 || showMainWindowIdx < loadingSetIdx {
+		t.Fatal("showMainWindow 必须在 loadingSet:false 之后调用，确保启动数据加载完成后再显示窗口")
+	}
+
+	licenseCheckIdx := strings.Index(appStore, "licenseStatus.required && !licenseStatus.authorized")
+	if licenseCheckIdx < 0 {
+		t.Fatal("frontend/src/stores/app.ts 缺少授权状态提前返回逻辑")
+	}
+	licenseBlock := appStore[licenseCheckIdx:]
+	if returnIdx := strings.Index(licenseBlock, "\n        return"); returnIdx > 0 {
+		licenseBlock = licenseBlock[:returnIdx]
+	}
+	if !strings.Contains(licenseBlock, "await showMainWindow()") {
+		t.Fatal("授权未通过的提前返回路径也必须调用 showMainWindow，否则授权页不可见")
 	}
 }
 
@@ -913,9 +974,111 @@ func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 	}
 }
 
+// TestFrontendColorsUseSingleTokenFile 验证项目自有前端颜色只能在全局 token 文件写死。
+func TestFrontendColorsUseSingleTokenFile(t *testing.T) {
+	mainTS := readRootFile(t, "frontend", "src", "main.ts")
+	styles := readRootFile(t, "frontend", "src", "styles.css")
+	colorTokens := strings.ReplaceAll(readRootFile(t, filepath.FromSlash(frontendColorTokenFile)), "\r\n", "\n")
+
+	if !strings.Contains(mainTS, `import './colors.css'`) {
+		t.Fatal("frontend/src/main.ts should import the global color token file before project styles")
+	}
+	if strings.Index(mainTS, `import './colors.css'`) > strings.Index(mainTS, `import './styles.css'`) {
+		t.Fatal("global color token file must load before frontend/src/styles.css")
+	}
+
+	if !strings.Contains(styles, "var(--color-display-apple-blue)") {
+		t.Fatal("styles.css should consume display palette colors through the global color token file")
+	}
+
+	for _, required := range []string{
+		"Naming rules:",
+		"--color-display-<token>",
+		"--color-transparent",
+		"--color-(white|black)-solid",
+		"--color-(white|black)-alpha-080",
+		"alpha 后缀固定三位",
+		"--color-value-<raw-value-slug>",
+		"同一个 raw 色值只能定义一次",
+		"frontend/src/components/ui/** 是 shadcn primitive 目录，结构测试会跳过。",
+	} {
+		if !strings.Contains(colorTokens, required) {
+			t.Fatalf("%s should document color token naming rule %q", frontendColorTokenFile, required)
+		}
+	}
+	if _, err := os.Stat(rootPath(filepath.Join("frontend", "src", "styles", "tokens", "colors.css"))); err == nil {
+		t.Fatal("global color token file should stay beside frontend/src/styles.css, not under frontend/src/styles/tokens")
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("check old color token path: %v", err)
+	}
+
+	valueOwners := map[string]string{}
+	for _, match := range colorTokenDeclarationPattern.FindAllStringSubmatch(colorTokens, -1) {
+		name := match[1]
+		value := strings.TrimSpace(match[2])
+		assertColorTokenNameMatchesRules(t, name, value)
+		canonicalValue := canonicalColorValue(value)
+		if previous, exists := valueOwners[canonicalValue]; exists {
+			t.Fatalf("raw color value %q is defined by both %s and %s", value, previous, name)
+		}
+		valueOwners[canonicalValue] = name
+	}
+	if len(valueOwners) == 0 {
+		t.Fatal("global color token file should define color variables")
+	}
+
+	var violations []string
+	err := filepath.WalkDir(rootPath(filepath.Join("frontend", "src")), func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			rel := filepath.ToSlash(mustRelRoot(t, path))
+			if rel == "frontend/src/components/ui" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !hasAnySuffix(entry.Name(), ".css", ".vue", ".ts") {
+			return nil
+		}
+		rel := filepath.ToSlash(mustRelRoot(t, path))
+		if rel == frontendColorTokenFile {
+			return nil
+		}
+		source := strings.ReplaceAll(readRootFile(t, filepath.FromSlash(rel)), "\r\n", "\n")
+		if strings.Contains(source, "--color-var(") || strings.Contains(source, "var(--color-var") {
+			violations = append(violations, rel+": invalid nested color var")
+		}
+		for _, match := range rawColorLiteralPattern.FindAllString(source, -1) {
+			violations = append(violations, rel+": "+match)
+		}
+		for _, match := range rawNamedColorPattern.FindAllStringSubmatch(source, -1) {
+			violations = append(violations, rel+": "+strings.TrimSpace(match[2]))
+		}
+		for _, line := range strings.Split(source, "\n") {
+			if strings.Contains(line, "color-mix(") && (strings.Contains(line, " white") || strings.Contains(line, " black")) {
+				violations = append(violations, rel+": "+strings.TrimSpace(line))
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("scan frontend colors: %v", err)
+	}
+	if len(violations) > 0 {
+		limit := len(violations)
+		if limit > 20 {
+			limit = 20
+		}
+		t.Fatalf("frontend raw colors must live in %s; first violations:\n%s", frontendColorTokenFile, strings.Join(violations[:limit], "\n"))
+	}
+}
+
 // TestDisplayPreferencePaletteUsesSingleRuntimeColorSource 锁定品牌主题色和中性灰阶色调共 18 色只在 runtime 变量处写死。
 func TestDisplayPreferencePaletteUsesSingleRuntimeColorSource(t *testing.T) {
 	styles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "styles.css"), "\r\n", "\n")
+	colorTokens := strings.ReplaceAll(readRootFile(t, filepath.FromSlash(frontendColorTokenFile)), "\r\n", "\n")
 	settingsStyles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.css"), "\r\n", "\n")
 
 	if got, want := len(displayPreferencePaletteColors), 18; got != want {
@@ -930,9 +1093,14 @@ func TestDisplayPreferencePaletteUsesSingleRuntimeColorSource(t *testing.T) {
 		seen[color.token] = true
 
 		runtimeVar := "--runtime-color-" + color.token
-		runtimeDeclaration := runtimeVar + ": " + color.value + ";"
+		colorTokenVar := "--color-display-" + color.token
+		runtimeDeclaration := runtimeVar + ": var(" + colorTokenVar + ");"
+		colorTokenDeclaration := colorTokenVar + ": " + color.value + ";"
+		if count := strings.Count(colorTokens, colorTokenDeclaration); count != 1 {
+			t.Fatalf("display color %q should be hard-coded exactly once in %s, got %d", color.token, frontendColorTokenFile, count)
+		}
 		if count := strings.Count(styles, runtimeDeclaration); count != 1 {
-			t.Fatalf("runtime color %q should be hard-coded exactly once in styles.css, got %d", color.token, count)
+			t.Fatalf("runtime color %q should reference %s exactly once in styles.css, got %d", color.token, colorTokenVar, count)
 		}
 
 		if strings.Contains(settingsStyles, color.value) {
@@ -1524,9 +1692,9 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 		`Artistic 方案 common`,
 		`:root[data-display-scheme="artistic"]`,
 		`--artistic-primary: var(--runtime-theme-color, var(--runtime-color-apple-blue))`,
-		`--artistic-success: #10b981`,
-		`--artistic-warning: #f59e0b`,
-		`--artistic-error: #ef4444`,
+		`--artistic-success: var(--color-value-10b981)`,
+		`--artistic-warning: var(--color-value-f59e0b)`,
+		`--artistic-error: var(--color-value-ef4444)`,
 		`--artistic-shadow`,
 		`[data-slot="button"]`,
 		`[data-slot="badge"]`,
@@ -1595,7 +1763,7 @@ func TestArtisticSchemeKeepsSwitchAsTrack(t *testing.T) {
 		`translate: none !important`,
 		`width:`,
 		`height:`,
-		`background: #ffffff !important`,
+		`background: var(--color-white-solid) !important`,
 		`:root[data-display-scheme="artistic"] [data-slot="switch"][data-state="checked"] [data-slot="switch-thumb"]`,
 	} {
 		if !strings.Contains(switchStyles, required) {
@@ -1917,6 +2085,266 @@ func readRootFile(t *testing.T, parts ...string) string {
 		t.Fatalf("read %s: %v", filepath.Join(parts...), err)
 	}
 	return string(data)
+}
+
+func mustRelRoot(t *testing.T, path string) string {
+	t.Helper()
+	rel, err := filepath.Rel(rootPath("."), path)
+	if err != nil {
+		t.Fatalf("resolve relative path for %s: %v", path, err)
+	}
+	return rel
+}
+
+func hasAnySuffix(value string, suffixes ...string) bool {
+	for _, suffix := range suffixes {
+		if strings.HasSuffix(value, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
+func assertColorTokenNameMatchesRules(t *testing.T, name string, value string) {
+	t.Helper()
+	if !colorTokenNameShapePattern.MatchString(name) {
+		t.Fatalf("color token %q should use a documented --color-display/black/white/value name", name)
+	}
+
+	switch {
+	case name == "--color-transparent":
+		if strings.ToLower(value) != "transparent" {
+			t.Fatalf("%s should define transparent, got %q", name, value)
+		}
+	case strings.HasPrefix(name, "--color-display-"):
+		token := strings.TrimPrefix(name, "--color-display-")
+		expectedValue, ok := displayPaletteValueForToken(token)
+		if !ok {
+			t.Fatalf("display color token %q is not part of the locked 18-color display palette", name)
+		}
+		if value != expectedValue {
+			t.Fatalf("display color token %q should define %q, got %q", name, expectedValue, value)
+		}
+	case name == "--color-black-solid":
+		if strings.ToLower(value) != "#000000" {
+			t.Fatalf("%s should define #000000, got %q", name, value)
+		}
+	case name == "--color-white-solid":
+		if strings.ToLower(value) != "#ffffff" {
+			t.Fatalf("%s should define #ffffff, got %q", name, value)
+		}
+	case strings.HasPrefix(name, "--color-black-alpha-") || strings.HasPrefix(name, "--color-white-alpha-"):
+		assertMonochromeAlphaTokenNameMatchesValue(t, name, value)
+	case strings.HasPrefix(name, "--color-value-"):
+		slug, ok := colorValueSlug(value)
+		if !ok {
+			t.Fatalf("value-derived color token %q has unsupported raw value %q", name, value)
+		}
+		if expected := "--color-value-" + slug; name != expected {
+			t.Fatalf("value-derived color token %q should be named %q for raw value %q", name, expected, value)
+		}
+	default:
+		t.Fatalf("color token %q does not match any documented naming rule", name)
+	}
+}
+
+func displayPaletteValueForToken(token string) (string, bool) {
+	for _, color := range displayPreferencePaletteColors {
+		if color.token == token {
+			return color.value, true
+		}
+	}
+	return "", false
+}
+
+func assertMonochromeAlphaTokenNameMatchesValue(t *testing.T, name string, value string) {
+	t.Helper()
+	nameMatch := monochromeAlphaTokenNamePattern.FindStringSubmatch(name)
+	if nameMatch == nil {
+		t.Fatalf("monochrome alpha token %q should use --color-(white|black)-alpha-000 naming", name)
+	}
+	valueMatch := rgbaColorValuePattern.FindStringSubmatch(strings.ToLower(value))
+	if valueMatch == nil {
+		t.Fatalf("monochrome alpha token %q should define rgba(...), got %q", name, value)
+	}
+
+	expectedChannel := "0"
+	if nameMatch[1] == "white" {
+		expectedChannel = "255"
+	}
+	for _, channel := range valueMatch[1:4] {
+		if channel != expectedChannel {
+			t.Fatalf("%s should use rgba(%s, %s, %s, alpha), got %q", name, expectedChannel, expectedChannel, expectedChannel, value)
+		}
+	}
+
+	alpha, err := strconv.ParseFloat(valueMatch[4], 64)
+	if err != nil {
+		t.Fatalf("parse alpha for %s: %v", name, err)
+	}
+	expectedSuffix := fmt.Sprintf("%03d", int(alpha*1000+0.5))
+	if nameMatch[2] != expectedSuffix {
+		t.Fatalf("%s alpha suffix should be %s for %q", name, expectedSuffix, value)
+	}
+}
+
+func colorValueSlug(value string) (string, bool) {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch {
+	case strings.HasPrefix(value, "#"):
+		return strings.TrimPrefix(value, "#"), true
+	case strings.HasPrefix(value, "oklch(") && strings.HasSuffix(value, ")"):
+		return "oklch-" + functionalColorSlug(strings.TrimSuffix(strings.TrimPrefix(value, "oklch("), ")")), true
+	case strings.HasPrefix(value, "rgb(") && strings.HasSuffix(value, ")"):
+		inner := strings.TrimSuffix(strings.TrimPrefix(value, "rgb("), ")")
+		colorPart, alphaPart, hasAlpha := strings.Cut(inner, "/")
+		components := slugFields(colorPart)
+		if len(components) == 0 {
+			return "", false
+		}
+		slug := "rgb-" + strings.Join(components, "-")
+		if hasAlpha {
+			slug += "-alpha-" + slugColorComponent(alphaPart)
+		}
+		return slug, true
+	case strings.HasPrefix(value, "rgba(") && strings.HasSuffix(value, ")"):
+		inner := strings.TrimSuffix(strings.TrimPrefix(value, "rgba("), ")")
+		parts := strings.Split(inner, ",")
+		if len(parts) != 4 {
+			return "", false
+		}
+		for index, part := range parts {
+			parts[index] = slugColorComponent(part)
+		}
+		return "rgba-" + strings.Join(parts, "-"), true
+	default:
+		return "", false
+	}
+}
+
+func functionalColorSlug(value string) string {
+	colorPart, alphaPart, hasAlpha := strings.Cut(value, "/")
+	slug := strings.Join(slugFields(colorPart), "-")
+	if hasAlpha {
+		slug += "-alpha-" + slugColorComponent(alphaPart)
+	}
+	return slug
+}
+
+func slugFields(value string) []string {
+	fields := strings.Fields(value)
+	for index, field := range fields {
+		fields[index] = slugColorComponent(field)
+	}
+	return fields
+}
+
+func slugColorComponent(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.ReplaceAll(value, ".", "p")
+	value = strings.ReplaceAll(value, "%", "pct")
+	return value
+}
+
+func canonicalColorValue(value string) string {
+	value = strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(value)), " "))
+	if canonical, ok := canonicalHexColorValue(value); ok {
+		return canonical
+	}
+	if canonical, ok := canonicalRGBColorValue(value); ok {
+		return canonical
+	}
+	if canonical, ok := canonicalWhiteOklchValue(value); ok {
+		return canonical
+	}
+	return value
+}
+
+func canonicalHexColorValue(value string) (string, bool) {
+	if !strings.HasPrefix(value, "#") {
+		return "", false
+	}
+	hex := strings.TrimPrefix(value, "#")
+	if len(hex) == 3 {
+		hex = strings.Repeat(hex[0:1], 2) + strings.Repeat(hex[1:2], 2) + strings.Repeat(hex[2:3], 2)
+	}
+	if len(hex) != 6 {
+		return "", false
+	}
+	red, errRed := strconv.ParseInt(hex[0:2], 16, 64)
+	green, errGreen := strconv.ParseInt(hex[2:4], 16, 64)
+	blue, errBlue := strconv.ParseInt(hex[4:6], 16, 64)
+	if errRed != nil || errGreen != nil || errBlue != nil {
+		return "", false
+	}
+	return fmt.Sprintf("rgba(%d,%d,%d,1)", red, green, blue), true
+}
+
+func canonicalRGBColorValue(value string) (string, bool) {
+	if strings.HasPrefix(value, "rgb(") && strings.HasSuffix(value, ")") {
+		inner := strings.TrimSuffix(strings.TrimPrefix(value, "rgb("), ")")
+		colorPart, alphaPart, hasAlpha := strings.Cut(inner, "/")
+		channels := strings.Fields(strings.TrimSpace(colorPart))
+		if len(channels) != 3 {
+			return "", false
+		}
+		alpha := "1"
+		if hasAlpha {
+			alpha = normaliseAlphaValue(alphaPart)
+		}
+		return canonicalRGBAChannels(channels[0], channels[1], channels[2], alpha), true
+	}
+	if strings.HasPrefix(value, "rgba(") && strings.HasSuffix(value, ")") {
+		inner := strings.TrimSuffix(strings.TrimPrefix(value, "rgba("), ")")
+		parts := strings.Split(inner, ",")
+		if len(parts) != 4 {
+			return "", false
+		}
+		return canonicalRGBAChannels(parts[0], parts[1], parts[2], normaliseAlphaValue(parts[3])), true
+	}
+	return "", false
+}
+
+func canonicalRGBAChannels(red string, green string, blue string, alpha string) string {
+	return fmt.Sprintf(
+		"rgba(%s,%s,%s,%s)",
+		strings.TrimSpace(red),
+		strings.TrimSpace(green),
+		strings.TrimSpace(blue),
+		strings.TrimSpace(alpha),
+	)
+}
+
+func canonicalWhiteOklchValue(value string) (string, bool) {
+	if !strings.HasPrefix(value, "oklch(") || !strings.HasSuffix(value, ")") {
+		return "", false
+	}
+	inner := strings.TrimSuffix(strings.TrimPrefix(value, "oklch("), ")")
+	colorPart, alphaPart, hasAlpha := strings.Cut(inner, "/")
+	if strings.TrimSpace(colorPart) != "1 0 0" {
+		return "", false
+	}
+	alpha := "1"
+	if hasAlpha {
+		alpha = normaliseAlphaValue(alphaPart)
+	}
+	return "rgba(255,255,255," + alpha + ")", true
+}
+
+func normaliseAlphaValue(value string) string {
+	value = strings.TrimSpace(value)
+	if strings.HasSuffix(value, "%") {
+		percent, err := strconv.ParseFloat(strings.TrimSuffix(value, "%"), 64)
+		if err != nil {
+			return value
+		}
+		return strconv.FormatFloat(percent/100, 'f', -1, 64)
+	}
+	alpha, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return value
+	}
+	return strconv.FormatFloat(alpha, 'f', -1, 64)
 }
 
 // readArtisticSchemeStyles 汇总 artistic 方案目录下的 common 和组件覆盖 CSS，供结构测试检查集中归属。

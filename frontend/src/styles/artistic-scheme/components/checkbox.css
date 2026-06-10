@@ -3,7 +3,7 @@
 :root[data-display-scheme="artistic"] [data-slot="checkbox"] {
   border: 1px solid var(--border) !important;
   border-radius: 6px !important; /* 更艺术圆润的圆角 */
-  background: rgba(255, 255, 255, 0.45) !important;
+  background: var(--color-white-alpha-450) !important;
   transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
               background-color 200ms ease,
               border-color 200ms ease,
@@ -11,8 +11,8 @@
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] [data-slot="checkbox"] {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: var(--color-white-alpha-050) !important;
+  border-color: var(--color-white-alpha-100) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="checkbox"]:hover:not(:disabled) {
@@ -22,16 +22,16 @@
 
 :root[data-display-scheme="artistic"] [data-slot="checkbox"]:focus-visible {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
   outline: none !important;
 }
 
 /* 选中状态：橘粉渐变底色，无边框，伴随微小发光阴影 */
 :root[data-display-scheme="artistic"] [data-slot="checkbox"][data-state="checked"] {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, #f43f5e)) !important;
-  border-color: transparent !important;
-  color: #ffffff !important;
-  box-shadow: 0 3px 8px -2px color-mix(in srgb, var(--artistic-primary) 40%, transparent) !important;
+  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, var(--color-value-f43f5e))) !important;
+  border-color: var(--color-transparent) !important;
+  color: var(--color-white-solid) !important;
+  box-shadow: 0 3px 8px -2px color-mix(in srgb, var(--artistic-primary) 40%, var(--color-transparent)) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="checkbox"]:disabled {

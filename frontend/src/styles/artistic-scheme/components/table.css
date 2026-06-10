@@ -37,15 +37,15 @@
 
 /* 斑马线/交替背景，带软色调 */
 :root[data-display-scheme="artistic"] [data-slot="table-body"] [data-slot="table-row"]:nth-child(even) {
-  background: color-mix(in srgb, var(--artistic-primary) 3%, transparent);
+  background: color-mix(in srgb, var(--artistic-primary) 3%, var(--color-transparent));
 }
 
 :root[data-display-scheme="artistic"] [data-slot="table-row"]:hover {
-  background: color-mix(in srgb, var(--artistic-primary) 8%, transparent) !important;
+  background: color-mix(in srgb, var(--artistic-primary) 8%, var(--color-transparent)) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="table-row"]:hover > [data-slot="table-cell"] {
-  background: transparent !important; /* 让 row hover 背景直接透过来 */
+  background: var(--color-transparent) !important; /* 让 row hover 背景直接透过来 */
 }
 
 :root[data-display-scheme="artistic"] [data-slot="table-body"] [data-slot="table-row"]:last-child > [data-slot="table-cell"] {

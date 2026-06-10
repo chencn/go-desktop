@@ -302,6 +302,99 @@ func TestWindowLifecycleRecordsTroubleshootingLogs(t *testing.T) {
 	}
 }
 
+// TestStartupWindowLifecycleKeepsMainWindowHiddenUntilFrontendReady 保护启动窗口顺序：
+// 主窗口必须先 Hidden 创建，不能被 Windows StartState 提前显示；Wails runtime ready 也不能直接切主窗口。
+func TestStartupWindowLifecycleKeepsMainWindowHiddenUntilFrontendReady(t *testing.T) {
+	source := readRootFile(t, "main.go")
+
+	start := strings.Index(source, `Name:            "main"`)
+	end := strings.Index(source, `appRuntime.SetMainWindow(mainWindow)`)
+	if start < 0 || end < 0 || end <= start {
+		t.Fatal("main.go 缺少可检查的主窗口创建结构")
+	}
+	mainWindowBlock := source[start:end]
+	for _, required := range []string{
+		"Hidden:          startLoadingHidden || startHidden || splashWindow != nil",
+		"InitialPosition: application.WindowCentered",
+	} {
+		if !strings.Contains(mainWindowBlock, required) {
+			t.Fatalf("主窗口启动可见性合同缺少 %q", required)
+		}
+	}
+	if strings.Contains(mainWindowBlock, "StartState") {
+		t.Fatal("主窗口启动时不能设置 StartState；Windows SW_MAXIMIZE 会覆盖 Hidden:true 并提前露出白屏")
+	}
+
+	readyStart := strings.Index(source, "events.Common.WindowRuntimeReady")
+	if readyStart < 0 {
+		t.Fatal("main.go 缺少 WindowRuntimeReady 事件注册")
+	}
+	readyBlock := source[readyStart:]
+	if closingHook := strings.Index(readyBlock, "WindowClosing"); closingHook > 0 {
+		readyBlock = readyBlock[:closingHook]
+	}
+	for _, forbidden := range []string{
+		"appRuntime.ShowMainWindow()",
+		"splashWindow.Close()",
+	} {
+		if strings.Contains(readyBlock, forbidden) {
+			t.Fatalf("WindowRuntimeReady 不能执行 %q；它只表示 Wails bridge 就绪，不代表前端首帧已渲染", forbidden)
+		}
+	}
+}
+
+// TestRuntimeShowMainWindowOwnsSplashHandoff 保护 splash 到主窗口的交接点集中在 Runtime.ShowMainWindow。
+func TestRuntimeShowMainWindowOwnsSplashHandoff(t *testing.T) {
+	mainSource := readRootFile(t, "main.go")
+	serviceSource := readRootFile(t, "internal", "desktopapp", "runtime", "service.go")
+	windowSource := readRootFile(t, "internal", "desktopapp", "runtime", "window.go")
+
+	mainWindowIdx := strings.Index(mainSource, "appRuntime.SetMainWindow(mainWindow)")
+	splashWindowIdx := strings.Index(mainSource, "appRuntime.SetSplashWindow(splashWindow)")
+	if mainWindowIdx < 0 || splashWindowIdx < 0 {
+		t.Fatal("main.go 必须同时注册 mainWindow 和 splashWindow")
+	}
+	if splashWindowIdx < mainWindowIdx {
+		t.Fatal("appRuntime.SetSplashWindow 必须在 appRuntime.SetMainWindow 之后调用")
+	}
+
+	for _, required := range []string{
+		"splashWindow *application.WebviewWindow",
+		"func (s *Runtime) SetSplashWindow(window *application.WebviewWindow)",
+		"s.splashWindow = window",
+	} {
+		if !strings.Contains(serviceSource, required) {
+			t.Fatalf("Runtime 必须保存 splashWindow 引用：缺少 %q", required)
+		}
+	}
+
+	start := strings.Index(windowSource, "func (s *Runtime) ShowMainWindow()")
+	if start < 0 {
+		t.Fatal("window.go 缺少 Runtime.ShowMainWindow")
+	}
+	methodBody := windowSource[start:]
+	if nextFunc := strings.Index(methodBody[1:], "\nfunc "); nextFunc > 0 {
+		methodBody = methodBody[:nextFunc+1]
+	}
+	for _, required := range []string{
+		"s.lock.Lock()",
+		"splash := s.splashWindow",
+		"s.splashWindow = nil",
+		"window.Show()",
+		"splash.Close()",
+	} {
+		if !strings.Contains(methodBody, required) {
+			t.Fatalf("Runtime.ShowMainWindow 必须原子接管 splash 交接：缺少 %q", required)
+		}
+	}
+	if strings.Contains(methodBody, "s.lock.RLock()") {
+		t.Fatal("Runtime.ShowMainWindow 需要写锁清空 splashWindow，不能使用 RLock")
+	}
+	if strings.Index(methodBody, "splash.Close()") < strings.Index(methodBody, "window.Show()") {
+		t.Fatal("splash.Close() 必须在 window.Show() 之后，避免 loading 到主窗口之间出现空白")
+	}
+}
+
 // TestRuntimeDoesNotUseSQLiteForLogsOrUpdateBusinessData 验证日志和更新业务数据不再写入 SQLite。
 func TestRuntimeDoesNotUseSQLiteForLogsOrUpdateBusinessData(t *testing.T) {
 	runtimeSources := strings.Join([]string{

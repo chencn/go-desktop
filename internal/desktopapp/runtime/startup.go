@@ -11,19 +11,26 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-// startupHiddenArg 是自启入口使用的隐藏启动参数。
+// startupArg 标记本次启动来自开机自启入口。
+const startupArg = "--startup"
+
+// startupHiddenArg 是自启入口使用的最终隐藏参数。
 const startupHiddenArg = "--startup-hidden"
 
 // desktopShortcutArg 标记本次启动来自应用创建的桌面快捷图标。
 const desktopShortcutArg = "--desktop-shortcut"
 
 // StartupAutostartArguments 根据设置生成开机自启参数。
-// 只有开机自启和隐藏到托盘同时开启时，才给自启项写入 --startup-hidden。
+// 开机自启开启时始终写入 --startup 标记启动来源；隐藏到托盘开启时再写入 --startup-hidden。
 func StartupAutostartArguments(settings Settings) []string {
-	if settings.AutoLaunch && settings.LaunchHiddenToTray {
-		return []string{startupHiddenArg}
+	if !settings.AutoLaunch {
+		return nil
 	}
-	return nil
+	args := []string{startupArg}
+	if settings.LaunchHiddenToTray {
+		args = append(args, startupHiddenArg)
+	}
+	return args
 }
 
 // ApplyStartupIntegrations 按当前设置执行启动期系统集成检查。
@@ -52,7 +59,7 @@ func (s *Runtime) applyStartupIntegrations(force bool) error {
 	)
 }
 
-// applyChangedStartupIntegrations 只同步实际变化的启动集成，避免普通设置保存触发注册表或桌面快捷方式副作用。
+// applyChangedStartupIntegrations 只同步受设置保存影响的启动集成，避免无关保存触发桌面快捷方式副作用。
 func (s *Runtime) applyChangedStartupIntegrations(previous Settings, next Settings) error {
 	if s.options.StartupIntegrationApplier != nil {
 		return s.options.StartupIntegrationApplier(previous, next)
@@ -74,8 +81,9 @@ func (s *Runtime) applyChangedStartupIntegrations(previous Settings, next Settin
 }
 
 // autostartSettingsChanged 判断保存设置时是否需要重写开机自启项。
+// AutoLaunch 保持开启时也重写参数，保证旧自启项迁移到当前启动参数合同。
 func autostartSettingsChanged(previous Settings, next Settings) bool {
-	return previous.AutoLaunch != next.AutoLaunch || (next.AutoLaunch && previous.LaunchHiddenToTray != next.LaunchHiddenToTray)
+	return previous.AutoLaunch != next.AutoLaunch || next.AutoLaunch
 }
 
 // desktopShortcutSettingsChanged 判断保存设置时是否需要创建或删除桌面快捷图标。

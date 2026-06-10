@@ -138,11 +138,12 @@ func main() {
 
 	crashReporter.Phase("启动期系统集成")
 	appRuntime.ApplyStartupIntegrations()
+	startLoadingHidden := appRuntime.ShouldHideDuringStartupLoading(startupLaunch)
 	startHidden := appRuntime.ShouldStartHidden(startupLaunch)
 	var splashWindow *application.WebviewWindow
-	if !startHidden {
+	if !startLoadingHidden {
 		crashReporter.Phase("创建启动加载窗口")
-		// 主窗口保持 Hidden，直到 WebView runtime ready；splash 只覆盖可见加载态。
+		// 主窗口保持 Hidden 到 runtime ready；splash 自身等 WebView 导航完成后再显示，避免先露出白底窗口。
 		splashWindow = wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 			Name:             "splash",
 			Title:            "",
@@ -155,6 +156,7 @@ func main() {
 			AlwaysOnTop:      true,
 			DisableResize:    true,
 			Frameless:        true,
+			Hidden:           true,
 			InitialPosition:  application.WindowCentered,
 			BackgroundType:   application.BackgroundTypeTransparent,
 			BackgroundColour: application.NewRGBA(0, 0, 0, 0),
@@ -165,6 +167,12 @@ func main() {
 				HiddenOnTaskbar:                   true,
 			},
 		})
+		splashWindow.OnWindowEvent(events.Windows.WebViewNavigationCompleted, func(_ *application.WindowEvent) {
+			defer appRuntime.RecoverPanic("启动加载窗口导航完成钩子")
+			if splashWindow != nil && !startHidden {
+				splashWindow.Show()
+			}
+		})
 	}
 	crashReporter.Phase("创建主窗口")
 	mainWindow = wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
@@ -174,9 +182,8 @@ func main() {
 		Height:          768,
 		MinWidth:        1024,
 		MinHeight:       768,
-		StartState:      application.WindowStateMaximised,
 		InitialPosition: application.WindowCentered,
-		Hidden:          startHidden || splashWindow != nil,
+		Hidden:          startLoadingHidden || startHidden || splashWindow != nil,
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			Backdrop:                application.MacBackdropTranslucent,
@@ -189,19 +196,18 @@ func main() {
 		URL:              "/",
 	})
 	appRuntime.SetMainWindow(mainWindow)
+	appRuntime.SetSplashWindow(splashWindow)
 
 	mainWindow.OnWindowEvent(events.Common.WindowRuntimeReady, func(_ *application.WindowEvent) {
 		defer appRuntime.RecoverPanic("窗口运行时就绪钩子")
 		if startHidden {
-			appRuntime.RecordLog("window", "窗口内容已加载，按启动策略保持隐藏")
+			appRuntime.RecordLog("window", "窗口内容已加载，按自启隐藏策略保持托盘隐藏")
 			return
 		}
-		appRuntime.ShowMainWindow()
-		if splashWindow != nil {
-			splashWindow.Close()
-			splashWindow = nil
-		}
-		appRuntime.RecordLog("window", "主窗口内容已加载，启动加载窗口已关闭")
+		// 不在此处显示主窗口：WindowRuntimeReady 只表示 Wails JS bridge 就绪，
+		// 前端框架和启动数据可能尚未加载完成，提前显示会导致白屏。
+		// 主窗口由前端 initialise 完成后调用 ShowMainWindow API 触发显示。
+		appRuntime.RecordLog("window", "Wails 运行时就绪，等待前端初始化完成后显示主窗口")
 	})
 
 	mainWindow.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {

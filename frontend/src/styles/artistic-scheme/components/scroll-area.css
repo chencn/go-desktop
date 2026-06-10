@@ -13,5 +13,5 @@
 
 /* 悬停时：滑块变宽，并且变颜色为半透明暖橘 */
 :root[data-display-scheme="artistic"] [data-slot="scroll-area-scrollbar"]:hover [data-slot="scroll-area-scrollbar-thumb"] {
-  background-color: color-mix(in srgb, var(--artistic-primary) 50%, transparent) !important;
+  background-color: color-mix(in srgb, var(--artistic-primary) 50%, var(--color-transparent)) !important;
 }

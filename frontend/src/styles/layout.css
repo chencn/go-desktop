@@ -14,7 +14,7 @@
 
 /* 彩色图标模式只改语义图标容器和 svg 颜色，不改变业务组件自己的状态色。 */
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-indigo {
-  background: color-mix(in srgb, var(--icon-indigo) 16%, transparent);
+  background: color-mix(in srgb, var(--icon-indigo) 16%, var(--color-transparent));
   color: var(--icon-indigo);
 }
 
@@ -23,7 +23,7 @@
 }
 
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-blue {
-  background: color-mix(in srgb, var(--icon-blue) 16%, transparent);
+  background: color-mix(in srgb, var(--icon-blue) 16%, var(--color-transparent));
   color: var(--icon-blue);
 }
 
@@ -32,7 +32,7 @@
 }
 
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-cyan {
-  background: color-mix(in srgb, var(--icon-cyan) 16%, transparent);
+  background: color-mix(in srgb, var(--icon-cyan) 16%, var(--color-transparent));
   color: var(--icon-cyan);
 }
 
@@ -41,7 +41,7 @@
 }
 
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-green {
-  background: color-mix(in srgb, var(--icon-green) 16%, transparent);
+  background: color-mix(in srgb, var(--icon-green) 16%, var(--color-transparent));
   color: var(--icon-green);
 }
 
@@ -50,7 +50,7 @@
 }
 
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-amber {
-  background: color-mix(in srgb, var(--icon-amber) 18%, transparent);
+  background: color-mix(in srgb, var(--icon-amber) 18%, var(--color-transparent));
   color: var(--icon-amber);
 }
 
@@ -59,7 +59,7 @@
 }
 
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-orange {
-  background: color-mix(in srgb, var(--icon-orange) 18%, transparent);
+  background: color-mix(in srgb, var(--icon-orange) 18%, var(--color-transparent));
   color: var(--icon-orange);
 }
 
@@ -68,7 +68,7 @@
 }
 
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-gray {
-  background: color-mix(in srgb, var(--icon-gray) 14%, transparent);
+  background: color-mix(in srgb, var(--icon-gray) 14%, var(--color-transparent));
   color: var(--icon-gray);
 }
 
@@ -77,7 +77,7 @@
 }
 
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-purple {
-  background: color-mix(in srgb, var(--icon-purple) 16%, transparent);
+  background: color-mix(in srgb, var(--icon-purple) 16%, var(--color-transparent));
   color: var(--icon-purple);
 }
 
@@ -86,7 +86,7 @@
 }
 
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-pink {
-  background: color-mix(in srgb, var(--icon-pink) 16%, transparent);
+  background: color-mix(in srgb, var(--icon-pink) 16%, var(--color-transparent));
   color: var(--icon-pink);
 }
 
@@ -95,7 +95,7 @@
 }
 
 :root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-red {
-  background: color-mix(in srgb, var(--icon-red) 16%, transparent);
+  background: color-mix(in srgb, var(--icon-red) 16%, var(--color-transparent));
   color: var(--icon-red);
 }
 

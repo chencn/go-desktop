@@ -21,7 +21,7 @@
   height: 7px;
   border-radius: 999px;
   background: currentColor;
-  box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 38%, transparent);
+  box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 38%, var(--color-transparent));
   animation: status-pulse 1.6s ease-out infinite;
 }
 
@@ -39,10 +39,10 @@
 
 @keyframes status-pulse {
   70% {
-    box-shadow: 0 0 0 7px color-mix(in oklch, currentColor 0%, transparent);
+    box-shadow: 0 0 0 7px color-mix(in oklch, currentColor 0%, var(--color-transparent));
   }
   100% {
-    box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 0%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 0%, var(--color-transparent));
   }
 }
 
@@ -70,7 +70,7 @@
 .log-summary-grid div:hover {
   transform: translateY(-2px);
   border-color: color-mix(in oklch, var(--primary) 18%, var(--border)) !important;
-  box-shadow: var(--artistic-shadow, 0 10px 30px -8px rgba(0, 0, 0, 0.08)) !important;
+  box-shadow: var(--artistic-shadow, 0 10px 30px -8px var(--color-black-alpha-080)) !important;
   background: color-mix(in oklch, var(--background) 2%, var(--card)) !important;
 }
 
@@ -96,9 +96,9 @@
   min-height: 104px;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  background: color-mix(in oklch, var(--card) 70%, transparent) !important;
+  background: color-mix(in oklch, var(--card) 70%, var(--color-transparent)) !important;
   backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent) !important;
+  border: 1px solid color-mix(in oklch, var(--border) 60%, var(--color-transparent)) !important;
   transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1), background-color 220ms ease !important;
 }
 
@@ -110,7 +110,7 @@
 .software-status-card:hover {
   transform: translateY(-3px) scale(1.005);
   border-color: color-mix(in oklch, var(--primary) 22%, var(--border)) !important;
-  box-shadow: 0 12px 30px -8px color-mix(in oklch, var(--primary) 14%, rgba(0, 0, 0, 0.08)) !important;
+  box-shadow: 0 12px 30px -8px color-mix(in oklch, var(--primary) 14%, var(--color-black-alpha-080)) !important;
   background: color-mix(in oklch, var(--background) 4%, var(--card)) !important;
 }
 
@@ -158,25 +158,25 @@
 }
 
 .software-status-icon.icon-tone-indigo {
-  background: color-mix(in oklch, var(--primary) 8%, transparent);
+  background: color-mix(in oklch, var(--primary) 8%, var(--color-transparent));
   color: var(--primary);
 }
 .software-status-icon.icon-tone-green {
-  background: color-mix(in oklch, var(--icon-green) 10%, transparent);
+  background: color-mix(in oklch, var(--icon-green) 10%, var(--color-transparent));
   color: var(--icon-green);
 }
 .software-status-icon.icon-tone-orange {
-  background: color-mix(in oklch, var(--icon-orange) 10%, transparent);
+  background: color-mix(in oklch, var(--icon-orange) 10%, var(--color-transparent));
   color: var(--icon-orange);
 }
 .software-status-icon.icon-tone-purple {
-  background: color-mix(in oklch, var(--primary) 10%, transparent);
+  background: color-mix(in oklch, var(--primary) 10%, var(--color-transparent));
   color: var(--primary);
 }
 
 .software-status-card:hover .software-status-icon.icon-tone-indigo { background: var(--primary); color: var(--primary-foreground); }
-.software-status-card:hover .software-status-icon.icon-tone-green { background: var(--icon-green); color: #ffffff; }
-.software-status-card:hover .software-status-icon.icon-tone-orange { background: var(--icon-orange); color: #ffffff; }
+.software-status-card:hover .software-status-icon.icon-tone-green { background: var(--icon-green); color: var(--color-white-solid); }
+.software-status-card:hover .software-status-icon.icon-tone-orange { background: var(--icon-orange); color: var(--color-white-solid); }
 .software-status-card:hover .software-status-icon.icon-tone-purple { background: var(--primary); color: var(--primary-foreground); }
 
 .software-status-main div {
@@ -229,9 +229,9 @@
   min-height: 104px;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  background: color-mix(in oklch, var(--card) 70%, transparent) !important;
+  background: color-mix(in oklch, var(--card) 70%, var(--color-transparent)) !important;
   backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent) !important;
+  border: 1px solid color-mix(in oklch, var(--border) 60%, var(--color-transparent)) !important;
   transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1), background-color 220ms ease !important;
 }
 
@@ -243,7 +243,7 @@
 .business-stat-card:hover {
   transform: translateY(-3px) scale(1.005);
   border-color: color-mix(in oklch, var(--primary) 22%, var(--border)) !important;
-  box-shadow: 0 12px 30px -8px color-mix(in oklch, var(--primary) 14%, rgba(0, 0, 0, 0.08)) !important;
+  box-shadow: 0 12px 30px -8px color-mix(in oklch, var(--primary) 14%, var(--color-black-alpha-080)) !important;
   background: color-mix(in oklch, var(--background) 4%, var(--card)) !important;
 }
 
@@ -308,16 +308,16 @@
 
 .business-stat-card:hover .metric-delta-badge.is-positive {
   background: var(--icon-green);
-  color: #ffffff;
+  color: var(--color-white-solid);
   border-color: var(--icon-green);
-  box-shadow: 0 2px 8px color-mix(in oklch, var(--icon-green) 25%, transparent);
+  box-shadow: 0 2px 8px color-mix(in oklch, var(--icon-green) 25%, var(--color-transparent));
 }
 
 .business-stat-card:hover .metric-delta-badge.is-negative {
   background: var(--destructive);
-  color: #ffffff;
+  color: var(--color-white-solid);
   border-color: var(--destructive);
-  box-shadow: 0 2px 8px color-mix(in oklch, var(--destructive) 25%, transparent);
+  box-shadow: 0 2px 8px color-mix(in oklch, var(--destructive) 25%, var(--color-transparent));
 }
 
 .business-stat-card:hover .metric-delta-badge.is-neutral {
@@ -337,9 +337,9 @@
   gap: 0 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  background: color-mix(in oklch, var(--card) 70%, transparent) !important;
+  background: color-mix(in oklch, var(--card) 70%, var(--color-transparent)) !important;
   backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent) !important;
+  border: 1px solid color-mix(in oklch, var(--border) 60%, var(--color-transparent)) !important;
   transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1), background-color 220ms ease !important;
 }
 
@@ -355,7 +355,7 @@
 .chart-panel:hover {
   transform: translateY(-3px);
   border-color: color-mix(in oklch, var(--primary) 20%, var(--border)) !important;
-  box-shadow: 0 16px 36px -8px color-mix(in oklch, var(--primary) 10%, rgba(0, 0, 0, 0.08)) !important;
+  box-shadow: 0 16px 36px -8px color-mix(in oklch, var(--primary) 10%, var(--color-black-alpha-080)) !important;
   background: color-mix(in oklch, var(--background) 4%, var(--card)) !important;
 }
 
@@ -401,8 +401,8 @@
   width: 100%;
   min-height: 18px;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  background: linear-gradient(to top, var(--primary) 60%, color-mix(in oklch, var(--primary) 65%, #ffffff));
-  box-shadow: 0 0 10px color-mix(in oklch, var(--primary) 15%, transparent);
+  background: linear-gradient(to top, var(--primary) 60%, color-mix(in oklch, var(--primary) 65%, var(--color-white-solid)));
+  box-shadow: 0 0 10px color-mix(in oklch, var(--primary) 15%, var(--color-transparent));
   transition: height 320ms cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
@@ -411,7 +411,7 @@
   content: '';
   position: absolute;
   top: 0; right: 0; bottom: 0; left: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  background: linear-gradient(90deg, var(--color-transparent), var(--color-white-alpha-350), var(--color-transparent));
   transform: translateX(-100%);
   pointer-events: none;
 }
@@ -428,7 +428,7 @@
 
 .demo-bar-column:hover .demo-bar-fill {
   filter: brightness(1.08);
-  box-shadow: 0 0 16px color-mix(in oklch, var(--primary) 40%, transparent);
+  box-shadow: 0 0 16px color-mix(in oklch, var(--primary) 40%, var(--color-transparent));
 }
 
 .demo-bar-column small {
@@ -501,18 +501,18 @@
 }
 
 .distribution-fill.is-chart-1 {
-  background: linear-gradient(to right, var(--chart-1) 70%, color-mix(in oklch, var(--chart-1) 50%, #ffffff));
-  box-shadow: 0 0 8px color-mix(in oklch, var(--chart-1) 15%, transparent);
+  background: linear-gradient(to right, var(--chart-1) 70%, color-mix(in oklch, var(--chart-1) 50%, var(--color-white-solid)));
+  box-shadow: 0 0 8px color-mix(in oklch, var(--chart-1) 15%, var(--color-transparent));
 }
 
 .distribution-fill.is-chart-2 {
-  background: linear-gradient(to right, var(--chart-2) 70%, color-mix(in oklch, var(--chart-2) 50%, #ffffff));
-  box-shadow: 0 0 8px color-mix(in oklch, var(--chart-2) 15%, transparent);
+  background: linear-gradient(to right, var(--chart-2) 70%, color-mix(in oklch, var(--chart-2) 50%, var(--color-white-solid)));
+  box-shadow: 0 0 8px color-mix(in oklch, var(--chart-2) 15%, var(--color-transparent));
 }
 
 .distribution-fill.is-chart-5 {
-  background: linear-gradient(to right, var(--chart-5) 70%, color-mix(in oklch, var(--chart-5) 50%, #ffffff));
-  box-shadow: 0 0 8px color-mix(in oklch, var(--chart-5) 15%, transparent);
+  background: linear-gradient(to right, var(--chart-5) 70%, color-mix(in oklch, var(--chart-5) 50%, var(--color-white-solid)));
+  box-shadow: 0 0 8px color-mix(in oklch, var(--chart-5) 15%, var(--color-transparent));
 }
 
 .log-summary-grid {

@@ -5,44 +5,44 @@
 
   /* 活力色彩定义：优先使用运行时主题变量，未初始化时才回落到当前默认 token。 */
   --artistic-primary: var(--runtime-theme-color, var(--runtime-color-apple-blue));
-  --artistic-primary-hover: color-mix(in oklch, var(--artistic-primary) 80%, white);
-  --artistic-primary-active: color-mix(in oklch, var(--artistic-primary) 80%, black);
+  --artistic-primary-hover: color-mix(in oklch, var(--artistic-primary) 80%, var(--color-white-solid));
+  --artistic-primary-active: color-mix(in oklch, var(--artistic-primary) 80%, var(--color-black-solid));
 
-  --artistic-success: #10b981;       /* 薄荷绿 */
-  --artistic-warning: #f59e0b;       /* 琥珀黄 */
-  --artistic-error: #ef4444;         /* 珊瑚红 */
-  --artistic-info: #06b6d4;          /* 晴空蓝 (Cyan) */
+  --artistic-success: var(--color-value-10b981);       /* 薄荷绿 */
+  --artistic-warning: var(--color-value-f59e0b);       /* 琥珀黄 */
+  --artistic-error: var(--color-value-ef4444);         /* 珊瑚红 */
+  --artistic-info: var(--color-value-06b6d4);          /* 晴空蓝 (Cyan) */
 
   /* 基础面板颜色 (浅灰背景 + 近实体白面板) */
-  --background: #f7f8fb;
-  --foreground: color-mix(in srgb, var(--artistic-primary) 2%, var(--foreground, #1f2937));
-  --card: rgba(255, 255, 255, 0.94);
+  --background: var(--color-value-f7f8fb);
+  --foreground: color-mix(in srgb, var(--artistic-primary) 2%, var(--foreground, var(--color-value-1f2937)));
+  --card: var(--color-white-alpha-940);
   --card-foreground: var(--foreground);
-  --popover: rgba(255, 255, 255, 0.98);
+  --popover: var(--color-white-alpha-980);
   --popover-foreground: var(--foreground);
 
   /* 低饱和边框，避免橘色扩散到整页轮廓 */
-  --border: #e8edf5;
-  --card-border: #e3e8f0;
-  --input: color-mix(in srgb, var(--artistic-primary) 8%, rgba(15, 23, 42, 0.12));
+  --border: var(--color-value-e8edf5);
+  --card-border: var(--color-value-e3e8f0);
+  --input: color-mix(in srgb, var(--artistic-primary) 8%, var(--color-value-rgba-15-23-42-0p12));
   --primary: var(--artistic-primary);
-  --primary-foreground: var(--runtime-theme-foreground, #ffffff);
+  --primary-foreground: var(--runtime-theme-foreground, var(--color-white-solid));
   --ring: var(--artistic-primary);
 
   /* 侧栏保持轻透，但不抢背景层级 */
-  --sidebar: rgba(255, 255, 255, 0.9);
+  --sidebar: var(--color-white-alpha-900);
   --sidebar-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: color-mix(in srgb, var(--artistic-primary) 7%, rgba(255, 255, 255, 0.86));
+  --sidebar-accent: color-mix(in srgb, var(--artistic-primary) 7%, var(--color-white-alpha-860));
   --sidebar-accent-foreground: var(--artistic-primary);
   --sidebar-ring: var(--artistic-primary);
 
   /* 状态软色彩 */
-  --soft-danger: rgba(239, 68, 68, 0.08);
-  --soft-warning: rgba(245, 158, 11, 0.08);
-  --soft-success: rgba(16, 185, 129, 0.08);
+  --soft-danger: var(--color-value-rgba-239-68-68-0p08);
+  --soft-warning: var(--color-value-rgba-245-158-11-0p08);
+  --soft-success: var(--color-value-rgba-16-185-129-0p08);
 
   /* 图体尺寸与圆角 */
   --radius: 1rem; /* 16px 圆角 */
@@ -53,10 +53,10 @@
   --fs-mono: 12px;
 
   /* 中性阴影，保留层级但不产生橘色光晕 */
-  --artistic-shadow: 0 12px 28px rgba(15, 23, 42, 0.06),
-                     0 2px 8px rgba(15, 23, 42, 0.04);
-  --artistic-shadow-lg: 0 18px 36px rgba(15, 23, 42, 0.08),
-                        0 4px 14px rgba(15, 23, 42, 0.05);
+  --artistic-shadow: 0 12px 28px var(--color-value-rgba-15-23-42-0p06),
+                     0 2px 8px var(--color-value-rgba-15-23-42-0p04);
+  --artistic-shadow-lg: 0 18px 36px var(--color-value-rgba-15-23-42-0p08),
+                        0 4px 14px var(--color-value-rgba-15-23-42-0p05);
   --artistic-glass-border: 1px solid var(--card-border);
 }
 
@@ -65,43 +65,43 @@
   color-scheme: dark;
 
   --artistic-primary: var(--runtime-theme-color, var(--runtime-color-apple-blue));
-  --artistic-primary-hover: color-mix(in oklch, var(--artistic-primary) 80%, white);
-  --artistic-primary-active: color-mix(in oklch, var(--artistic-primary) 80%, black);
+  --artistic-primary-hover: color-mix(in oklch, var(--artistic-primary) 80%, var(--color-white-solid));
+  --artistic-primary-active: color-mix(in oklch, var(--artistic-primary) 80%, var(--color-black-solid));
 
   /* 基础面板颜色 (极具质感与通透度的黑曜石深海蓝水晶毛玻璃基底) */
-  --background: var(--background, #08090d);            /* 星海深空蓝黑，彻底告别死黑与脏褐色 */
-  --foreground: color-mix(in srgb, var(--artistic-primary) 4%, var(--foreground, #fafaf9));
-  --card: rgba(13, 16, 26, 0.65);                     /* 通透冰蓝黑水晶卡片 */
+  --background: var(--background, var(--color-value-08090d));            /* 星海深空蓝黑，彻底告别死黑与脏褐色 */
+  --foreground: color-mix(in srgb, var(--artistic-primary) 4%, var(--foreground, var(--color-value-fafaf9)));
+  --card: var(--color-value-rgba-13-16-26-0p65);                     /* 通透冰蓝黑水晶卡片 */
   --card-foreground: var(--foreground);
-  --popover: rgba(18, 22, 33, 0.92);                  /* 浮层面板 */
+  --popover: var(--color-value-rgba-18-22-33-0p92);                  /* 浮层面板 */
   --popover-foreground: var(--foreground);
 
   /* 增强亮白色半透明边框，确保每个卡片和组件的物理边界感清晰可见 */
-  --border: rgba(255, 255, 255, 0.28);
-  --card-border: rgba(255, 255, 255, 0.32);
-  --input: rgba(255, 255, 255, 0.38);
+  --border: var(--color-white-alpha-280);
+  --card-border: var(--color-white-alpha-320);
+  --input: var(--color-white-alpha-380);
   --primary: var(--artistic-primary);
-  --primary-foreground: var(--runtime-theme-foreground, #ffffff);
+  --primary-foreground: var(--runtime-theme-foreground, var(--color-white-solid));
   --ring: var(--artistic-primary);
 
   /* 侧栏半透明 */
-  --sidebar: rgba(10, 12, 19, 0.55);
+  --sidebar: var(--color-value-rgba-10-12-19-0p55);
   --sidebar-foreground: var(--foreground);
-  --sidebar-border: rgba(255, 255, 255, 0.26);
-  --sidebar-accent: rgba(251, 146, 60, 0.12);
+  --sidebar-border: var(--color-white-alpha-260);
+  --sidebar-accent: var(--color-value-rgba-251-146-60-0p12);
   --sidebar-accent-foreground: var(--artistic-primary);
 
   /* 状态软色彩 */
-  --soft-danger: rgba(239, 68, 68, 0.15);
-  --soft-warning: rgba(245, 158, 11, 0.15);
-  --soft-success: rgba(16, 185, 129, 0.15);
+  --soft-danger: var(--color-value-rgba-239-68-68-0p15);
+  --soft-warning: var(--color-value-rgba-245-158-11-0p15);
+  --soft-success: var(--color-value-rgba-16-185-129-0p15);
 
   /* 去除诡异的彩色发光，重构为高对比度、沉稳深邃的纯黑高级阴影 */
-  --artistic-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.7),
-                     0 1px 3px rgba(0, 0, 0, 0.4);
-  --artistic-shadow-lg: 0 20px 40px -12px rgba(0, 0, 0, 0.8),
-                        0 2px 8px rgba(0, 0, 0, 0.5);
-  --artistic-glass-border: 1px solid rgba(255, 255, 255, 0.24);
+  --artistic-shadow: 0 10px 30px -8px var(--color-black-alpha-700),
+                     0 1px 3px var(--color-black-alpha-400);
+  --artistic-shadow-lg: 0 20px 40px -12px var(--color-black-alpha-800),
+                        0 2px 8px var(--color-black-alpha-500);
+  --artistic-glass-border: 1px solid var(--color-white-alpha-240);
 }
 
 /* 清爽背景覆盖：去掉内容区多层彩色光斑，降低视觉噪声。 */
@@ -121,10 +121,10 @@
 /* 根据用户选定颜色动态计算 Primary 变量 */
 :root[data-display-scheme="artistic"]:not([data-theme-color="neutral"])[data-theme-color] {
   --artistic-primary: var(--runtime-theme-color);
-  --artistic-primary-hover: color-mix(in oklch, var(--runtime-theme-color) 80%, white);
-  --artistic-primary-active: color-mix(in oklch, var(--runtime-theme-color) 80%, black);
+  --artistic-primary-hover: color-mix(in oklch, var(--runtime-theme-color) 80%, var(--color-white-solid));
+  --artistic-primary-active: color-mix(in oklch, var(--runtime-theme-color) 80%, var(--color-black-solid));
   --primary: var(--runtime-theme-color);
-  --primary-foreground: var(--runtime-theme-foreground, #ffffff);
+  --primary-foreground: var(--runtime-theme-foreground, var(--color-white-solid));
   --ring: var(--runtime-theme-color);
   --sidebar-primary: var(--runtime-theme-color);
 }
@@ -178,15 +178,15 @@
 
 /* 侧边栏与头部透明融合变体 */
 :root[data-display-scheme="artistic"][data-menu="default-translucent"] .app-sidebar {
-  background: color-mix(in srgb, var(--background) 16%, rgba(255, 255, 255, 0.92)) !important;
+  background: color-mix(in srgb, var(--background) 16%, var(--color-white-alpha-920)) !important;
 }
 
 :root[data-display-scheme="artistic"][data-menu="inverted"] .app-sidebar {
-  --sidebar: rgba(20, 16, 25, 0.95);
-  --sidebar-foreground: rgba(255, 255, 255, 0.85);
-  --sidebar-accent: color-mix(in srgb, var(--artistic-primary) 15%, transparent);
+  --sidebar: var(--color-value-rgba-20-16-25-0p95);
+  --sidebar-foreground: var(--color-white-alpha-850);
+  --sidebar-accent: color-mix(in srgb, var(--artistic-primary) 15%, var(--color-transparent));
   --sidebar-accent-foreground: var(--artistic-primary);
-  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-border: var(--color-white-alpha-050);
   background: var(--sidebar) !important;
 }
 
@@ -199,8 +199,8 @@
   height: 36px;
   border-radius: 50% !important; /* 圆形品牌图标 */
   background: var(--artistic-primary) !important;
-  color: #ffffff !important;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;
+  color: var(--color-white-solid) !important;
+  box-shadow: 0 6px 14px var(--color-value-rgba-15-23-42-0p08) !important;
 }
 
 :root[data-display-scheme="artistic"] .brand-copy strong {
@@ -232,20 +232,20 @@
 
 :root[data-display-scheme="artistic"] .sidebar-item.is-active {
   background: var(--artistic-primary) !important;
-  color: #ffffff !important;
-  box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--artistic-primary) 34%, transparent) !important;
+  color: var(--color-white-solid) !important;
+  box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--artistic-primary) 34%, var(--color-transparent)) !important;
 }
 
 :root[data-display-scheme="artistic"] .sidebar-item.is-active .nav-icon {
-  background: rgba(255, 255, 255, 0.2) !important;
-  color: #ffffff !important;
+  background: var(--color-white-alpha-200) !important;
+  color: var(--color-white-solid) !important;
 }
 
 :root[data-display-scheme="artistic"] .sidebar-item .nav-icon {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(120, 119, 130, 0.08);
+  background: var(--color-value-rgba-120-119-130-0p08);
   color: var(--foreground);
   transition: all 220ms ease;
 }
@@ -253,9 +253,9 @@
 /* 顶栏磨砂效果 */
 :root[data-display-scheme="artistic"] .topbar {
   border-bottom: 1px solid var(--border) !important;
-  background: color-mix(in srgb, var(--background) 18%, rgba(255, 255, 255, 0.92)) !important;
+  background: color-mix(in srgb, var(--background) 18%, var(--color-white-alpha-920)) !important;
   backdrop-filter: blur(12px) !important;
-  box-shadow: 0 4px 18px -14px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 4px 18px -14px var(--color-value-rgba-15-23-42-0p14);
 }
 
 :root[data-display-scheme="artistic"] .topbar-title h1 {
@@ -314,8 +314,8 @@
 
 :root[data-display-scheme="artistic"] .managed-badge {
   color: var(--runtime-accent-color, var(--artistic-primary));
-  background: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 10%, transparent);
-  border-color: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 18%, transparent);
+  background: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 10%, var(--color-transparent));
+  border-color: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 18%, var(--color-transparent));
 }
 
 :root[data-display-scheme="artistic"] .is-managed-palette .color-dot-btn {
@@ -328,26 +328,26 @@
 }
 
 :root[data-display-scheme="artistic"] .is-managed-palette .color-dot-btn.is-managed-selected {
-  border-color: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 42%, transparent);
-  background: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 10%, transparent);
+  border-color: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 42%, var(--color-transparent));
+  background: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 10%, var(--color-transparent));
   opacity: 1;
   transform: none;
 }
 
 :root[data-display-scheme="artistic"] .is-managed-palette .color-dot-btn.is-managed-selected .color-palette-circle {
-  background: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 58%, white);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 10%, transparent);
+  background: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 58%, var(--color-white-solid));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 10%, var(--color-transparent));
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] .is-managed-palette .color-dot-btn.is-managed-selected .color-palette-circle {
-  background: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 50%, white);
+  background: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 50%, var(--color-white-solid));
 }
 
 :root[data-display-scheme="artistic"] .data-icon {
   width: 34px;
   height: 34px;
   border-radius: 50% !important; /* 圆形修饰图标 */
-  background: color-mix(in srgb, var(--artistic-primary) 8%, transparent);
+  background: color-mix(in srgb, var(--artistic-primary) 8%, var(--color-transparent));
   color: var(--foreground);
 }
 
@@ -369,71 +369,71 @@
 
 :root[data-display-scheme="artistic"] .software-status-icon {
   border-radius: 50% !important;
-  background: rgba(120, 119, 130, 0.08);
+  background: var(--color-value-rgba-120-119-130-0p08);
 }
 
 /* 带彩色的小药丸徽章 */
 :root[data-display-scheme="artistic"] .metric-delta-badge.is-positive {
-  border: 1px solid rgba(16, 185, 129, 0.2) !important;
-  background: rgba(16, 185, 129, 0.1) !important;
-  color: #10b981 !important;
+  border: 1px solid var(--color-value-rgba-16-185-129-0p2) !important;
+  background: var(--color-value-rgba-16-185-129-0p1) !important;
+  color: var(--color-value-10b981) !important;
   border-radius: 999px !important;
 }
 
 :root[data-display-scheme="artistic"] .metric-delta-badge.is-neutral {
-  border: 1px solid rgba(245, 158, 11, 0.2) !important;
-  background: rgba(245, 158, 11, 0.1) !important;
-  color: #f59e0b !important;
+  border: 1px solid var(--color-value-rgba-245-158-11-0p2) !important;
+  background: var(--color-value-rgba-245-158-11-0p1) !important;
+  color: var(--color-value-f59e0b) !important;
   border-radius: 999px !important;
 }
 
 :root[data-display-scheme="artistic"] .metric-delta-badge.is-negative {
-  border: 1px solid rgba(239, 68, 68, 0.2) !important;
-  background: rgba(239, 68, 68, 0.1) !important;
-  color: #ef4444 !important;
+  border: 1px solid var(--color-value-rgba-239-68-68-0p2) !important;
+  background: var(--color-value-rgba-239-68-68-0p1) !important;
+  color: var(--color-value-ef4444) !important;
   border-radius: 999px !important;
 }
 
 /* 彩色图标 tone 处理 */
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-orange {
-  background: color-mix(in srgb, var(--icon-orange) 12%, transparent) !important;
+  background: color-mix(in srgb, var(--icon-orange) 12%, var(--color-transparent)) !important;
   color: var(--icon-orange) !important;
 }
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-cyan {
-  background: rgba(6, 182, 212, 0.12) !important;
-  color: #06b6d4 !important;
+  background: var(--color-value-rgba-6-182-212-0p12) !important;
+  color: var(--color-value-06b6d4) !important;
 }
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-green {
-  background: rgba(16, 185, 129, 0.12) !important;
-  color: #10b981 !important;
+  background: var(--color-value-rgba-16-185-129-0p12) !important;
+  color: var(--color-value-10b981) !important;
 }
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-amber {
-  background: rgba(245, 158, 11, 0.12) !important;
-  color: #f59e0b !important;
+  background: var(--color-value-rgba-245-158-11-0p12) !important;
+  color: var(--color-value-f59e0b) !important;
 }
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-blue {
-  background: rgba(59, 130, 246, 0.12) !important;
-  color: #3b82f6 !important;
+  background: var(--color-value-rgba-59-130-246-0p12) !important;
+  color: var(--color-value-3b82f6) !important;
 }
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-red {
-  background: rgba(239, 68, 68, 0.12) !important;
-  color: #ef4444 !important;
+  background: var(--color-value-rgba-239-68-68-0p12) !important;
+  color: var(--color-value-ef4444) !important;
 }
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-gray {
-  background: rgba(100, 116, 139, 0.12) !important;
-  color: #64748b !important;
+  background: var(--color-value-rgba-100-116-139-0p12) !important;
+  color: var(--color-value-64748b) !important;
 }
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-indigo {
-  background: rgba(79, 70, 229, 0.12) !important;
-  color: #4f46e5 !important;
+  background: var(--color-value-rgba-79-70-229-0p12) !important;
+  color: var(--color-value-4f46e5) !important;
 }
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-purple {
-  background: rgba(168, 85, 247, 0.12) !important;
-  color: #a855f7 !important;
+  background: var(--color-value-rgba-168-85-247-0p12) !important;
+  color: var(--color-value-a855f7) !important;
 }
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-pink {
-  background: rgba(236, 72, 153, 0.12) !important;
-  color: #ec4899 !important;
+  background: var(--color-value-rgba-236-72-153-0p12) !important;
+  color: var(--color-value-ec4899) !important;
 }
 
 /* 授权页 artistic 项目级覆盖 */
@@ -463,7 +463,7 @@
 }
 
 :root[data-display-scheme="artistic"] .license-icon {
-  background: color-mix(in srgb, var(--artistic-primary) 12%, transparent) !important;
+  background: color-mix(in srgb, var(--artistic-primary) 12%, var(--color-transparent)) !important;
   color: var(--artistic-primary) !important;
   border-radius: var(--radius-sm, calc(var(--radius) - 6px)) !important;
 }
@@ -500,12 +500,12 @@
 :root[data-display-scheme="artistic"] .license-textarea {
   border: 1px solid var(--border) !important;
   border-radius: var(--radius-sm, calc(var(--radius) - 6px)) !important;
-  background: color-mix(in srgb, var(--card) 40%, transparent) !important;
+  background: color-mix(in srgb, var(--card) 40%, var(--color-transparent)) !important;
 }
 
 :root[data-display-scheme="artistic"] .license-textarea:focus-visible {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
 }
 
 /* 更新弹窗 artistic 项目级覆盖 */

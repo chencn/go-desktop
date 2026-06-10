@@ -72,8 +72,8 @@
   background: var(--sidebar-collapse-bg);
   color: var(--sidebar-collapse-fg);
   box-shadow:
-    0 8px 18px color-mix(in oklch, var(--foreground) 10%, transparent),
-    0 1px 3px color-mix(in oklch, var(--foreground) 8%, transparent);
+    0 8px 18px color-mix(in oklch, var(--foreground) 10%, var(--color-transparent)),
+    0 1px 3px color-mix(in oklch, var(--foreground) 8%, var(--color-transparent));
   transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
 }
 
@@ -97,15 +97,15 @@
 :global(:root[data-menu="inverted-translucent"] .app-sidebar) {
   --sidebar: var(--foreground);
   --sidebar-foreground: var(--background);
-  --sidebar-accent: color-mix(in oklch, var(--background) 14%, transparent);
+  --sidebar-accent: color-mix(in oklch, var(--background) 14%, var(--color-transparent));
   --sidebar-accent-foreground: var(--background);
-  --sidebar-border: color-mix(in oklch, var(--background) 16%, transparent);
+  --sidebar-border: color-mix(in oklch, var(--background) 16%, var(--color-transparent));
   background: var(--sidebar);
   color: var(--sidebar-foreground);
 }
 
 :global(:root[data-menu="inverted-translucent"] .app-sidebar) {
-  background: color-mix(in oklch, var(--foreground) 88%, transparent);
+  background: color-mix(in oklch, var(--foreground) 88%, var(--color-transparent));
   backdrop-filter: blur(14px);
 }
 
@@ -172,7 +172,7 @@
   gap: 10px;
   border: 0;
   border-radius: var(--radius-md);
-  background: transparent;
+  background: var(--color-transparent);
   padding: 8px;
   color: var(--sidebar-foreground);
   text-align: left;
@@ -210,7 +210,7 @@
 }
 
 :global(:root[data-menu-accent="bold"] .sidebar-item.is-active .nav-icon) {
-  background: color-mix(in oklch, var(--sidebar-primary-foreground) 18%, transparent);
+  background: color-mix(in oklch, var(--sidebar-primary-foreground) 18%, var(--color-transparent));
   color: var(--sidebar-primary-foreground);
 }
 
@@ -327,7 +327,7 @@
   gap: 7px;
   border: 0;
   border-radius: var(--radius-md);
-  background: transparent;
+  background: var(--color-transparent);
   padding: 0 10px;
   color: var(--muted-foreground);
   white-space: nowrap;

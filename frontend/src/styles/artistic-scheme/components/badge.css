@@ -6,29 +6,29 @@
   font-size: 11px !important;
   letter-spacing: 0;
   padding: 2px 10px !important;
-  border: 1px solid color-mix(in srgb, var(--artistic-primary) 25%, transparent) !important;
-  background: color-mix(in srgb, var(--artistic-primary) 12%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--artistic-primary) 25%, var(--color-transparent)) !important;
+  background: color-mix(in srgb, var(--artistic-primary) 12%, var(--color-transparent)) !important;
   color: var(--artistic-primary) !important;
   text-transform: uppercase;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="badge"].is-positive,
 :root[data-display-scheme="artistic"] [data-slot="badge"].status-success {
-  border-color: rgba(16, 185, 129, 0.25) !important;
-  background: rgba(16, 185, 129, 0.1) !important;
-  color: #10b981 !important;
+  border-color: var(--color-value-rgba-16-185-129-0p25) !important;
+  background: var(--color-value-rgba-16-185-129-0p1) !important;
+  color: var(--color-value-10b981) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="badge"].is-negative,
 :root[data-display-scheme="artistic"] [data-slot="badge"].status-error {
-  border-color: rgba(244, 63, 94, 0.25) !important;
-  background: rgba(244, 63, 94, 0.1) !important;
-  color: #f43f5e !important;
+  border-color: var(--color-value-rgba-244-63-94-0p25) !important;
+  background: var(--color-value-rgba-244-63-94-0p1) !important;
+  color: var(--color-value-f43f5e) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="badge"].is-neutral,
 :root[data-display-scheme="artistic"] [data-slot="badge"].status-warning {
-  border-color: rgba(245, 158, 11, 0.25) !important;
-  background: rgba(245, 158, 11, 0.1) !important;
-  color: #f59e0b !important;
+  border-color: var(--color-value-rgba-245-158-11-0p25) !important;
+  background: var(--color-value-rgba-245-158-11-0p1) !important;
+  color: var(--color-value-f59e0b) !important;
 }

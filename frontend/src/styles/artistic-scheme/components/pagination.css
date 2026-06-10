@@ -11,14 +11,14 @@
 
 :root[data-display-scheme="artistic"] [data-slot="pagination-link"]:hover {
   transform: scale(1.08);
-  box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+  box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
 }
 
 /* 激活的页码按钮 */
 :root[data-display-scheme="artistic"] [data-slot="pagination-link"][data-active="true"],
 :root[data-display-scheme="artistic"] [data-slot="pagination-link"][aria-current="page"] {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, #f43f5e)) !important;
-  color: #ffffff !important;
-  border-color: transparent !important;
-  box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--artistic-primary) 35%, transparent) !important;
+  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, var(--color-value-f43f5e))) !important;
+  color: var(--color-white-solid) !important;
+  border-color: var(--color-transparent) !important;
+  box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--artistic-primary) 35%, var(--color-transparent)) !important;
 }

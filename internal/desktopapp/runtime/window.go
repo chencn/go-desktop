@@ -10,6 +10,9 @@ import (
 
 // StartupLaunch 描述本次启动是否来自需要特殊窗口行为的启动入口。
 type StartupLaunch struct {
+	// Autostart 表示本次启动来自开机自启入口。
+	Autostart bool
+
 	// Hidden 表示启动入口要求默认隐藏主窗口。
 	Hidden bool
 
@@ -25,11 +28,14 @@ func (api *API) ShowMainWindow() (err error) {
 }
 
 // ShowMainWindow 显示主窗口。
+// 如果存在启动加载窗口（splash），会在显示主窗口后自动关闭它。
 // Windows 平台会短暂置顶再取消，避免从托盘或第二实例唤起时窗口停在其他窗口后面。
 func (s *Runtime) ShowMainWindow() {
-	s.lock.RLock()
+	s.lock.Lock()
 	window := s.mainWindow
-	s.lock.RUnlock()
+	splash := s.splashWindow
+	s.splashWindow = nil
+	s.lock.Unlock()
 	if window == nil {
 		return
 	}
@@ -40,6 +46,10 @@ func (s *Runtime) ShowMainWindow() {
 		window.Maximise()
 	}
 	window.Show()
+	if splash != nil {
+		splash.Close()
+		s.RecordLog("window", "主窗口内容已就绪，启动加载窗口已关闭")
+	}
 	if goruntime.GOOS == "windows" {
 		window.SetAlwaysOnTop(true)
 		window.Focus()
@@ -156,18 +166,29 @@ func ParseExitRequest(args []string) ExitRequest {
 }
 
 // ParseStartupLaunch 解析启动行为参数。
-// 识别 --startup-hidden 和 --desktop-shortcut；normaliseArg 会兼容单横线形式。
+// 识别 --startup、--startup-hidden 和 --desktop-shortcut；normaliseArg 会兼容单横线形式。
 func ParseStartupLaunch(args []string) StartupLaunch {
 	var launch StartupLaunch
 	for _, arg := range args {
 		switch normaliseArg(arg) {
+		case "-startup":
+			launch.Autostart = true
 		case "-startup-hidden":
+			launch.Autostart = true
 			launch.Hidden = true
 		case "-desktop-shortcut":
 			launch.DesktopShortcut = true
 		}
 	}
 	return launch
+}
+
+// ShouldHideDuringStartupLoading 判断自启加载期是否应临时隐藏主窗口。
+// 它不受 LaunchHiddenToTray 影响；加载完成后是否继续隐藏由 ShouldStartHidden 决定。
+func (s *Runtime) ShouldHideDuringStartupLoading(startup StartupLaunch) bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.settings.AutoLaunch && startup.Autostart
 }
 
 // ShouldStartHidden 判断本次启动是否应默认隐藏主窗口。

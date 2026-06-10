@@ -24,10 +24,10 @@
 /* 选中态：暖橘渐变圆药丸 */
 :root[data-display-scheme="artistic"] [data-slot="calendar"] [data-selected],
 :root[data-display-scheme="artistic"] [data-slot="calendar"] button[aria-selected="true"] {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, #f43f5e)) !important;
-  color: #ffffff !important;
+  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, var(--color-value-f43f5e))) !important;
+  color: var(--color-white-solid) !important;
   transform: scale(1.1) !important;
-  box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--artistic-primary) 35%, transparent) !important;
+  box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--artistic-primary) 35%, var(--color-transparent)) !important;
 }
 
 /* 今天指示器 */

@@ -245,6 +245,26 @@ func TestCloseToTrayDoesNotHijackMinimiseButton(t *testing.T) {
 	}
 }
 
+// TestSplashWindowShowsAfterNavigationCompleted 验证原生 splash 先隐藏创建，避免 WebView2 导航完成前露出白底窗口。
+func TestSplashWindowShowsAfterNavigationCompleted(t *testing.T) {
+	source := readRootFile(t, "main.go")
+	start := strings.Index(source, `Name:             "splash"`)
+	end := strings.Index(source, `crashReporter.Phase("创建主窗口")`)
+	if start < 0 || end < 0 || end <= start {
+		t.Fatalf("main.go 缺少可检查的 splash 创建结构")
+	}
+	splashBlock := source[start:end]
+	for _, want := range []string{
+		"Hidden:           true",
+		"splashWindow.OnWindowEvent(events.Windows.WebViewNavigationCompleted",
+		"splashWindow.Show()",
+	} {
+		if !strings.Contains(splashBlock, want) {
+			t.Fatalf("splash 必须先隐藏创建并在 WebView 导航完成后显示，缺少 %q", want)
+		}
+	}
+}
+
 func readRootFile(t *testing.T, parts ...string) string {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(append([]string{"..", ".."}, parts...)...))

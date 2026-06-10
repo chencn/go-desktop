@@ -13,5 +13,5 @@
 
 :root[data-display-scheme="artistic"] [data-slot="combobox-trigger"]:focus {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
 }

@@ -27,9 +27,9 @@
 }
 
 .log-page [data-slot="card"] {
-  background: color-mix(in oklch, var(--card) 70%, transparent) !important;
+  background: color-mix(in oklch, var(--card) 70%, var(--color-transparent)) !important;
   backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent) !important;
+  border: 1px solid color-mix(in oklch, var(--border) 60%, var(--color-transparent)) !important;
   gap: 0 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
@@ -63,9 +63,9 @@
   grid-template-columns: minmax(220px, 1.35fr) minmax(140px, 0.85fr) minmax(120px, 0.75fr) minmax(240px, 1.4fr);
   align-items: end;
   gap: 12px;
-  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent) !important;
+  border: 1px solid color-mix(in oklch, var(--border) 60%, var(--color-transparent)) !important;
   border-radius: var(--radius);
-  background: color-mix(in oklch, var(--card) 70%, transparent) !important;
+  background: color-mix(in oklch, var(--card) 70%, var(--color-transparent)) !important;
   backdrop-filter: blur(12px);
   padding: 12px;
   transition: all 220ms ease;
@@ -74,7 +74,7 @@
 .log-toolbar:hover {
   border-color: color-mix(in oklch, var(--primary) 18%, var(--border)) !important;
   background: color-mix(in oklch, var(--background) 2%, var(--card)) !important;
-  box-shadow: var(--artistic-shadow, 0 4px 20px rgba(0, 0, 0, 0.03));
+  box-shadow: var(--artistic-shadow, 0 4px 20px var(--color-black-alpha-030));
 }
 
 .log-search {
@@ -101,7 +101,7 @@
   grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 10px;
   border: 0 !important;
-  background: transparent !important;
+  background: var(--color-transparent) !important;
 }
 
 .log-stream-panel {
@@ -131,7 +131,7 @@
 .log-stat-item:hover,
 .log-stat-item.is-active {
   transform: translateY(-2px);
-  box-shadow: var(--artistic-shadow, 0 6px 16px rgba(0, 0, 0, 0.04));
+  box-shadow: var(--artistic-shadow, 0 6px 16px var(--color-black-alpha-040));
 }
 
 .log-stat-item strong {
@@ -159,7 +159,7 @@
 .log-stat-item.is-all.is-active {
   border-color: color-mix(in srgb, var(--artistic-primary) 50%, var(--border)) !important;
   background: color-mix(in srgb, var(--artistic-primary) 8%, var(--card)) !important;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-primary) 15%, transparent) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-primary) 15%, var(--color-transparent)) !important;
 }
 
 .log-stat-item.is-debug strong {
@@ -169,7 +169,7 @@
 .log-stat-item.is-debug.is-active {
   border-color: color-mix(in srgb, var(--muted-foreground) 50%, var(--border)) !important;
   background: color-mix(in srgb, var(--muted-foreground) 8%, var(--card)) !important;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--muted-foreground) 15%, transparent) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--muted-foreground) 15%, var(--color-transparent)) !important;
 }
 
 .log-stat-item.is-info strong {
@@ -179,7 +179,7 @@
 .log-stat-item.is-info.is-active {
   border-color: color-mix(in srgb, var(--artistic-info) 50%, var(--border)) !important;
   background: color-mix(in srgb, var(--artistic-info) 8%, var(--card)) !important;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-info) 15%, transparent) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-info) 15%, var(--color-transparent)) !important;
 }
 
 .log-stat-item.is-warning strong {
@@ -189,7 +189,7 @@
 .log-stat-item.is-warning.is-active {
   border-color: color-mix(in srgb, var(--artistic-warning) 50%, var(--border)) !important;
   background: color-mix(in srgb, var(--artistic-warning) 8%, var(--card)) !important;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-warning) 15%, transparent) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-warning) 15%, var(--color-transparent)) !important;
 }
 
 .log-stat-item.is-error strong {
@@ -199,7 +199,7 @@
 .log-stat-item.is-error.is-active {
   border-color: color-mix(in srgb, var(--artistic-error) 50%, var(--border)) !important;
   background: color-mix(in srgb, var(--artistic-error) 8%, var(--card)) !important;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-error) 15%, transparent) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-error) 15%, var(--color-transparent)) !important;
 }
 
 .log-stream-header {
@@ -326,7 +326,7 @@
 .log-level-badge {
   --log-level-color: var(--muted-foreground);
   border-color: color-mix(in oklch, var(--log-level-color) 28%, var(--border)) !important;
-  background: color-mix(in oklch, var(--log-level-color) 9%, transparent) !important;
+  background: color-mix(in oklch, var(--log-level-color) 9%, var(--color-transparent)) !important;
   color: var(--log-level-color) !important;
   font-family: var(--font-mono);
   font-weight: 650;

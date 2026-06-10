@@ -2,26 +2,26 @@
 
 :root[data-display-scheme="artistic"] [data-slot="input-otp-slot"] {
   border-color: var(--border) !important;
-  background: rgba(255, 255, 255, 0.45) !important;
+  background: var(--color-white-alpha-450) !important;
   transition: border-color 220ms ease,
               box-shadow 220ms ease,
               background-color 220ms ease !important;
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] [data-slot="input-otp-slot"] {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: var(--color-white-alpha-040) !important;
+  border-color: var(--color-white-alpha-080) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="input-otp-slot"][data-active="true"] {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
-  background: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
+  background: var(--color-white-alpha-700) !important;
   z-index: 10 !important;
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] [data-slot="input-otp-slot"][data-active="true"] {
-  background: rgba(24, 18, 14, 0.8) !important;
+  background: var(--color-value-rgba-24-18-14-0p8) !important;
 }
 
 /* 光标颜色改为主题色 */

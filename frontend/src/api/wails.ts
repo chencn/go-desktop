@@ -851,6 +851,15 @@ export async function quitApp() {
   }
 }
 
+/** 通知后端显示主窗口，前端初始化完成后调用 */
+export async function showMainWindow() {
+  try {
+    await binding('ShowMainWindow')()
+  } catch (error) {
+    await previewFallback(() => undefined, error)
+  }
+}
+
 /**
  * 打开外部链接
  * 优先使用 Wails Browser API，预览模式下降级到 window.open

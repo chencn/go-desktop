@@ -19,7 +19,7 @@
 
 :root[data-display-scheme="artistic"] [data-sonner-toast] [data-close-button]:hover {
   background-color: var(--artistic-error) !important;
-  color: #ffffff !important;
-  border-color: transparent !important;
+  color: var(--color-white-solid) !important;
+  border-color: var(--color-transparent) !important;
   transform: scale(1.1);
 }

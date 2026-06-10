@@ -191,7 +191,7 @@
   width: 26px;
   height: 26px;
   border-radius: var(--radius);
-  background: color-mix(in oklch, var(--primary) 8%, transparent);
+  background: color-mix(in oklch, var(--primary) 8%, var(--color-transparent));
   color: var(--primary);
   transition: all 220ms ease;
 }

@@ -22,6 +22,7 @@ import {
   scheduleDownloadedUpdateOnStartup as scheduleDownloadedUpdateOnStartupApi,
   saveDisplayPreferences,
   saveSettings,
+  showMainWindow,
   type DisplayPreferences,
   type LicenseStatus,
   type LogQuery,
@@ -119,6 +120,8 @@ export const useAppStore = defineStore('app', {
       const licenseStatus = initialLicenseStatus ?? failedLicenseStatus()
       if (licenseStatus.required && !licenseStatus.authorized) {
         this.applyAction({ type: 'loadingSet', payload: false })
+        // 授权页也需要显示主窗口，否则用户无法看到授权页面。
+        await showMainWindow()
         return
       }
 
@@ -161,6 +164,8 @@ export const useAppStore = defineStore('app', {
         }
       } finally {
         this.applyAction({ type: 'loadingSet', payload: false })
+        // 前端数据加载完成，通知后端显示主窗口并关闭 splash 加载窗口。
+        await showMainWindow()
       }
     },
 

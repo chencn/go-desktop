@@ -16,7 +16,7 @@
 :root[data-display-scheme="artistic"] [data-slot="carousel-next"]:hover {
   transform: scale(1.15) !important;
   background-color: var(--artistic-primary) !important;
-  color: #ffffff !important;
-  border-color: transparent !important;
-  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--artistic-primary) 35%, transparent) !important;
+  color: var(--color-white-solid) !important;
+  border-color: var(--color-transparent) !important;
+  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--artistic-primary) 35%, var(--color-transparent)) !important;
 }

@@ -1,7 +1,7 @@
 /* Artistic AlertDialog: 覆盖 shadcn AlertDialog primitive */
 
 :root[data-display-scheme="artistic"] [data-slot="alert-dialog-overlay"] {
-  background: rgba(18, 14, 10, 0.45) !important;
+  background: var(--color-value-rgba-18-14-10-0p45) !important;
   backdrop-filter: blur(8px) !important;
 }
 

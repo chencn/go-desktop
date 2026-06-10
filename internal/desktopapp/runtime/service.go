@@ -180,6 +180,10 @@ type Runtime struct {
 	// 用于窗口操作（显示、隐藏、事件发送等）
 	mainWindow *application.WebviewWindow
 
+	// splashWindow 启动加载窗口实例
+	// 前端 initialise 完成后首次调用 ShowMainWindow 时自动关闭
+	splashWindow *application.WebviewWindow
+
 	// settings 当前应用设置
 	// 包含 GitHub 配置、更新间隔、日志保留等
 	settings Settings
@@ -625,6 +629,14 @@ func (s *Runtime) SetMainWindow(window *application.WebviewWindow) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.mainWindow = window
+}
+
+// SetSplashWindow 设置启动加载窗口实例。
+// ShowMainWindow 首次调用时会自动关闭该窗口。
+func (s *Runtime) SetSplashWindow(window *application.WebviewWindow) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.splashWindow = window
 }
 
 // Shutdown 关闭运行时，释放资源

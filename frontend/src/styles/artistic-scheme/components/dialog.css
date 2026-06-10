@@ -1,7 +1,7 @@
 /* Artistic Dialog: 覆盖 shadcn Dialog primitive，引入深邃模糊的蒙层与弹性弹窗 */
 
 :root[data-display-scheme="artistic"] [data-slot="dialog-overlay"] {
-  background: rgba(18, 14, 10, 0.45) !important;
+  background: var(--color-value-rgba-18-14-10-0p45) !important;
   backdrop-filter: blur(8px) !important;
 }
 
@@ -34,14 +34,14 @@
   top: 16px;
   right: 16px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--artistic-primary) 8%, transparent);
+  background: color-mix(in srgb, var(--artistic-primary) 8%, var(--color-transparent));
   color: var(--artistic-primary);
   transition: all 220ms ease;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="dialog-close"]:hover {
   background: var(--artistic-primary);
-  color: #ffffff;
+  color: var(--color-white-solid);
   transform: scale(1.08) rotate(90deg);
 }
 

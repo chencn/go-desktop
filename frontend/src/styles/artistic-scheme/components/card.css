@@ -53,8 +53,8 @@
   --artistic-glass-border: 1px solid var(--card-border) !important;
 }
 :root[data-display-scheme="artistic"][data-card-border="soft"] [data-slot="card"] {
-  --artistic-glass-border: 1px solid color-mix(in srgb, var(--card-border) 45%, transparent) !important;
+  --artistic-glass-border: 1px solid color-mix(in srgb, var(--card-border) 45%, var(--color-transparent)) !important;
 }
 :root[data-display-scheme="artistic"][data-card-border="hidden"] [data-slot="card"] {
-  --artistic-glass-border: 1px solid transparent !important;
+  --artistic-glass-border: 1px solid var(--color-transparent) !important;
 }

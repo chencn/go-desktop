@@ -2,17 +2,17 @@
 
 :root[data-display-scheme="artistic"] [data-slot="progress"] {
   height: 6px !important;
-  background: color-mix(in srgb, var(--artistic-primary) 10%, transparent) !important;
+  background: color-mix(in srgb, var(--artistic-primary) 10%, var(--color-transparent)) !important;
   border-radius: 999px !important;
   overflow: hidden;
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] [data-slot="progress"] {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: var(--color-white-alpha-080) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="progress-indicator"] {
   border-radius: 999px !important;
-  background: linear-gradient(90deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 70%, #f43f5e)) !important;
-  box-shadow: 0 0 8px color-mix(in srgb, var(--artistic-primary) 50%, transparent) !important;
+  background: linear-gradient(90deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 70%, var(--color-value-f43f5e))) !important;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--artistic-primary) 50%, var(--color-transparent)) !important;
 }

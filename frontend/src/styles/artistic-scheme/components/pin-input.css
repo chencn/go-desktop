@@ -2,7 +2,7 @@
 
 :root[data-display-scheme="artistic"] [data-slot="pin-input-input"] {
   border-color: var(--border) !important;
-  background: rgba(255, 255, 255, 0.45) !important;
+  background: var(--color-white-alpha-450) !important;
   border-radius: calc(var(--radius) - 6px) !important;
   transition: border-color 220ms ease,
               box-shadow 220ms ease,
@@ -10,13 +10,13 @@
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] [data-slot="pin-input-input"] {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: var(--color-white-alpha-040) !important;
+  border-color: var(--color-white-alpha-080) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="pin-input-input"]:focus-visible,
 :root[data-display-scheme="artistic"] [data-slot="pin-input-input"][data-active="true"] {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
-  background: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
+  background: var(--color-white-alpha-700) !important;
 }

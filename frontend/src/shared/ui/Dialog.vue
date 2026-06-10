@@ -56,7 +56,7 @@ const dialogOpen = computed({
   border-radius: var(--radius-xl);
   background: var(--popover);
   color: var(--popover-foreground);
-  box-shadow: 0 24px 70px color-mix(in oklch, var(--foreground) 18%, transparent);
+  box-shadow: 0 24px 70px color-mix(in oklch, var(--foreground) 18%, var(--color-transparent));
   padding: 18px;
 }
 

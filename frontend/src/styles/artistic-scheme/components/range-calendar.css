@@ -18,8 +18,8 @@
 /* 范围的起点与终点 */
 :root[data-display-scheme="artistic"] [data-slot="range-calendar"] [data-selection-start],
 :root[data-display-scheme="artistic"] [data-slot="range-calendar"] [data-selection-end] {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, #f43f5e)) !important;
-  color: #ffffff !important;
+  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, var(--color-value-f43f5e))) !important;
+  color: var(--color-white-solid) !important;
   transform: scale(1.1) !important;
 }
 

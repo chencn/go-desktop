@@ -49,13 +49,13 @@
 :root[data-display-scheme="artistic"] [data-slot="select-trigger"]:hover,
 :root[data-display-scheme="artistic"] .preference-color-trigger:hover {
   border-color: color-mix(in srgb, var(--artistic-primary) 50%, var(--border)) !important;
-  background-color: rgba(255, 255, 255, 0.75) !important;
+  background-color: var(--color-white-alpha-750) !important;
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] .ui-native-select:hover,
 :root[data-theme="night"][data-display-scheme="artistic"] [data-slot="select-trigger"]:hover,
 :root[data-theme="night"][data-display-scheme="artistic"] .preference-color-trigger:hover {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: var(--color-white-alpha-080) !important;
 }
 
 :root[data-display-scheme="artistic"] .ui-native-select:focus-visible,
@@ -64,8 +64,8 @@
 :root[data-display-scheme="artistic"] .preference-color-trigger:focus-visible,
 :root[data-display-scheme="artistic"] .preference-color-select.is-open .preference-color-trigger {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
-  background-color: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
+  background-color: var(--color-white-alpha-850) !important;
   outline: 0 !important;
 }
 
@@ -74,7 +74,7 @@
 :root[data-theme="night"][data-display-scheme="artistic"] [data-slot="select-trigger"][data-state="open"],
 :root[data-theme="night"][data-display-scheme="artistic"] .preference-color-trigger:focus-visible,
 :root[data-theme="night"][data-display-scheme="artistic"] .preference-color-select.is-open .preference-color-trigger {
-  background-color: rgba(24, 18, 14, 0.8) !important;
+  background-color: var(--color-value-rgba-24-18-14-0p8) !important;
 }
 
 :root[data-display-scheme="artistic"] .ui-native-select:disabled,
@@ -83,7 +83,7 @@
 :root[data-display-scheme="artistic"] .preference-color-trigger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background-color: rgba(120, 119, 130, 0.08) !important;
+  background-color: var(--color-value-rgba-120-119-130-0p08) !important;
   border-color: var(--border) !important;
 }
 
@@ -154,6 +154,6 @@
 :root[data-display-scheme="artistic"] .preference-swatch {
   width: 14px;
   height: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-white-alpha-200);
   border-radius: 50% !important;
 }
