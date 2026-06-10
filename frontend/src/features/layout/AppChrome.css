@@ -15,6 +15,8 @@
 }
 
 .app-shell {
+  --sidebar-collapsed-width: 72px;
+
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   height: 100vh;
@@ -25,7 +27,7 @@
 }
 
 .app-shell.is-sidebar-collapsed {
-  grid-template-columns: 88px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
 }
 
 .app-sidebar {
@@ -404,19 +406,13 @@
 }
 
 .app-error {
-  width: min(100%, 1440px);
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   border: 1px solid color-mix(in oklch, var(--destructive) 38%, var(--border));
   border-radius: var(--radius-lg);
   background: var(--soft-danger);
   padding: 12px 14px;
   color: var(--destructive);
-}
-
-@media (min-width: 1600px) {
-  .app-error {
-    width: min(100%, 1560px);
-  }
 }
 
 @media (max-width: 980px) {

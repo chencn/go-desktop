@@ -106,10 +106,10 @@
 /* 页面通用布局类必须保持 min-width: 0，避免日志、路径和版本号撑破桌面 shell。 */
 .page-stack {
   display: grid;
-  width: min(100%, 1440px);
+  width: 100%;
   min-width: 0;
   gap: 20px;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .content-grid {
@@ -147,12 +147,6 @@
   min-width: 0;
   align-items: flex-start;
   gap: 12px;
-}
-
-@media (min-width: 1600px) {
-  .page-stack {
-    width: min(100%, 1560px);
-  }
 }
 
 @media (max-width: 980px) {
