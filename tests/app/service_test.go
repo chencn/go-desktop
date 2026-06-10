@@ -142,7 +142,7 @@ func TestDisplayPreferencesPersistThroughSQLiteConfig(t *testing.T) {
 		BaseColor:   "mauve",
 		ThemeColor:  "blue",
 		AccentColor: "emerald",
-		ChartColor:  "yellow",
+		ChartColor:  "amber",
 		IconTone:    "colorful",
 		Menu:        "inverted",
 		MenuAccent:  "bold",
@@ -177,7 +177,7 @@ func TestDisplayPreferencesNormaliseInvalidValues(t *testing.T) {
 		BaseColor:   "slate",
 		ThemeColor:  "blue",
 		AccentColor: "emerald",
-		ChartColor:  "yellow",
+		ChartColor:  "amber",
 		IconTone:    "rainbow",
 		Menu:        "default",
 		MenuAccent:  "bold",
@@ -221,9 +221,9 @@ func TestDisplayPreferencesJSONPersistsProfilesAcrossRestart(t *testing.T) {
 		UIStyle:       "nova",
 		ThemeMode:     "dark",
 		BaseColor:     "mauve",
-		ThemeColor:    "red",
+		ThemeColor:    "rose",
 		AccentColor:   "emerald",
-		ChartColor:    "yellow",
+		ChartColor:    "amber",
 		IconTone:      "colorful",
 		Menu:          "inverted",
 		MenuAccent:    "bold",
@@ -282,7 +282,7 @@ func TestDisplayPreferencesJSONPersistsProfilesAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("切回 shadcn 失败：%v", err)
 	}
-	if shadcn.UIStyle != "nova" || shadcn.BaseColor != "mauve" || shadcn.ThemeColor != "red" || shadcn.AccentColor != "emerald" || shadcn.IconTone != "colorful" {
+	if shadcn.UIStyle != "nova" || shadcn.BaseColor != "mauve" || shadcn.ThemeColor != "rose" || shadcn.AccentColor != "emerald" || shadcn.IconTone != "colorful" {
 		t.Fatalf("期望 shadcn profile 未被 artistic 覆盖，实际为 %#v", shadcn)
 	}
 }
@@ -299,9 +299,9 @@ func TestDisplayPreferencesSnapshotsIncludeProfilesAcrossRestart(t *testing.T) {
 			Shadcn: app.DisplayProfile{
 				UIStyle:     "nova",
 				BaseColor:   "mauve",
-				ThemeColor:  "red",
+				ThemeColor:  "rose",
 				AccentColor: "emerald",
-				ChartColor:  "yellow",
+				ChartColor:  "amber",
 				IconTone:    "colorful",
 				Menu:        "inverted-translucent",
 				MenuAccent:  "bold",
@@ -343,7 +343,7 @@ func TestDisplayPreferencesSnapshotsIncludeProfilesAcrossRestart(t *testing.T) {
 	reloaded := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
 	defer reloaded.Shutdown()
 	snapshot := reloaded.DisplayPreferencesSnapshot()
-	if snapshot.DisplayScheme != "artistic" || snapshot.Profiles.Shadcn.ThemeColor != "red" || snapshot.Profiles.Artistic.Menu != "inverted" {
+	if snapshot.DisplayScheme != "artistic" || snapshot.Profiles.Shadcn.ThemeColor != "rose" || snapshot.Profiles.Artistic.Menu != "inverted" {
 		t.Fatalf("期望重启后快照保留两套 profile，实际为 %#v", snapshot)
 	}
 
@@ -355,7 +355,7 @@ func TestDisplayPreferencesSnapshotsIncludeProfilesAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("前端式切回 shadcn 失败：%v", err)
 	}
-	if switched.UIStyle != "nova" || switched.ThemeColor != "red" || switched.AccentColor != "emerald" || switched.Menu != "inverted-translucent" {
+	if switched.UIStyle != "nova" || switched.ThemeColor != "rose" || switched.AccentColor != "emerald" || switched.Menu != "inverted-translucent" {
 		t.Fatalf("期望切回 shadcn 后恢复原 profile，实际为 %#v", switched)
 	}
 }
@@ -392,9 +392,9 @@ func TestDisplayPreferencesArtisticNormalisesValues(t *testing.T) {
 		UIStyle:       "nova",
 		ThemeMode:     "dark",
 		BaseColor:     "mauve",
-		ThemeColor:    "red",
+		ThemeColor:    "rose",
 		AccentColor:   "emerald",
-		ChartColor:    "yellow",
+		ChartColor:    "amber",
 		IconTone:      "colorful",
 		Menu:          "default-translucent",
 		MenuAccent:    "bold",
@@ -406,10 +406,10 @@ func TestDisplayPreferencesArtisticNormalisesValues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("保存 artistic 显示偏好失败：%v", err)
 	}
-	if saved.DisplayScheme != "artistic" || saved.UIStyle != "nova" || saved.BaseColor != "mauve" || saved.ThemeColor != "red" || saved.AccentColor != "red" {
+	if saved.DisplayScheme != "artistic" || saved.UIStyle != "nova" || saved.BaseColor != "mauve" || saved.ThemeColor != "rose" || saved.AccentColor != "rose" {
 		t.Fatalf("期望 artistic 合法输入被保留，实际为 %#v", saved)
 	}
-	if saved.Menu != "default-translucent" || saved.Radius != "none" || saved.ChartColor != "yellow" || saved.IconTone != "colorful" || saved.MenuAccent != "bold" || saved.Density != "compact" || saved.TextSize != "large" || saved.CardBorder != "soft" {
+	if saved.Menu != "default-translucent" || saved.Radius != "none" || saved.ChartColor != "amber" || saved.IconTone != "colorful" || saved.MenuAccent != "bold" || saved.Density != "compact" || saved.TextSize != "large" || saved.CardBorder != "soft" {
 		t.Fatalf("期望 artistic 可编辑项保留合法输入，实际为 %#v", saved)
 	}
 }

@@ -122,9 +122,9 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 | Mode | `light / dark` | `.dark`、`data-theme="day|night"` |
 | Style | `reka / vega / nova / maia / lyra / mira / luma / sera` | `data-style` |
 | Base Color | `neutral / stone / zinc / mauve / olive / mist / taupe` | `data-base-color` |
-| Theme Color | 24 色集合 | `data-theme-color` |
-| Accent Color | 24 色集合 | `data-accent-color` |
-| Chart Color | 24 色集合 | `data-chart-color` |
+| Theme Color | 品牌色集合 | `data-theme-color` |
+| Accent Color | 品牌色集合，设置页托管跟随 Theme Color | `data-accent-color` |
+| Chart Color | 18 色集合 | `data-chart-color` |
 | Icon Tone | `default / colorful` | `data-icon-tone` |
 | Menu | 持久化支持 `default / inverted / default-translucent / inverted-translucent`；设置页只暴露 `default / inverted` | `data-menu` |
 | Menu Accent | `subtle / bold` | `data-menu-accent` |
@@ -133,9 +133,13 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 | Text Size | `small / normal / medium / large` | `data-text-size` |
 | Card Border | `visible / soft / hidden` | `data-card-border` |
 
-24 色集合：
+品牌色集合：
 
-`neutral`、`stone`、`zinc`、`mauve`、`olive`、`mist`、`taupe`、`amber`、`blue`、`cyan`、`emerald`、`fuchsia`、`green`、`indigo`、`lime`、`orange`、`pink`、`purple`、`red`、`rose`、`sky`、`teal`、`violet`、`yellow`。
+`neutral`、`amber`、`apple-blue`、`blue`、`cyan`、`emerald`、`indigo`、`orange`、`pink`、`rose`、`sky`、`teal`。
+
+18 色 token 兼容集合：
+
+`neutral`、`stone`、`zinc`、`mauve`、`olive`、`mist`、`taupe`、`amber`、`apple-blue`、`blue`、`cyan`、`emerald`、`indigo`、`orange`、`pink`、`rose`、`sky`、`teal`。
 
 当前前端类型契约：
 
@@ -143,7 +147,7 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 export type BaseColor = "neutral" | "stone" | "zinc" | "mauve" | "olive" | "mist" | "taupe"
 ```
 
-Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控制主强调，Accent 控制辅助强调，Chart Color 只控制统计图表 token。设置页当前只暴露经过主题筛选的常用色盘，持久化层仍接受 24 色集合并做标准化。设置页品牌辅助色显示为 disabled 托管项，跟随品牌主题色，视觉使用同色系浅一号，不提供独立选择入口。Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
+Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控制主强调，Accent 控制辅助强调，Chart Color 只控制统计图表 token。设置页品牌主题色只展示品牌色集合；中性灰阶色调里除 `neutral` 外，`stone`、`zinc`、`mauve`、`olive`、`mist`、`taupe` 只属于 Base Color，不出现在品牌主题色里。设置页品牌辅助色显示为 disabled 托管项，跟随品牌主题色，视觉使用同色系浅一号，不提供独立选择入口。Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
 
 显示偏好规则：
 
@@ -162,7 +166,7 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 - Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
 - 禁止远程字体加载，字体族固定系统字体。
 - Artistic 主题的外观范围包括按钮、输入、shadcn Select、原生 select 兜底、开关、卡片、表格、弹窗、Badge、菜单、顶栏、focus、hover、active 和暗色状态。
-- Artistic 主题默认主色为落日橘，辅以薄荷绿、晴空蓝和毛玻璃面板；具体变量以 `frontend/src/styles/artistic-scheme/common.css` 为准。
+- Artistic 主题默认主色为 Apple 蓝，辅以薄荷绿、晴空蓝和毛玻璃面板；具体变量以 `frontend/src/styles/artistic-scheme/common.css` 为准。
 
 ## 5. 主题和 CSS 归属规则
 
@@ -280,8 +284,9 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 日志页规则：
 
 - 支持来源、级别、关键词、日志文件筛选。
-- 支持统计摘要、分页和当前筛选范围清理。
-- 表格时间、来源、级别列固定宽度，内容列占满剩余宽度并允许换行。
+- 支持统计摘要、动态 pageSize 分页和当前筛选范围清理；分页条显示总数、每页条数和当前页/总页。
+- 表格时间、来源、级别列固定宽度，内容列占满剩余宽度并允许换行；级别列使用 `UiBadge` 表达状态。
+- 空态放在表格 body 内，不在表格外额外拆一块空状态。
 - 路径、日志内容、版本号必须 `min-width: 0` 和 `overflow-wrap: anywhere`。
 - 清空日志必须使用 `AlertDialog`。
 - 自动刷新、手动刷新和专注模式属于日志页顶层工具。

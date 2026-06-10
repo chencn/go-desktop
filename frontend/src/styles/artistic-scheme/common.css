@@ -1,39 +1,41 @@
-/* Artistic 方案 common: 定义温暖灿烂的落日桃橘与薄荷天蓝（Sunset Peach & Mint Sky）艺术渐变、毛玻璃变量及根级 token */
+/* Artistic 方案 common: 定义 Apple 蓝默认强调色与清爽低噪的浅色界面基底。 */
 
 :root[data-display-scheme="artistic"] {
   color-scheme: light;
 
-  /* 活力色彩定义 (落日暖色系) */
-  --artistic-primary: #f97316;       /* 活力橘 (Vibrant Orange) */
-  --artistic-primary-hover: #fb923c;
-  --artistic-primary-active: #ea580c;
+  /* 活力色彩定义：优先使用运行时主题变量，未初始化时才回落到当前默认 token。 */
+  --artistic-primary: var(--runtime-theme-color, var(--runtime-color-apple-blue));
+  --artistic-primary-hover: color-mix(in oklch, var(--artistic-primary) 80%, white);
+  --artistic-primary-active: color-mix(in oklch, var(--artistic-primary) 80%, black);
 
   --artistic-success: #10b981;       /* 薄荷绿 */
   --artistic-warning: #f59e0b;       /* 琥珀黄 */
   --artistic-error: #ef4444;         /* 珊瑚红 */
   --artistic-info: #06b6d4;          /* 晴空蓝 (Cyan) */
 
-  /* 基础面板颜色 (暖光毛玻璃基底) */
-  --background: var(--background, #fdfcfa);
-  --foreground: color-mix(in srgb, var(--artistic-primary) 6%, var(--foreground, #1c1917));
-  --card: rgba(255, 255, 255, 0.6);
+  /* 基础面板颜色 (浅灰背景 + 近实体白面板) */
+  --background: #f7f8fb;
+  --foreground: color-mix(in srgb, var(--artistic-primary) 2%, var(--foreground, #1f2937));
+  --card: rgba(255, 255, 255, 0.94);
   --card-foreground: var(--foreground);
-  --popover: rgba(255, 255, 255, 0.88);
+  --popover: rgba(255, 255, 255, 0.98);
   --popover-foreground: var(--foreground);
 
-  /* 动态主题自适应轻盈边框 */
-  --border: color-mix(in srgb, var(--artistic-primary) 12%, rgba(0, 0, 0, 0.05));
-  --card-border: color-mix(in srgb, var(--artistic-primary) 18%, rgba(0, 0, 0, 0.07));
-  --input: color-mix(in srgb, var(--artistic-primary) 22%, rgba(0, 0, 0, 0.08));
+  /* 低饱和边框，避免橘色扩散到整页轮廓 */
+  --border: #e8edf5;
+  --card-border: #e3e8f0;
+  --input: color-mix(in srgb, var(--artistic-primary) 8%, rgba(15, 23, 42, 0.12));
+  --primary: var(--artistic-primary);
+  --primary-foreground: var(--runtime-theme-foreground, #ffffff);
   --ring: var(--artistic-primary);
 
-  /* 侧栏半透明 */
-  --sidebar: rgba(255, 255, 255, 0.45);
+  /* 侧栏保持轻透，但不抢背景层级 */
+  --sidebar: rgba(255, 255, 255, 0.9);
   --sidebar-foreground: var(--foreground);
-  --sidebar-border: color-mix(in srgb, var(--artistic-primary) 10%, rgba(0, 0, 0, 0.04));
-  --sidebar-primary: var(--artistic-primary);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: color-mix(in srgb, var(--artistic-primary) 8%, transparent);
+  --sidebar-border: var(--border);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: color-mix(in srgb, var(--artistic-primary) 7%, rgba(255, 255, 255, 0.86));
   --sidebar-accent-foreground: var(--artistic-primary);
   --sidebar-ring: var(--artistic-primary);
 
@@ -50,21 +52,21 @@
   --fs-caption: 12px;
   --fs-mono: 12px;
 
-  /* 艺术暖光阴影 (基于橘黄色系) */
-  --artistic-shadow: 0 10px 30px -8px color-mix(in srgb, var(--artistic-primary) 15%, transparent),
-                     0 1px 3px rgba(0, 0, 0, 0.02);
-  --artistic-shadow-lg: 0 20px 40px -12px color-mix(in srgb, var(--artistic-primary) 22%, transparent),
-                        0 2px 8px rgba(0, 0, 0, 0.04);
-  --artistic-glass-border: 1px solid rgba(255, 255, 255, 0.6);
+  /* 中性阴影，保留层级但不产生橘色光晕 */
+  --artistic-shadow: 0 12px 28px rgba(15, 23, 42, 0.06),
+                     0 2px 8px rgba(15, 23, 42, 0.04);
+  --artistic-shadow-lg: 0 18px 36px rgba(15, 23, 42, 0.08),
+                        0 4px 14px rgba(15, 23, 42, 0.05);
+  --artistic-glass-border: 1px solid var(--card-border);
 }
 
-/* 暗色模式 - 赛博落日与深林天青 */
+/* 暗色模式 - 深色玻璃与当前主题强调色 */
 :root[data-theme="night"][data-display-scheme="artistic"] {
   color-scheme: dark;
 
-  --artistic-primary: #fb923c;       /* 亮暖橘 */
-  --artistic-primary-hover: #fdba74;
-  --artistic-primary-active: #f97316;
+  --artistic-primary: var(--runtime-theme-color, var(--runtime-color-apple-blue));
+  --artistic-primary-hover: color-mix(in oklch, var(--artistic-primary) 80%, white);
+  --artistic-primary-active: color-mix(in oklch, var(--artistic-primary) 80%, black);
 
   /* 基础面板颜色 (极具质感与通透度的黑曜石深海蓝水晶毛玻璃基底) */
   --background: var(--background, #08090d);            /* 星海深空蓝黑，彻底告别死黑与脏褐色 */
@@ -78,6 +80,8 @@
   --border: rgba(255, 255, 255, 0.28);
   --card-border: rgba(255, 255, 255, 0.32);
   --input: rgba(255, 255, 255, 0.38);
+  --primary: var(--artistic-primary);
+  --primary-foreground: var(--runtime-theme-foreground, #ffffff);
   --ring: var(--artistic-primary);
 
   /* 侧栏半透明 */
@@ -100,16 +104,12 @@
   --artistic-glass-border: 1px solid rgba(255, 255, 255, 0.24);
 }
 
-/* 激活活力渐变背景覆盖 (支持毛玻璃效果) */
+/* 清爽背景覆盖：去掉内容区多层彩色光斑，降低视觉噪声。 */
 :root[data-display-scheme="artistic"] .app-shell,
 :root[data-display-scheme="artistic"] .content-scroll {
-  background-image:
-    radial-gradient(at 0% 0%, color-mix(in srgb, var(--artistic-primary) 18%, transparent) 0px, transparent 55%),
-    radial-gradient(at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, color-mix(in srgb, var(--accent) 18%, transparent) 0px, transparent 55%),
-    radial-gradient(at 0% 100%, color-mix(in srgb, var(--artistic-primary) 12%, transparent) 0px, transparent 50%);
+  background-image: none;
   background-color: var(--background);
-  background-attachment: fixed;
+  background-attachment: scroll;
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] .app-shell,
@@ -161,7 +161,7 @@
   --topbar-height: 76px;
 }
 
-/* Artistic App Shell & Layout: 覆盖应用壳层、侧栏导航、页头和列表样式，使全局展现暖日融融的毛玻璃艺术感 */
+/* Artistic App Shell & Layout: 覆盖应用壳层、侧栏导航、页头和列表样式。 */
 
 :root[data-display-scheme="artistic"] .app-shell {
   background: var(--background) !important;
@@ -172,13 +172,13 @@
   gap: 16px;
   border-right: 1px solid var(--sidebar-border) !important;
   background: var(--sidebar) !important;
-  backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(12px) !important;
   padding: 24px 16px;
 }
 
 /* 侧边栏与头部透明融合变体 */
 :root[data-display-scheme="artistic"][data-menu="default-translucent"] .app-sidebar {
-  background: color-mix(in srgb, var(--background) 70%, rgba(255, 255, 255, 0.4)) !important;
+  background: color-mix(in srgb, var(--background) 16%, rgba(255, 255, 255, 0.92)) !important;
 }
 
 :root[data-display-scheme="artistic"][data-menu="inverted"] .app-sidebar {
@@ -198,17 +198,18 @@
   width: 36px;
   height: 36px;
   border-radius: 50% !important; /* 圆形品牌图标 */
-  background: linear-gradient(135deg, var(--artistic-primary), #f43f5e) !important;
+  background: var(--artistic-primary) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--artistic-primary) 40%, transparent) !important;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;
 }
 
 :root[data-display-scheme="artistic"] .brand-copy strong {
   font-weight: 800;
   color: var(--foreground);
-  background: linear-gradient(135deg, var(--foreground), var(--artistic-primary));
-  -webkit-background-clip: text;
-  background-clip: text;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: initial;
 }
 
 :root[data-display-scheme="artistic"] .sidebar-nav {
@@ -230,9 +231,9 @@
 }
 
 :root[data-display-scheme="artistic"] .sidebar-item.is-active {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, #f43f5e)) !important;
+  background: var(--artistic-primary) !important;
   color: #ffffff !important;
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--artistic-primary) 50%, transparent) !important;
+  box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--artistic-primary) 34%, transparent) !important;
 }
 
 :root[data-display-scheme="artistic"] .sidebar-item.is-active .nav-icon {
@@ -252,17 +253,19 @@
 /* 顶栏磨砂效果 */
 :root[data-display-scheme="artistic"] .topbar {
   border-bottom: 1px solid var(--border) !important;
-  background: color-mix(in srgb, var(--background) 75%, rgba(255, 255, 255, 0.45)) !important;
-  backdrop-filter: blur(20px) !important;
-  box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.03);
+  background: color-mix(in srgb, var(--background) 18%, rgba(255, 255, 255, 0.92)) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 18px -14px rgba(15, 23, 42, 0.14);
 }
 
 :root[data-display-scheme="artistic"] .topbar-title h1 {
   font-weight: 800;
   letter-spacing: 0;
-  background: linear-gradient(135deg, var(--foreground), var(--artistic-primary));
-  -webkit-background-clip: text;
-  background-clip: text;
+  color: var(--foreground);
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: initial;
 }
 
 :root[data-display-scheme="artistic"] .compact-nav-item {
@@ -280,13 +283,13 @@
 :root[data-display-scheme="artistic"] .aesthetic-field-col:not(.scheme-field-container) {
   border: var(--artistic-glass-border) !important;
   background: var(--card) !important;
-  backdrop-filter: blur(18px) !important;
+  backdrop-filter: blur(8px) !important;
   box-shadow: var(--artistic-shadow) !important;
 }
 
 :root[data-display-scheme="artistic"] .settings-row-item:hover,
 :root[data-display-scheme="artistic"] .aesthetic-field-col:not(.scheme-field-container):hover {
-  border-color: color-mix(in srgb, var(--artistic-primary) 35%, var(--border)) !important;
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
 }
 
 :root[data-display-scheme="artistic"] .row-copy strong,
@@ -360,7 +363,7 @@
   border: var(--artistic-glass-border) !important;
   border-radius: var(--radius) !important;
   background: var(--card) !important;
-  backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(8px) !important;
   box-shadow: var(--artistic-shadow) !important;
 }
 
@@ -393,8 +396,8 @@
 
 /* 彩色图标 tone 处理 */
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-orange {
-  background: rgba(249, 115, 22, 0.12) !important;
-  color: #f97316 !important;
+  background: color-mix(in srgb, var(--icon-orange) 12%, transparent) !important;
+  color: var(--icon-orange) !important;
 }
 :root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-cyan {
   background: rgba(6, 182, 212, 0.12) !important;
@@ -435,13 +438,9 @@
 
 /* 授权页 artistic 项目级覆盖 */
 :root[data-display-scheme="artistic"] .license-shell {
-  background-image:
-    radial-gradient(at 0% 0%, color-mix(in srgb, var(--artistic-primary) 18%, transparent) 0px, transparent 55%),
-    radial-gradient(at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, color-mix(in srgb, var(--accent) 18%, transparent) 0px, transparent 55%),
-    radial-gradient(at 0% 100%, color-mix(in srgb, var(--artistic-primary) 12%, transparent) 0px, transparent 50%) !important;
+  background-image: none !important;
   background-color: var(--background) !important;
-  background-attachment: fixed !important;
+  background-attachment: scroll !important;
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] .license-shell {
@@ -453,13 +452,13 @@
   border: var(--artistic-glass-border) !important;
   border-radius: var(--radius) !important;
   background: var(--card) !important;
-  backdrop-filter: blur(28px) !important;
+  backdrop-filter: blur(12px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
-  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 260ms ease, border-color 260ms ease !important;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease !important;
 }
 
 :root[data-display-scheme="artistic"] .license-panel:hover {
-  transform: translateY(-4px) scale(1.008) !important;
+  transform: translateY(-1px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
 }
 
@@ -511,10 +510,11 @@
 
 /* 更新弹窗 artistic 项目级覆盖 */
 :root[data-display-scheme="artistic"] .dialog-header:not(.is-no-update) h2 {
-  background: linear-gradient(135deg, var(--foreground), var(--artistic-primary)) !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
+  color: var(--foreground) !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
   font-weight: 800;
 }
 

@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Cpu, Moon, RefreshCw, Sun } from '@lucide/vue'
+import { ChevronsLeft, ChevronsRight, Cpu, Moon, RefreshCw, Sun } from '@lucide/vue'
 import { useDisplayPreferences } from '@/app/display'
 import { toMessage } from '@/app/state'
 import { useAppStore } from '@/stores/app'
@@ -29,6 +29,8 @@ const appStore = useAppStore()
 const display = useDisplayPreferences()
 // updateOpen 是弹窗开关，关闭弹窗不会取消 store 中的更新任务。
 const updateOpen = ref(false)
+// sidebarCollapsed 只控制当前桌面侧栏展示密度，不进入持久化显示偏好。
+const sidebarCollapsed = ref(false)
 // activeTitle/activeSubtitle 从共享导航配置读取，避免侧栏文案和页头漂移。
 const activeTitle = computed(() => pageTitle(props.activeView))
 const activeSubtitle = computed(() => pageSubtitle(props.activeView))
@@ -59,14 +61,24 @@ function updateIconTone(status?: string) {
 </script>
 
 <template>
-  <div class="app-shell">
-    <aside class="app-sidebar" aria-label="主导航">
+  <div :class="cn('app-shell', sidebarCollapsed && 'is-sidebar-collapsed')">
+    <aside class="app-sidebar" :data-collapsed="sidebarCollapsed ? 'true' : 'false'" aria-label="主导航">
+      <button
+        class="sidebar-collapse-trigger"
+        type="button"
+        :aria-label="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
+        :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
+        @click="sidebarCollapsed = !sidebarCollapsed"
+      >
+        <ChevronsRight v-if="sidebarCollapsed" :size="16" />
+        <ChevronsLeft v-else :size="16" />
+      </button>
       <div class="sidebar-brand">
         <span class="brand-mark" aria-hidden="true">
           <Cpu :size="19" />
         </span>
         <span class="brand-copy">
-          <strong>{{ appStore.appInfo?.name ?? projectMetadata.appName }}</strong>
+          <strong v-if="!sidebarCollapsed">{{ appStore.appInfo?.name ?? projectMetadata.appName }}</strong>
         </span>
       </div>
 
@@ -75,6 +87,7 @@ function updateIconTone(status?: string) {
           v-for="item in navigation"
           :key="item.key"
           :class="cn('sidebar-item', props.activeView === item.key && 'is-active')"
+          :aria-label="item.label"
           :title="item.label"
           type="button"
           @click="emit('navigate', item.key)"
@@ -82,7 +95,7 @@ function updateIconTone(status?: string) {
           <span :class="cn('nav-icon', props.activeView !== item.key && item.tone)" aria-hidden="true">
             <component :is="item.icon" :size="18" />
           </span>
-          <span>{{ item.label }}</span>
+          <span v-if="!sidebarCollapsed">{{ item.label }}</span>
         </button>
       </nav>
     </aside>

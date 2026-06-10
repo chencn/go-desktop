@@ -9,7 +9,7 @@ export type DisplayScheme = 'shadcn' | 'artistic'
 export type TextSize = 'small' | 'normal' | 'medium' | 'large'
 export type UIStyle = 'reka' | 'vega' | 'nova' | 'maia' | 'lyra' | 'mira' | 'luma' | 'sera'
 export type BaseColor = 'neutral' | 'stone' | 'zinc' | 'mauve' | 'olive' | 'mist' | 'taupe'
-export type AccentColor = 'neutral' | 'stone' | 'zinc' | 'mauve' | 'olive' | 'mist' | 'taupe' | 'amber' | 'blue' | 'cyan' | 'emerald' | 'fuchsia' | 'green' | 'indigo' | 'lime' | 'orange' | 'pink' | 'purple' | 'red' | 'rose' | 'sky' | 'teal' | 'violet' | 'yellow'
+export type AccentColor = 'neutral' | 'stone' | 'zinc' | 'mauve' | 'olive' | 'mist' | 'taupe' | 'amber' | 'apple-blue' | 'blue' | 'cyan' | 'emerald' | 'indigo' | 'orange' | 'pink' | 'rose' | 'sky' | 'teal'
 export type ThemeColor = AccentColor
 export type ChartColor = AccentColor
 export type IconTone = 'default' | 'colorful'
@@ -76,7 +76,7 @@ const shadcnProfileDefaults = {
 } satisfies DisplayProfile
 
 const artisticProfileDefaults = {
-  accentColor: 'orange',
+  accentColor: 'apple-blue',
   baseColor: 'stone',
   cardBorder: 'soft',
   chartColor: 'emerald',
@@ -86,7 +86,7 @@ const artisticProfileDefaults = {
   menuAccent: 'bold',
   radius: 'large',
   textSize: 'normal',
-  themeColor: 'orange',
+  themeColor: 'apple-blue',
   uiStyle: 'vega',
 } satisfies DisplayProfile
 
@@ -496,7 +496,7 @@ function isBaseColor(value: string | null): value is BaseColor {
 }
 
 function isAccentColor(value: string | null): value is AccentColor {
-  return value === 'neutral' || value === 'stone' || value === 'zinc' || value === 'mauve' || value === 'olive' || value === 'mist' || value === 'taupe' || value === 'amber' || value === 'blue' || value === 'cyan' || value === 'emerald' || value === 'fuchsia' || value === 'green' || value === 'indigo' || value === 'lime' || value === 'orange' || value === 'pink' || value === 'purple' || value === 'red' || value === 'rose' || value === 'sky' || value === 'teal' || value === 'violet' || value === 'yellow'
+  return value === 'neutral' || value === 'stone' || value === 'zinc' || value === 'mauve' || value === 'olive' || value === 'mist' || value === 'taupe' || value === 'amber' || value === 'apple-blue' || value === 'blue' || value === 'cyan' || value === 'emerald' || value === 'indigo' || value === 'orange' || value === 'pink' || value === 'rose' || value === 'sky' || value === 'teal'
 }
 
 function isThemeColor(value: string | null): value is ThemeColor {

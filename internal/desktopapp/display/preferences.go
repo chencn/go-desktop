@@ -209,8 +209,8 @@ func defaultArtisticProfile() Profile {
 	return Profile{
 		UIStyle:     "vega",
 		BaseColor:   "stone",
-		ThemeColor:  "orange",
-		AccentColor: "orange",
+		ThemeColor:  "apple-blue",
+		AccentColor: "apple-blue",
 		ChartColor:  "emerald",
 		IconTone:    "colorful",
 		Menu:        "default",
@@ -335,7 +335,7 @@ var (
 	allowedUIStyles     = stringSet("reka", "vega", "nova", "maia", "lyra", "mira", "luma", "sera")
 	allowedThemeModes   = stringSet("light", "dark")
 	allowedBaseColors   = stringSet("neutral", "stone", "zinc", "mauve", "olive", "mist", "taupe")
-	allowedAccentColors = stringSet("neutral", "stone", "zinc", "mauve", "olive", "mist", "taupe", "amber", "blue", "cyan", "emerald", "fuchsia", "green", "indigo", "lime", "orange", "pink", "purple", "red", "rose", "sky", "teal", "violet", "yellow")
+	allowedAccentColors = stringSet("neutral", "stone", "zinc", "mauve", "olive", "mist", "taupe", "amber", "apple-blue", "blue", "cyan", "emerald", "indigo", "orange", "pink", "rose", "sky", "teal")
 	allowedIconTones    = stringSet("default", "colorful")
 	allowedMenus        = stringSet("default", "inverted", "default-translucent", "inverted-translucent")
 	allowedMenuAccents  = stringSet("subtle", "bold")

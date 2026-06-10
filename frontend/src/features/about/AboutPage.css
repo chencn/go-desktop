@@ -13,8 +13,7 @@
 }
 
 .about-identity-card:hover {
-  border-color: color-mix(in oklch, var(--primary) 15%, var(--border));
-  box-shadow: var(--artistic-shadow, 0 10px 30px -8px rgba(0, 0, 0, 0.08));
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
 }
 
 .about-identity-header {
@@ -69,8 +68,7 @@
 .about-status-item:hover {
   transform: translateY(-2px);
   background: color-mix(in oklch, var(--background) 2%, var(--card));
-  border-color: color-mix(in oklch, var(--primary) 18%, var(--border));
-  box-shadow: var(--artistic-shadow, 0 8px 20px -6px rgba(0, 0, 0, 0.05));
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
 }
 
 .about-status-item svg {
@@ -138,9 +136,8 @@
 
 .about-info-row:hover {
   background: color-mix(in oklch, var(--background) 2%, var(--card));
-  border-color: color-mix(in oklch, var(--primary) 15%, var(--border));
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
   transform: translateY(-1px);
-  box-shadow: var(--artistic-shadow, 0 4px 12px rgba(0, 0, 0, 0.03));
 }
 
 .about-info-row span {
@@ -178,8 +175,7 @@
 .about-tech-group:hover {
   transform: translateY(-2px);
   background: color-mix(in oklch, var(--background) 2%, var(--card));
-  border-color: color-mix(in oklch, var(--primary) 18%, var(--border));
-  box-shadow: var(--artistic-shadow, 0 10px 24px -8px rgba(0, 0, 0, 0.06));
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
 }
 
 .tech-group-title-row {

@@ -597,22 +597,16 @@ html[data-text-size="large"], :root[data-text-size="large"] {
   --runtime-color-mist: oklch(0.55 0.08 235);
   --runtime-color-taupe: oklch(0.48 0.045 82);
   --runtime-color-amber: oklch(0.769 0.188 70.08);
+  --runtime-color-apple-blue: #007aff;
   --runtime-color-blue: #1677ff;
   --runtime-color-cyan: oklch(0.609 0.126 221.723);
   --runtime-color-emerald: oklch(0.596 0.145 163.225);
-  --runtime-color-fuchsia: oklch(0.667 0.295 322.15);
-  --runtime-color-green: oklch(0.527 0.154 150.069);
   --runtime-color-indigo: oklch(0.511 0.262 276.966);
-  --runtime-color-lime: oklch(0.648 0.2 131.684);
   --runtime-color-orange: oklch(0.646 0.222 41.116);
   --runtime-color-pink: oklch(0.656 0.241 354.308);
-  --runtime-color-purple: oklch(0.558 0.288 302.321);
-  --runtime-color-red: oklch(0.577 0.245 27.325);
   --runtime-color-rose: oklch(0.586 0.253 17.585);
   --runtime-color-sky: oklch(0.588 0.158 241.966);
   --runtime-color-teal: oklch(0.6 0.118 184.704);
-  --runtime-color-violet: oklch(0.541 0.281 293.009);
-  --runtime-color-yellow: oklch(0.795 0.184 86.047);
 }
 
 :root[data-theme-color="stone"] { --runtime-theme-color: var(--runtime-color-stone); }
@@ -622,22 +616,16 @@ html[data-text-size="large"], :root[data-text-size="large"] {
 :root[data-theme-color="mist"] { --runtime-theme-color: var(--runtime-color-mist); }
 :root[data-theme-color="taupe"] { --runtime-theme-color: var(--runtime-color-taupe); }
 :root[data-theme-color="amber"] { --runtime-theme-color: var(--runtime-color-amber); --runtime-theme-foreground: oklch(0.205 0 0); }
+:root[data-theme-color="apple-blue"] { --runtime-theme-color: var(--runtime-color-apple-blue); }
 :root[data-theme-color="blue"] { --runtime-theme-color: var(--runtime-color-blue); }
 :root[data-theme-color="cyan"] { --runtime-theme-color: var(--runtime-color-cyan); }
 :root[data-theme-color="emerald"] { --runtime-theme-color: var(--runtime-color-emerald); }
-:root[data-theme-color="fuchsia"] { --runtime-theme-color: var(--runtime-color-fuchsia); }
-:root[data-theme-color="green"] { --runtime-theme-color: var(--runtime-color-green); }
 :root[data-theme-color="indigo"] { --runtime-theme-color: var(--runtime-color-indigo); }
-:root[data-theme-color="lime"] { --runtime-theme-color: var(--runtime-color-lime); --runtime-theme-foreground: oklch(0.205 0 0); }
 :root[data-theme-color="orange"] { --runtime-theme-color: var(--runtime-color-orange); }
 :root[data-theme-color="pink"] { --runtime-theme-color: var(--runtime-color-pink); }
-:root[data-theme-color="purple"] { --runtime-theme-color: var(--runtime-color-purple); }
-:root[data-theme-color="red"] { --runtime-theme-color: var(--runtime-color-red); }
 :root[data-theme-color="rose"] { --runtime-theme-color: var(--runtime-color-rose); }
 :root[data-theme-color="sky"] { --runtime-theme-color: var(--runtime-color-sky); }
 :root[data-theme-color="teal"] { --runtime-theme-color: var(--runtime-color-teal); }
-:root[data-theme-color="violet"] { --runtime-theme-color: var(--runtime-color-violet); }
-:root[data-theme-color="yellow"] { --runtime-theme-color: var(--runtime-color-yellow); --runtime-theme-foreground: oklch(0.205 0 0); }
 
 :root[data-accent-color="stone"] { --runtime-accent-color: var(--runtime-color-stone); }
 :root[data-accent-color="zinc"] { --runtime-accent-color: var(--runtime-color-zinc); }
@@ -646,22 +634,16 @@ html[data-text-size="large"], :root[data-text-size="large"] {
 :root[data-accent-color="mist"] { --runtime-accent-color: var(--runtime-color-mist); }
 :root[data-accent-color="taupe"] { --runtime-accent-color: var(--runtime-color-taupe); }
 :root[data-accent-color="amber"] { --runtime-accent-color: var(--runtime-color-amber); }
+:root[data-accent-color="apple-blue"] { --runtime-accent-color: var(--runtime-color-apple-blue); }
 :root[data-accent-color="blue"] { --runtime-accent-color: var(--runtime-color-blue); }
 :root[data-accent-color="cyan"] { --runtime-accent-color: var(--runtime-color-cyan); }
 :root[data-accent-color="emerald"] { --runtime-accent-color: var(--runtime-color-emerald); }
-:root[data-accent-color="fuchsia"] { --runtime-accent-color: var(--runtime-color-fuchsia); }
-:root[data-accent-color="green"] { --runtime-accent-color: var(--runtime-color-green); }
 :root[data-accent-color="indigo"] { --runtime-accent-color: var(--runtime-color-indigo); }
-:root[data-accent-color="lime"] { --runtime-accent-color: var(--runtime-color-lime); }
 :root[data-accent-color="orange"] { --runtime-accent-color: var(--runtime-color-orange); }
 :root[data-accent-color="pink"] { --runtime-accent-color: var(--runtime-color-pink); }
-:root[data-accent-color="purple"] { --runtime-accent-color: var(--runtime-color-purple); }
-:root[data-accent-color="red"] { --runtime-accent-color: var(--runtime-color-red); }
 :root[data-accent-color="rose"] { --runtime-accent-color: var(--runtime-color-rose); }
 :root[data-accent-color="sky"] { --runtime-accent-color: var(--runtime-color-sky); }
 :root[data-accent-color="teal"] { --runtime-accent-color: var(--runtime-color-teal); }
-:root[data-accent-color="violet"] { --runtime-accent-color: var(--runtime-color-violet); }
-:root[data-accent-color="yellow"] { --runtime-accent-color: var(--runtime-color-yellow); }
 
 :root[data-chart-color="stone"] { --runtime-chart-color: var(--runtime-color-stone); }
 :root[data-chart-color="zinc"] { --runtime-chart-color: var(--runtime-color-zinc); }
@@ -670,22 +652,16 @@ html[data-text-size="large"], :root[data-text-size="large"] {
 :root[data-chart-color="mist"] { --runtime-chart-color: var(--runtime-color-mist); }
 :root[data-chart-color="taupe"] { --runtime-chart-color: var(--runtime-color-taupe); }
 :root[data-chart-color="amber"] { --runtime-chart-color: var(--runtime-color-amber); }
+:root[data-chart-color="apple-blue"] { --runtime-chart-color: var(--runtime-color-apple-blue); }
 :root[data-chart-color="blue"] { --runtime-chart-color: var(--runtime-color-blue); }
 :root[data-chart-color="cyan"] { --runtime-chart-color: var(--runtime-color-cyan); }
 :root[data-chart-color="emerald"] { --runtime-chart-color: var(--runtime-color-emerald); }
-:root[data-chart-color="fuchsia"] { --runtime-chart-color: var(--runtime-color-fuchsia); }
-:root[data-chart-color="green"] { --runtime-chart-color: var(--runtime-color-green); }
 :root[data-chart-color="indigo"] { --runtime-chart-color: var(--runtime-color-indigo); }
-:root[data-chart-color="lime"] { --runtime-chart-color: var(--runtime-color-lime); }
 :root[data-chart-color="orange"] { --runtime-chart-color: var(--runtime-color-orange); }
 :root[data-chart-color="pink"] { --runtime-chart-color: var(--runtime-color-pink); }
-:root[data-chart-color="purple"] { --runtime-chart-color: var(--runtime-color-purple); }
-:root[data-chart-color="red"] { --runtime-chart-color: var(--runtime-color-red); }
 :root[data-chart-color="rose"] { --runtime-chart-color: var(--runtime-color-rose); }
 :root[data-chart-color="sky"] { --runtime-chart-color: var(--runtime-color-sky); }
 :root[data-chart-color="teal"] { --runtime-chart-color: var(--runtime-color-teal); }
-:root[data-chart-color="violet"] { --runtime-chart-color: var(--runtime-color-violet); }
-:root[data-chart-color="yellow"] { --runtime-chart-color: var(--runtime-color-yellow); }
 
 :root:not([data-theme-color="neutral"])[data-theme-color] {
   --primary: var(--runtime-theme-color);

@@ -238,7 +238,7 @@ const defaultShadcnDisplayProfile: DisplayProfile = {
 
 
 const defaultArtisticDisplayProfile: DisplayProfile = {
-  accentColor: 'orange',
+  accentColor: 'apple-blue',
   baseColor: 'stone',
   cardBorder: 'soft',
   chartColor: 'emerald',
@@ -248,7 +248,7 @@ const defaultArtisticDisplayProfile: DisplayProfile = {
   menuAccent: 'bold',
   radius: 'large',
   textSize: 'normal',
-  themeColor: 'orange',
+  themeColor: 'apple-blue',
   uiStyle: 'vega',
 }
 

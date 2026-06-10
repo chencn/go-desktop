@@ -21,16 +21,70 @@
   min-width: 0;
   background: var(--background);
   color: var(--foreground);
+  transition: grid-template-columns 180ms ease;
+}
+
+.app-shell.is-sidebar-collapsed {
+  grid-template-columns: 88px minmax(0, 1fr);
 }
 
 .app-sidebar {
+  position: relative;
+  z-index: 2;
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 22px;
   border-right: 1px solid var(--sidebar-border);
   background: var(--sidebar);
+  overflow: visible;
   padding: 18px 14px;
+  transition: padding 180ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+
+.app-sidebar[data-collapsed="true"] {
+  align-items: center;
+  padding-right: 12px;
+  padding-left: 12px;
+}
+
+.sidebar-collapse-trigger {
+  --sidebar-collapse-primary: var(--primary);
+  --sidebar-collapse-primary-foreground: var(--primary-foreground);
+  --sidebar-collapse-bg: var(--sidebar);
+  --sidebar-collapse-fg: var(--sidebar-collapse-primary);
+  --sidebar-collapse-border: var(--sidebar-border);
+  --sidebar-collapse-hover-bg: var(--sidebar-collapse-primary);
+  --sidebar-collapse-hover-fg: var(--sidebar-collapse-primary-foreground);
+  --sidebar-collapse-hover-border: var(--sidebar-collapse-primary);
+
+  position: absolute;
+  top: 28px;
+  right: -16px;
+  z-index: 20;
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sidebar-collapse-border);
+  border-radius: 999px;
+  background: var(--sidebar-collapse-bg);
+  color: var(--sidebar-collapse-fg);
+  box-shadow:
+    0 8px 18px color-mix(in oklch, var(--foreground) 10%, transparent),
+    0 1px 3px color-mix(in oklch, var(--foreground) 8%, transparent);
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.sidebar-collapse-trigger:hover {
+  border-color: var(--sidebar-collapse-hover-border);
+  background: var(--sidebar-collapse-hover-bg);
+  color: var(--sidebar-collapse-hover-fg);
+}
+
+.sidebar-collapse-trigger:active {
+  transform: scale(0.96);
 }
 
 :global(:root[data-menu="default-translucent"] .app-sidebar),
@@ -61,6 +115,14 @@
   align-items: center;
   gap: 12px;
   padding: 2px 6px 12px;
+  transition: gap 180ms ease, padding 180ms ease;
+}
+
+.app-sidebar[data-collapsed="true"] .sidebar-brand {
+  justify-content: center;
+  gap: 0;
+  padding-right: 0;
+  padding-left: 0;
 }
 
 .brand-mark {
@@ -98,6 +160,7 @@
 
 .sidebar-nav {
   display: grid;
+  width: 100%;
   gap: 4px;
 }
 
@@ -114,6 +177,11 @@
   color: var(--sidebar-foreground);
   text-align: left;
   transition: background-color 140ms ease, color 140ms ease;
+}
+
+.app-sidebar[data-collapsed="true"] .sidebar-item {
+  justify-content: center;
+  gap: 0;
 }
 
 .sidebar-item:hover,

@@ -48,23 +48,56 @@ const styleOptions: Array<[UIStyle, string]> = [
 ]
 // themeOptions 控制全局亮暗模式，和具体显示方案的 profile 分开保存。
 const themeOptions: Array<[ThemeMode, string]> = [['light', '亮色'], ['dark', '暗色']]
-// baseOptions 限定中性色盘；强调/主题/图表色使用更完整的 colorOptions。
-const baseOptions: Array<[BaseColor, string]> = [['neutral', 'Neutral (灰阶)'], ['stone', 'Stone (石灰)'], ['zinc', 'Zinc (锌灰)'], ['mauve', 'Mauve (淡紫灰)'], ['olive', 'Olive (橄榄绿)'], ['mist', 'Mist (雾蓝)'], ['taupe', 'Taupe (褐灰)']]
-// colorOptions 同时服务主题色、强调色和图表色，值必须匹配 app/display.ts 的类型守卫。
-const colorOptions: Array<[AccentColor, string]> = [
-  ['orange', '落日橘 (Sunset Orange)'],
-  ['rose', '玫瑰红 (Coral Rose)'],
-  ['pink', '樱花粉 (Sakura Pink)'],
-  ['amber', '琥珀黄 (Amber Gold)'],
-  ['emerald', '薄荷绿 (Emerald)'],
-  ['teal', '松石绿 (Teal Forest)'],
-  ['cyan', '晴空蓝 (Sky Cyan)'],
-  ['blue', '经典蓝 (Classic Blue)'],
-  ['indigo', '靛蓝色 (Indigo Night)'],
-  ['zinc', '质感锌 (Zinc Gray)'],
+type DisplayColorKind = 'neutral' | 'base' | 'brand'
+type DisplayColorOption<T extends AccentColor = AccentColor> = {
+  value: T
+  label: string
+  kind: DisplayColorKind
+  baseLabel?: string
+}
+// displayColorOptions 是设置页 18 色唯一 token 真源；base/theme/chart 选项都从这里派生。
+const displayColorOptions: DisplayColorOption[] = [
+  { value: 'neutral', label: 'Neutral (灰阶)', kind: 'neutral' },
+  { value: 'stone', label: '石灰色 (Stone)', kind: 'base', baseLabel: 'Stone (石灰)' },
+  { value: 'zinc', label: '质感锌 (Zinc Gray)', kind: 'base', baseLabel: 'Zinc (锌灰)' },
+  { value: 'mauve', label: '淡紫灰 (Mauve)', kind: 'base', baseLabel: 'Mauve (淡紫灰)' },
+  { value: 'olive', label: '橄榄灰 (Olive)', kind: 'base', baseLabel: 'Olive (橄榄绿)' },
+  { value: 'mist', label: '雾蓝灰 (Mist)', kind: 'base', baseLabel: 'Mist (雾蓝)' },
+  { value: 'taupe', label: '褐灰色 (Taupe)', kind: 'base', baseLabel: 'Taupe (褐灰)' },
+  { value: 'orange', label: '落日橘 (Sunset Orange)', kind: 'brand' },
+  { value: 'rose', label: '玫瑰红 (Coral Rose)', kind: 'brand' },
+  { value: 'pink', label: '樱花粉 (Sakura Pink)', kind: 'brand' },
+  { value: 'amber', label: '琥珀黄 (Amber Gold)', kind: 'brand' },
+  { value: 'emerald', label: '薄荷绿 (Emerald)', kind: 'brand' },
+  { value: 'teal', label: '松石绿 (Teal Forest)', kind: 'brand' },
+  { value: 'cyan', label: '晴空蓝 (Sky Cyan)', kind: 'brand' },
+  { value: 'apple-blue', label: 'Apple 蓝 (Apple Blue)', kind: 'brand' },
+  { value: 'blue', label: 'AntD 蓝 (Ant Design Blue)', kind: 'brand' },
+  { value: 'indigo', label: '靛蓝色 (Indigo Night)', kind: 'brand' },
+  { value: 'sky', label: '天际蓝 (Sky)', kind: 'brand' },
 ]
-// 这些别名让模板表达具体业务含义，同时复用同一套色值枚举。
-const themeColorOptions: Array<[ThemeColor, string]> = colorOptions
+function toColorOption<T extends AccentColor>(option: DisplayColorOption<T>): [T, string] {
+  return [option.value, option.label]
+}
+
+function isBaseColorOption(option: DisplayColorOption): option is DisplayColorOption<BaseColor> {
+  return option.kind === 'neutral' || option.kind === 'base'
+}
+
+function isBrandColorOption(option: DisplayColorOption): option is DisplayColorOption<ThemeColor> {
+  return option.kind === 'neutral' || option.kind === 'brand'
+}
+
+function toBaseColorOption(option: DisplayColorOption<BaseColor>): [BaseColor, string] {
+  return [option.value, option.baseLabel ?? option.label]
+}
+
+const colorOptions: Array<[AccentColor, string]> = displayColorOptions.map(toColorOption)
+const baseOptions: Array<[BaseColor, string]> = displayColorOptions
+  .filter(isBaseColorOption)
+  .map(toBaseColorOption)
+const brandColorOptions: Array<[ThemeColor, string]> = displayColorOptions.filter(isBrandColorOption).map(toColorOption)
+const themeColorOptions: Array<[ThemeColor, string]> = brandColorOptions
 const chartOptions: Array<[ChartColor, string]> = colorOptions
 // iconToneOptions 只影响语义图标是否彩色，不改变 lucide 图标本身。
 const iconToneOptions: Array<[IconTone, string]> = [['default', '默认颜色'], ['colorful', '彩色图标']]
@@ -98,7 +131,7 @@ const logLevelOptions: Array<[LogLevel, string]> = [['debug', 'debug'], ['info',
 // 显示方案卡片信息定义，附带特色色彩发光类
 const schemeCardOptions: Array<[DisplayScheme, string, string, string]> = [
   ['shadcn', 'shadcn', '经典灵活的自由配置', 'glow-shadcn'],
-  ['artistic', 'Artistic', '温馨炫丽的落日暖阳', 'glow-artistic']
+  ['artistic', 'Artistic', '清爽柔和的品牌主题', 'glow-artistic']
 ]
 
 // 辅助函数：快速获取色名对应标签

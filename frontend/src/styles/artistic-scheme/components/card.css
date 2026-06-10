@@ -15,7 +15,7 @@
 :root[data-display-scheme="artistic"] [data-slot="card"]:hover {
   transform: translateY(-2px);
   box-shadow: var(--artistic-shadow-lg) !important;
-  border-color: color-mix(in srgb, var(--artistic-primary) 35%, var(--border)) !important;
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="card-header"] {
@@ -33,7 +33,7 @@
   font-weight: 700;
   color: var(--foreground);
   letter-spacing: 0;
-  background: linear-gradient(135deg, var(--foreground), color-mix(in srgb, var(--artistic-primary) 60%, var(--foreground)));
+  background: linear-gradient(135deg, var(--foreground), color-mix(in srgb, var(--primary) 60%, var(--foreground)));
   -webkit-background-clip: text;
   background-clip: text;
 }

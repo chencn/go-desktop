@@ -170,14 +170,14 @@
   color: var(--icon-orange);
 }
 .software-status-icon.icon-tone-purple {
-  background: color-mix(in oklch, var(--artistic-primary) 10%, transparent);
-  color: var(--artistic-primary);
+  background: color-mix(in oklch, var(--primary) 10%, transparent);
+  color: var(--primary);
 }
 
 .software-status-card:hover .software-status-icon.icon-tone-indigo { background: var(--primary); color: var(--primary-foreground); }
 .software-status-card:hover .software-status-icon.icon-tone-green { background: var(--icon-green); color: #ffffff; }
 .software-status-card:hover .software-status-icon.icon-tone-orange { background: var(--icon-orange); color: #ffffff; }
-.software-status-card:hover .software-status-icon.icon-tone-purple { background: var(--artistic-primary); color: #ffffff; }
+.software-status-card:hover .software-status-icon.icon-tone-purple { background: var(--primary); color: var(--primary-foreground); }
 
 .software-status-main div {
   display: grid;

@@ -98,7 +98,7 @@ describe('wails api fallback boundaries', () => {
       themeMode: 'dark',
       profiles: {
         shadcn: {
-          themeColor: 'red',
+          themeColor: 'rose',
         },
         artistic: {
           menu: 'inverted',
@@ -112,10 +112,10 @@ describe('wails api fallback boundaries', () => {
       themeMode: 'dark',
       profiles: {
         shadcn: {
-          themeColor: 'red',
+          themeColor: 'rose',
         },
         artistic: {
-          themeColor: 'orange',
+          themeColor: 'apple-blue',
           menu: 'inverted',
         },
       },

@@ -80,6 +80,17 @@
   font-weight: 700;
 }
 
+:root[data-display-scheme="artistic"] .app-sidebar[data-collapsed="true"] .sidebar-item {
+  justify-content: center;
+  padding: 8px !important;
+  transform: none !important;
+}
+
+:root[data-display-scheme="artistic"] .app-sidebar[data-collapsed="true"] .sidebar-item:hover,
+:root[data-display-scheme="artistic"] .app-sidebar[data-collapsed="true"] .sidebar-item.is-active {
+  transform: none !important;
+}
+
 /* 5. 导航图标舱 */
 :root[data-display-scheme="artistic"] .sidebar-item .nav-icon {
   display: inline-flex;
@@ -101,6 +112,10 @@
   transform: scale(1.08);
   background: color-mix(in srgb, var(--artistic-primary) 12%, transparent);
   color: var(--artistic-primary);
+}
+
+:root[data-display-scheme="artistic"] .app-sidebar[data-collapsed="true"] .sidebar-item:hover .nav-icon {
+  transform: none !important;
 }
 
 /* 反色风格下导航选项图标的常态与 Hover 状态 */

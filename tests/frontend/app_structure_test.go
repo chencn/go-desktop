@@ -9,6 +9,30 @@ import (
 	"testing"
 )
 
+var displayPreferencePaletteColors = []struct {
+	token string
+	value string
+}{
+	{token: "neutral", value: "oklch(0.45 0 0)"},
+	{token: "stone", value: "oklch(0.444 0.011 73.639)"},
+	{token: "zinc", value: "oklch(0.442 0.017 285.786)"},
+	{token: "mauve", value: "oklch(0.5 0.09 315)"},
+	{token: "olive", value: "oklch(0.48 0.08 120)"},
+	{token: "mist", value: "oklch(0.55 0.08 235)"},
+	{token: "taupe", value: "oklch(0.48 0.045 82)"},
+	{token: "amber", value: "oklch(0.769 0.188 70.08)"},
+	{token: "apple-blue", value: "#007aff"},
+	{token: "blue", value: "#1677ff"},
+	{token: "cyan", value: "oklch(0.609 0.126 221.723)"},
+	{token: "emerald", value: "oklch(0.596 0.145 163.225)"},
+	{token: "indigo", value: "oklch(0.511 0.262 276.966)"},
+	{token: "orange", value: "oklch(0.646 0.222 41.116)"},
+	{token: "pink", value: "oklch(0.656 0.241 354.308)"},
+	{token: "rose", value: "oklch(0.586 0.253 17.585)"},
+	{token: "sky", value: "oklch(0.588 0.158 241.966)"},
+	{token: "teal", value: "oklch(0.6 0.118 184.704)"},
+}
+
 // TestAppRootStaysAsCompositionRoot 验证 App.vue 只装配全局状态、门禁和页面出口，不回流具体业务流程。
 func TestAppRootStaysAsCompositionRoot(t *testing.T) {
 	appRoot := readRootFile(t, "frontend", "src", "App.vue")
@@ -773,7 +797,9 @@ func TestSettingsPageUsesCurrentDisplayPreferenceControls(t *testing.T) {
 		"侧边导航风格",
 		"组件高矮风格",
 		"themeOptions",
+		"displayColorOptions",
 		"baseOptions",
+		"brandColorOptions",
 		"themeColorOptions",
 		"iconToneOptions",
 		"chartOptions",
@@ -786,6 +812,32 @@ func TestSettingsPageUsesCurrentDisplayPreferenceControls(t *testing.T) {
 	} {
 		if !strings.Contains(settingsPage, required) {
 			t.Fatalf("settings page should expose current display preference control %q", required)
+		}
+	}
+
+	displayOptionsStart := strings.Index(settingsPage, "const displayColorOptions")
+	colorOptionsStart := strings.Index(settingsPage, "const colorOptions")
+	if displayOptionsStart < 0 || colorOptionsStart < 0 || !(displayOptionsStart < colorOptionsStart) {
+		t.Fatal("settings page should define displayColorOptions as the single source before derived color option arrays")
+	}
+	displayOptionsSource := settingsPage[displayOptionsStart:colorOptionsStart]
+	for _, color := range displayPreferencePaletteColors {
+		valueLiteral := `value: '` + color.token + `'`
+		if count := strings.Count(displayOptionsSource, valueLiteral); count != 1 {
+			t.Fatalf("displayColorOptions should define %q exactly once, got %d", color.token, count)
+		}
+		if count := strings.Count(settingsPage, valueLiteral); count != 1 {
+			t.Fatalf("settings page should not repeat display color token %q outside displayColorOptions, got %d", color.token, count)
+		}
+	}
+	for _, required := range []string{
+		"const colorOptions: Array<[AccentColor, string]> = displayColorOptions.map(toColorOption)",
+		"const baseOptions: Array<[BaseColor, string]> = displayColorOptions",
+		".filter(isBaseColorOption)",
+		"const brandColorOptions: Array<[ThemeColor, string]> = displayColorOptions.filter(isBrandColorOption).map(toColorOption)",
+	} {
+		if !strings.Contains(settingsPage, required) {
+			t.Fatalf("settings page should derive display color options through shared variables: missing %q", required)
 		}
 	}
 
@@ -817,9 +869,9 @@ func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 	styles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "styles.css"), "\r\n", "\n")
 
 	for _, required := range []string{
-		`:root[data-theme-color="yellow"] { --runtime-theme-color`,
-		`:root[data-accent-color="yellow"] { --runtime-accent-color`,
-		`:root[data-chart-color="yellow"] { --runtime-chart-color`,
+		`:root[data-theme-color="sky"] { --runtime-theme-color`,
+		`:root[data-accent-color="sky"] { --runtime-accent-color`,
+		`:root[data-chart-color="sky"] { --runtime-chart-color`,
 		`:root:not([data-theme-color="neutral"])[data-theme-color]`,
 		`--primary: var(--runtime-theme-color);`,
 		`:root:not([data-accent-color="neutral"])[data-accent-color]`,
@@ -858,6 +910,49 @@ func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 	accentRule := styles[accentRuleStart : accentRuleStart+accentRuleEnd]
 	if strings.Contains(accentRule, "--primary") || strings.Contains(accentRule, "--sidebar-primary") {
 		t.Fatalf("accent color rule must not mutate primary tokens: %s", accentRule)
+	}
+}
+
+// TestDisplayPreferencePaletteUsesSingleRuntimeColorSource 锁定品牌主题色和中性灰阶色调共 18 色只在 runtime 变量处写死。
+func TestDisplayPreferencePaletteUsesSingleRuntimeColorSource(t *testing.T) {
+	styles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "styles.css"), "\r\n", "\n")
+	settingsStyles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.css"), "\r\n", "\n")
+
+	if got, want := len(displayPreferencePaletteColors), 18; got != want {
+		t.Fatalf("display preference palette should explicitly cover %d colors, got %d", want, got)
+	}
+
+	seen := map[string]bool{}
+	for _, color := range displayPreferencePaletteColors {
+		if seen[color.token] {
+			t.Fatalf("display preference palette token %q is duplicated in the test contract", color.token)
+		}
+		seen[color.token] = true
+
+		runtimeVar := "--runtime-color-" + color.token
+		runtimeDeclaration := runtimeVar + ": " + color.value + ";"
+		if count := strings.Count(styles, runtimeDeclaration); count != 1 {
+			t.Fatalf("runtime color %q should be hard-coded exactly once in styles.css, got %d", color.token, count)
+		}
+
+		if strings.Contains(settingsStyles, color.value) {
+			t.Fatalf("SettingsPage.css must not repeat hard-coded display palette value %q; use var(%s)", color.value, runtimeVar)
+		}
+
+		swatchRule := `.color-palette-circle[data-accent="` + color.token + `"] { background: var(` + runtimeVar + `); }`
+		if !strings.Contains(settingsStyles, swatchRule) {
+			t.Fatalf("SettingsPage.css should render palette swatch %q through %s", color.token, runtimeVar)
+		}
+
+		if color.token == "neutral" {
+			continue
+		}
+		for _, axis := range []string{"theme", "accent", "chart"} {
+			axisRule := `:root[data-` + axis + `-color="` + color.token + `"] { --runtime-` + axis + `-color: var(` + runtimeVar + `);`
+			if !strings.Contains(styles, axisRule) {
+				t.Fatalf("styles.css should map %s color %q through %s", axis, color.token, runtimeVar)
+			}
+		}
 	}
 }
 
@@ -1104,6 +1199,61 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 	}
 }
 
+// TestLogsPageKeepsCloudInspiredPaginationAndTableDetails 验证日志页吸收 cloud-checkin 的分页信息密度，同时保留运行时日志表格模型。
+func TestLogsPageKeepsCloudInspiredPaginationAndTableDetails(t *testing.T) {
+	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
+	logStyles := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.css")
+
+	for _, required := range []string{
+		"calculateLogPageSize",
+		"ResizeObserver",
+		"logTableRef",
+		"logPaginationRef",
+		"totalPages",
+		"displayedLogPage",
+		"displayedPageSize",
+		"watch(logPageSize",
+		"共 {{ appStore.logTotal }} 条",
+		"当前第 {{ displayedLogPage }} / {{ totalPages }} 页",
+		`ref="logTableRef"`,
+		`ref="logPaginationRef"`,
+		`class="log-footer log-pagination-card"`,
+		`<UiTableRow v-if="appStore.logs.length === 0" class="log-empty-row">`,
+		`<UiTableCell colspan="4" class="log-empty-cell">暂无匹配日志</UiTableCell>`,
+		`class="log-level-badge"`,
+		"logLevelClass",
+	} {
+		if !strings.Contains(logsPage, required) {
+			t.Fatalf("logs page should keep cloud-inspired pagination/table detail %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		".log-table-shell",
+		".log-pagination-card",
+		".log-pagination-summary",
+		".log-empty-cell",
+		".log-level-badge",
+		".log-level-badge.is-error",
+		".log-level-badge.is-warning",
+		".log-level-badge.is-info",
+		".log-level-badge.is-debug",
+	} {
+		if !strings.Contains(logStyles, required) {
+			t.Fatalf("logs page styles should keep cloud-inspired pagination/table detail %q", required)
+		}
+	}
+
+	for _, forbidden := range []string{
+		"const logPageSize = 50",
+		`<div v-if="appStore.logs.length === 0" class="empty-state">`,
+	} {
+		if strings.Contains(logsPage, forbidden) {
+			t.Fatalf("logs page should not keep stale pagination/table detail %q", forbidden)
+		}
+	}
+}
+
 // TestLogsPageKeepsFileSelectorInsideFilterPanel 验证日志文件/日期选择收进折叠筛选，避免顶部常驻摘要挤占日志流。
 func TestLogsPageKeepsFileSelectorInsideFilterPanel(t *testing.T) {
 	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
@@ -1248,7 +1398,7 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 	for _, required := range []string{
 		"@theme inline",
 		"--color-sidebar",
-		"--runtime-color-yellow",
+		"--runtime-color-sky",
 		":root[data-card-border=\"visible\"]",
 	} {
 		if !strings.Contains(styles, required) {
@@ -1373,7 +1523,7 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 	for _, required := range []string{
 		`Artistic 方案 common`,
 		`:root[data-display-scheme="artistic"]`,
-		`--artistic-primary: #f97316`,
+		`--artistic-primary: var(--runtime-theme-color, var(--runtime-color-apple-blue))`,
 		`--artistic-success: #10b981`,
 		`--artistic-warning: #f59e0b`,
 		`--artistic-error: #ef4444`,

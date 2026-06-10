@@ -11,13 +11,6 @@
   gap: 8px;
 }
 
-.empty-state {
-  display: grid;
-  min-height: 96px;
-  place-items: center;
-  color: var(--muted-foreground);
-}
-
 .input-with-icon {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -246,6 +239,23 @@
   font-size: var(--fs-caption);
 }
 
+.log-pagination-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  padding: 10px 12px;
+  box-shadow: var(--shadow-xs, none);
+}
+
+.log-pagination-summary {
+  min-width: 0;
+  color: var(--muted-foreground);
+}
+
+.log-table-shell {
+  min-width: 0;
+}
+
 .log-table[data-slot="table"] {
   width: 100%;
   min-width: 920px;
@@ -303,6 +313,40 @@
   overflow-wrap: anywhere;
   text-overflow: initial;
   white-space: normal;
+}
+
+.log-table .log-empty-cell {
+  height: 112px;
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+  text-align: center;
+  white-space: normal;
+}
+
+.log-level-badge {
+  --log-level-color: var(--muted-foreground);
+  border-color: color-mix(in oklch, var(--log-level-color) 28%, var(--border)) !important;
+  background: color-mix(in oklch, var(--log-level-color) 9%, transparent) !important;
+  color: var(--log-level-color) !important;
+  font-family: var(--font-mono);
+  font-weight: 650;
+  text-transform: lowercase;
+}
+
+.log-level-badge.is-debug {
+  --log-level-color: var(--muted-foreground);
+}
+
+.log-level-badge.is-info {
+  --log-level-color: var(--primary);
+}
+
+.log-level-badge.is-warning {
+  --log-level-color: var(--icon-orange);
+}
+
+.log-level-badge.is-error {
+  --log-level-color: var(--destructive);
 }
 
 .log-table [data-slot="table-header"] [data-slot="table-head"] {
@@ -390,12 +434,16 @@
 .log-fullscreen .log-stream-panel {
   min-height: 0;
   align-content: stretch;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
+.log-fullscreen .log-table-shell,
 .log-fullscreen .log-stream-panel [data-slot="table-container"] {
   height: 100%;
   min-height: 0;
+}
+
+.log-fullscreen .log-stream-panel [data-slot="table-container"] {
   overflow: auto;
 }
 

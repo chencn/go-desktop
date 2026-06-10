@@ -4,7 +4,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, defineComponent, h, onUnmounted, ref, watch } from 'vue'
+import { computed, defineComponent, h, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { FileText, Maximize2, RefreshCw, Search, SlidersHorizontal, TimerReset, Trash2 } from '@lucide/vue'
 import { useAppStore } from '@/stores/app'
 import { cn } from '@/lib/utils'
@@ -14,10 +14,13 @@ import { displayMessage } from '@/shared/labels'
 
 // knownLogScopes 覆盖运行时内置来源；动态来源会继续从当前日志结果合并。
 const knownLogScopes = ['all', 'app', 'process', 'window', 'startup', 'shortcut', 'update', 'settings', 'storage', 'log-file', 'crash', 'panic', 'single-instance']
-// logPageSize 固定页面批量大小，避免大日志量一次性撑爆前端渲染。
-const logPageSize = 50
 
 const appStore = useAppStore()
+// logTableRef/logPaginationRef 用于按可见空间动态计算页大小，参考 cloud-checkin 日志页分页密度。
+const logTableRef = ref<HTMLElement | null>(null)
+const logPaginationRef = ref<HTMLElement | null>(null)
+// logPageSize 是前端请求页大小，后端仍会做最终归一化。
+const logPageSize = ref(calculateLogPageSize())
 // selectedLogFileName 保存当前文件选择；为空时后端默认读取当前每日文件。
 const selectedLogFileName = ref('')
 // keyword/scope/severity 是日志查询条件；变化后立即刷新第一页。
@@ -36,6 +39,8 @@ const autoRefresh = ref(false)
 const clearDialogOpen = ref(false)
 // timer 保存自动刷新 interval id，组件卸载或关闭自动刷新时必须清理。
 let timer: number | undefined
+// pageSizeObserver 跟随表格区域、分页条和窗口尺寸更新 pageSize。
+let pageSizeObserver: ResizeObserver | undefined
 
 // logScopes 合并内置来源和当前查询结果中的动态来源，避免新后端 scope 无法筛选。
 const logScopes = computed(() => {
@@ -60,6 +65,20 @@ const filterSummary = computed(() => {
   return parts.join(' / ')
 })
 
+const totalPages = computed(() => {
+  const pageSize = appStore.logPageSize || logPageSize.value
+  if (appStore.logTotal <= 0 || pageSize <= 0) return 0
+  return Math.ceil(appStore.logTotal / pageSize)
+})
+
+const displayedLogPage = computed(() => {
+  if (totalPages.value === 0) return 0
+  return Math.min(appStore.logPage, totalPages.value)
+})
+
+const displayedPageSize = computed(() => appStore.logPageSize || logPageSize.value)
+const canGoNext = computed(() => totalPages.value > 0 && appStore.logPage < totalPages.value)
+
 // Stat 是脚本内小型渲染组件，避免为日志统计条额外拆文件。
 const Stat = defineComponent({
   props: {
@@ -80,6 +99,29 @@ const Stat = defineComponent({
   },
 })
 
+function calculateLogPageSize(listElement?: HTMLElement | null, paginationElement?: HTMLElement | null) {
+  if (typeof window === 'undefined') return 50
+  const isDesktop = window.matchMedia('(min-width: 768px)').matches
+  const minRows = isDesktop ? 8 : 10
+  const maxRows = isDesktop ? 40 : 30
+  const listBounds = listElement?.getBoundingClientRect()
+  const tableBounds = listElement?.querySelector('[data-slot="table-container"]')?.getBoundingClientRect()
+  const paginationHeight = paginationElement?.getBoundingClientRect().height ?? 58
+  const listTop = tableBounds?.top ?? listBounds?.top ?? (isDesktop ? 300 : 320)
+  const headerHeight = listElement?.querySelector('thead')?.getBoundingClientRect().height ?? (isDesktop ? 38 : 0)
+  const rowElement = listElement?.querySelector('tbody tr:not(.log-empty-row)')
+  const rowHeight = rowElement?.getBoundingClientRect().height || (isDesktop ? 48 : 56)
+  const available = Math.max(0, window.innerHeight - listTop - headerHeight - paginationHeight - 24)
+  return Math.max(minRows, Math.min(maxRows, Math.floor(available / rowHeight)))
+}
+
+function updateLogPageSize() {
+  const next = calculateLogPageSize(logTableRef.value, logPaginationRef.value)
+  if (logPageSize.value !== next) {
+    logPageSize.value = next
+  }
+}
+
 // buildQuery 把页面筛选项转换成后端 LogQuery；page 由刷新入口显式传入。
 function buildQuery(page: number) {
   return {
@@ -88,7 +130,7 @@ function buildQuery(page: number) {
     severity: severity.value,
     keyword: keyword.value.trim(),
     page,
-    pageSize: logPageSize,
+    pageSize: logPageSize.value,
   }
 }
 
@@ -129,6 +171,11 @@ watch([keyword, scope, severity], () => {
   void refreshLogs(1)
 })
 
+// pageSize 变化时重置到第一页，避免视口变化后页码指向不同记录段。
+watch(logPageSize, () => {
+  void refreshLogs(1)
+})
+
 // watch 监听当前后端返回的文件名，初始化本地选择。
 watch(() => appStore.selectedLogFileName, (fileName) => {
   if (fileName && selectedLogFileName.value === '') {
@@ -158,11 +205,32 @@ watch(autoRefresh, (enabled) => {
 watch(fullscreen, (enabled) => {
   if (typeof document === 'undefined') return
   document.documentElement.classList.toggle('is-log-fullscreen', enabled)
+  void nextTick(updateLogPageSize)
 }, { immediate: true })
+
+watch(filtersOpen, () => {
+  void nextTick(updateLogPageSize)
+})
+
+watch(() => appStore.logs.length, () => {
+  void nextTick(updateLogPageSize)
+})
+
+onMounted(() => {
+  void nextTick(updateLogPageSize)
+  if (typeof ResizeObserver !== 'undefined') {
+    pageSizeObserver = new ResizeObserver(updateLogPageSize)
+    if (logTableRef.value) pageSizeObserver.observe(logTableRef.value)
+    if (logPaginationRef.value) pageSizeObserver.observe(logPaginationRef.value)
+  }
+  window.addEventListener('resize', updateLogPageSize)
+})
 
 // onUnmounted 在组件卸载前释放订阅和运行时资源，避免重复监听。
 onUnmounted(() => {
   if (timer) window.clearInterval(timer)
+  pageSizeObserver?.disconnect()
+  if (typeof window !== 'undefined') window.removeEventListener('resize', updateLogPageSize)
   if (typeof document !== 'undefined') document.documentElement.classList.remove('is-log-fullscreen')
 })
 
@@ -196,6 +264,16 @@ function logLevelLabel(level: string) {
     error: 'error',
   }
   return labels[level] ?? level
+}
+
+function logLevelClass(level: string) {
+  const classes: Record<string, string> = {
+    debug: 'is-debug',
+    info: 'is-info',
+    warning: 'is-warning',
+    error: 'is-error',
+  }
+  return classes[level] ?? 'is-debug'
 }
 
 // formatLogFileOption 统一日志文件下拉展示。
@@ -316,41 +394,47 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
               </div>
             </div>
 
-            <UiTable class="log-table" aria-label="应用日志">
-              <colgroup>
-                <col class="log-col-time">
-                <col class="log-col-scope">
-                <col class="log-col-level">
-                <col class="log-col-message">
-              </colgroup>
-              <UiTableHeader>
-                <UiTableRow>
-                  <UiTableHead>时间</UiTableHead>
-                  <UiTableHead>来源</UiTableHead>
-                  <UiTableHead>级别</UiTableHead>
-                  <UiTableHead>内容</UiTableHead>
-                </UiTableRow>
-              </UiTableHeader>
-              <UiTableBody>
-                <UiTableRow
-                  v-for="log in appStore.logs"
-                  :key="`${log.time}-${log.scope}-${log.message}`"
-                  :class="cn(log.severity === 'error' && 'is-error', log.severity === 'warning' && 'is-warning')"
-                >
-                  <UiTableCell>{{ formatDateTime(log.time) }}</UiTableCell>
-                  <UiTableCell>{{ logScopeLabel(log.scope) }}</UiTableCell>
-                  <UiTableCell>{{ logLevelLabel(log.severity) }}</UiTableCell>
-                  <UiTableCell class="log-message-cell" :title="displayMessage(log.message)">{{ displayMessage(log.message) }}</UiTableCell>
-                </UiTableRow>
-              </UiTableBody>
-            </UiTable>
-            <div v-if="appStore.logs.length === 0" class="empty-state">暂无匹配日志</div>
+            <div ref="logTableRef" class="log-table-shell">
+              <UiTable class="log-table" aria-label="应用日志">
+                <colgroup>
+                  <col class="log-col-time">
+                  <col class="log-col-scope">
+                  <col class="log-col-level">
+                  <col class="log-col-message">
+                </colgroup>
+                <UiTableHeader>
+                  <UiTableRow>
+                    <UiTableHead>时间</UiTableHead>
+                    <UiTableHead>来源</UiTableHead>
+                    <UiTableHead>级别</UiTableHead>
+                    <UiTableHead>内容</UiTableHead>
+                  </UiTableRow>
+                </UiTableHeader>
+                <UiTableBody>
+                  <UiTableRow v-if="appStore.logs.length === 0" class="log-empty-row">
+                    <UiTableCell colspan="4" class="log-empty-cell">暂无匹配日志</UiTableCell>
+                  </UiTableRow>
+                  <UiTableRow
+                    v-for="log in appStore.logs"
+                    :key="`${log.time}-${log.scope}-${log.message}`"
+                    :class="cn(log.severity === 'error' && 'is-error', log.severity === 'warning' && 'is-warning')"
+                  >
+                    <UiTableCell>{{ formatDateTime(log.time) }}</UiTableCell>
+                    <UiTableCell>{{ logScopeLabel(log.scope) }}</UiTableCell>
+                    <UiTableCell>
+                      <UiBadge class="log-level-badge" :class="logLevelClass(log.severity)" variant="outline">{{ logLevelLabel(log.severity) }}</UiBadge>
+                    </UiTableCell>
+                    <UiTableCell class="log-message-cell" :title="displayMessage(log.message)">{{ displayMessage(log.message) }}</UiTableCell>
+                  </UiTableRow>
+                </UiTableBody>
+              </UiTable>
+            </div>
 
-            <footer class="log-footer">
-              <span>第 {{ appStore.logPage }} 页 · 每页 {{ appStore.logPageSize }} 条</span>
+            <footer ref="logPaginationRef" class="log-footer log-pagination-card">
+              <span class="log-pagination-summary">共 {{ appStore.logTotal }} 条，每页 {{ displayedPageSize }} 条，当前第 {{ displayedLogPage }} / {{ totalPages }} 页</span>
               <div class="button-row">
                 <UiButton :disabled="appStore.logPage <= 1" variant="secondary" @click="refreshLogs(appStore.logPage - 1)">上一页</UiButton>
-                <UiButton :disabled="!appStore.logHasMore" variant="secondary" @click="refreshLogs(appStore.logPage + 1)">下一页</UiButton>
+                <UiButton :disabled="!canGoNext" variant="secondary" @click="refreshLogs(appStore.logPage + 1)">下一页</UiButton>
               </div>
             </footer>
           </section>

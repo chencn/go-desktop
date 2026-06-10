@@ -32,7 +32,7 @@ vi.mock('../../frontend/src/api/wails', () => {
   }
   const defaultArtisticDisplayProfile = {
     ...defaultShadcnDisplayProfile,
-    accentColor: 'orange',
+    accentColor: 'apple-blue',
     baseColor: 'stone',
     cardBorder: 'soft',
     chartColor: 'emerald',
@@ -40,7 +40,7 @@ vi.mock('../../frontend/src/api/wails', () => {
     menu: 'default',
     menuAccent: 'bold',
     radius: 'large',
-    themeColor: 'orange',
+    themeColor: 'apple-blue',
   }
 
   return {
@@ -177,36 +177,36 @@ describe('app state reducer', () => {
 })
 
 describe('display preference state', () => {
-  it('preserves persisted 24-color tokens while artistic accent follows theme color', () => {
+  it('preserves persisted color tokens while artistic accent follows theme color', () => {
     display.hydrateDisplayPreferences({
       displayScheme: 'artistic',
       themeMode: 'dark',
       profiles: {
         shadcn: {
-          accentColor: 'purple',
+          accentColor: 'teal',
           chartColor: 'sky',
-          themeColor: 'red',
+          themeColor: 'rose',
         },
         artistic: {
           accentColor: 'cyan',
-          chartColor: 'yellow',
-          themeColor: 'violet',
+          chartColor: 'amber',
+          themeColor: 'indigo',
         },
       },
     })
 
     let exported = display.exportDisplayPreferences()
     expect(exported.displayScheme).toBe('artistic')
-    expect(exported.themeColor).toBe('violet')
-    expect(exported.accentColor).toBe('violet')
-    expect(exported.chartColor).toBe('yellow')
-    expect(exported.profiles.artistic.accentColor).toBe('violet')
+    expect(exported.themeColor).toBe('indigo')
+    expect(exported.accentColor).toBe('indigo')
+    expect(exported.chartColor).toBe('amber')
+    expect(exported.profiles.artistic.accentColor).toBe('indigo')
 
     display.useDisplayPreferences().setDisplayScheme('shadcn')
     exported = display.exportDisplayPreferences()
     expect(exported.displayScheme).toBe('shadcn')
-    expect(exported.themeColor).toBe('red')
-    expect(exported.accentColor).toBe('purple')
+    expect(exported.themeColor).toBe('rose')
+    expect(exported.accentColor).toBe('teal')
     expect(exported.chartColor).toBe('sky')
   })
 })
