@@ -4,8 +4,9 @@
 -->
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { ChevronsLeft, ChevronsRight, Cpu, Moon, RefreshCw, Sun } from '@lucide/vue'
+import { computed, onMounted, ref } from 'vue'
+import { ChevronsLeft, ChevronsRight, Cpu, Minus, Moon, RefreshCw, Square, Sun, X } from '@lucide/vue'
+import { Window } from '@wailsio/runtime'
 import { useDisplayPreferences } from '@/app/display'
 import { toMessage } from '@/app/state'
 import { useAppStore } from '@/stores/app'
@@ -31,6 +32,8 @@ const display = useDisplayPreferences()
 const updateOpen = ref(false)
 // sidebarCollapsed 只控制当前桌面侧栏展示密度，不进入持久化显示偏好。
 const sidebarCollapsed = ref(false)
+// isWindowMaximised 只服务自定义窗口按钮的辅助文案，不作为业务状态持久化。
+const isWindowMaximised = ref(false)
 // activeTitle/activeSubtitle 从共享导航配置读取，避免侧栏文案和页头漂移。
 const activeTitle = computed(() => pageTitle(props.activeView))
 const activeSubtitle = computed(() => pageSubtitle(props.activeView))
@@ -58,6 +61,39 @@ function updateIconTone(status?: string) {
   if (['update_available', 'verified', 'pending_install'].includes(value)) return 'is-ready'
   return ''
 }
+
+async function refreshWindowMaximised() {
+  try {
+    isWindowMaximised.value = await Window.IsMaximised()
+  } catch {
+    isWindowMaximised.value = false
+  }
+}
+
+async function runWindowCommand(command: () => Promise<void>) {
+  try {
+    await command()
+    await refreshWindowMaximised()
+  } catch (error) {
+    appStore.applyAction({ type: 'errorSet', payload: toMessage(error) || '窗口操作失败' })
+  }
+}
+
+async function minimiseWindow() {
+  await runWindowCommand(() => Window.Minimise())
+}
+
+async function toggleWindowMaximise() {
+  await runWindowCommand(() => Window.ToggleMaximise())
+}
+
+async function closeWindow() {
+  await runWindowCommand(() => Window.Close())
+}
+
+onMounted(() => {
+  void refreshWindowMaximised()
+})
 </script>
 
 <template>
@@ -102,7 +138,7 @@ function updateIconTone(status?: string) {
 
     <main class="app-main">
       <header class="topbar">
-        <div class="topbar-title">
+        <div class="topbar-title" @dblclick="toggleWindowMaximise">
           <h1>{{ activeTitle }}</h1>
           <p>{{ activeSubtitle }}</p>
         </div>
@@ -128,6 +164,41 @@ function updateIconTone(status?: string) {
                 @click="updateOpen = true"
               >
                 <RefreshCw :class="cn(updateTone === 'is-danger' ? 'icon-tone-red' : updateTone === 'is-ready' ? 'icon-tone-green' : 'icon-tone-blue')" :size="18" />
+              </UiButton>
+            </UiTooltip>
+          </div>
+          <div class="window-controls" aria-label="窗口控制">
+            <UiTooltip content="最小化">
+              <UiButton
+                aria-label="最小化"
+                class="window-control-button"
+                size="icon"
+                variant="ghost"
+                @click="minimiseWindow"
+              >
+                <Minus :size="16" />
+              </UiButton>
+            </UiTooltip>
+            <UiTooltip :content="isWindowMaximised ? '还原窗口' : '最大化'">
+              <UiButton
+                :aria-label="isWindowMaximised ? '还原窗口' : '最大化'"
+                class="window-control-button"
+                size="icon"
+                variant="ghost"
+                @click="toggleWindowMaximise"
+              >
+                <Square :size="14" />
+              </UiButton>
+            </UiTooltip>
+            <UiTooltip content="关闭">
+              <UiButton
+                aria-label="关闭"
+                class="window-control-button is-close"
+                size="icon"
+                variant="ghost"
+                @click="closeWindow"
+              >
+                <X :size="17" />
               </UiButton>
             </UiTooltip>
           </div>

@@ -241,6 +241,13 @@
 }
 
 .topbar {
+  --wails-draggable: drag;
+  --window-controls-width: 138px;
+  --topbar-actions-width: 78px;
+  --topbar-control-gap: 8px;
+  --topbar-control-reserve: calc(var(--window-controls-width) + var(--topbar-actions-width) + var(--topbar-control-gap) + 8px);
+
+  position: relative;
   display: grid;
   min-height: var(--topbar-height);
   min-width: 0;
@@ -252,8 +259,19 @@
   padding: 14px var(--page-gutter);
 }
 
+.topbar button,
+.topbar-actions,
+.topbar-utility,
+.window-controls,
+.compact-nav {
+  --wails-draggable: no-drag;
+}
+
 .topbar-title {
+  box-sizing: border-box;
   min-width: 0;
+  padding-right: var(--topbar-control-reserve);
+  user-select: none;
 }
 
 .topbar-title h1 {
@@ -282,7 +300,13 @@
 }
 
 .topbar-actions {
+  position: absolute;
+  top: 0;
+  right: calc(var(--window-controls-width) + var(--topbar-control-gap));
+  z-index: 10;
   display: inline-flex;
+  width: var(--topbar-actions-width);
+  height: 36px;
   min-width: 0;
   align-items: center;
   justify-content: flex-end;
@@ -290,11 +314,42 @@
 }
 
 .topbar-utility {
-  display: grid;
+  display: inline-flex;
   min-width: 0;
   align-items: center;
   justify-content: end;
-  gap: 10px;
+  gap: 8px;
+}
+
+.window-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+  display: inline-flex;
+  min-width: 0;
+  height: 36px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  padding-left: 0;
+}
+
+.window-control-button {
+  width: 46px;
+  height: 36px;
+  border-radius: 0;
+  color: var(--muted-foreground);
+}
+
+.window-control-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.window-control-button.is-close:hover {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
 }
 
 .update-icon-button svg {
@@ -368,7 +423,7 @@
   }
 
   .topbar {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
     row-gap: 12px;
   }
@@ -378,9 +433,12 @@
   }
 
   .topbar-actions {
-    grid-column: 2;
-    grid-row: 1;
     justify-content: flex-end;
+  }
+
+  .window-controls {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .compact-nav {

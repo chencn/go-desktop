@@ -182,6 +182,7 @@ func main() {
 		Height:          768,
 		MinWidth:        1024,
 		MinHeight:       768,
+		Frameless:       true,
 		InitialPosition: application.WindowCentered,
 		Hidden:          startLoadingHidden || startHidden || splashWindow != nil,
 		Mac: application.MacWindow{
@@ -190,7 +191,8 @@ func main() {
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
 		Windows: application.WindowsWindow{
-			HiddenOnTaskbar: startHidden,
+			DisableFramelessWindowDecorations: true,
+			HiddenOnTaskbar:                   startHidden,
 		},
 		BackgroundColour: application.NewRGB(246, 248, 252),
 		URL:              "/",
