@@ -217,7 +217,7 @@ onMounted(() => {
         </div>
       </header>
 
-      <section class="content-scroll">
+      <section :class="cn('content-scroll', props.activeView === 'logs' && 'is-logs-view')">
         <div v-if="appStore.errorMessage" class="app-error">{{ appStore.errorMessage }}</div>
         <slot />
       </section>

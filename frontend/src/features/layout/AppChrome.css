@@ -397,6 +397,12 @@
   padding: var(--page-gutter);
 }
 
+.content-scroll.is-logs-view {
+  min-height: 0;
+  align-content: stretch;
+  overflow: hidden;
+}
+
 .app-error {
   width: min(100%, 1440px);
   margin: 0 auto;
