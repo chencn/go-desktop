@@ -1,0 +1,30 @@
+/* Artistic Input OTP: 覆盖 shadcn InputOTP primitive，实现呼吸发光框 */
+
+:root[data-display-scheme="artistic"] [data-slot="input-otp-slot"] {
+  border-color: var(--border) !important;
+  background: rgba(255, 255, 255, 0.45) !important;
+  transition: border-color 220ms ease,
+              box-shadow 220ms ease,
+              background-color 220ms ease !important;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="input-otp-slot"] {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="input-otp-slot"][data-active="true"] {
+  border-color: var(--artistic-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  z-index: 10 !important;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="input-otp-slot"][data-active="true"] {
+  background: rgba(24, 18, 14, 0.8) !important;
+}
+
+/* 光标颜色改为主题色 */
+:root[data-display-scheme="artistic"] [data-slot="input-otp-slot"] .animate-caret-blink {
+  background-color: var(--artistic-primary) !important;
+}

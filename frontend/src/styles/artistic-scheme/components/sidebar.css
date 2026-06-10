@@ -1,0 +1,123 @@
+/* Artistic Sidebar: 侧边栏全局与 5 种侧边导航风格配置美化 */
+
+/* 1. 基础侧栏圆角与过渡 */
+:root[data-display-scheme="artistic"] .app-sidebar {
+  border-right: 1px solid var(--sidebar-border) !important;
+  transition: background-color 220ms ease, border-color 220ms ease, backdrop-filter 220ms ease;
+}
+
+/* 2. 针对 2 种侧栏导航风格（[data-menu]）的艺术玻璃覆写 */
+/* 默认风格 */
+:root[data-display-scheme="artistic"][data-menu="default"] .app-sidebar {
+  background: color-mix(in oklch, var(--sidebar) 60%, transparent) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+/* 反色 (全深色) */
+:root[data-display-scheme="artistic"][data-menu="inverted"] .app-sidebar {
+  background: color-mix(in oklch, var(--foreground) 95%, transparent) !important;
+  backdrop-filter: none !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  /* 强制深色背景下的前景色与变量反白，解决亮色模式下文字看不清的问题 */
+  --sidebar-foreground: rgba(255, 255, 255, 0.8) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 3. 品牌 Header 区域 */
+:root[data-display-scheme="artistic"] .brand-mark {
+  border-radius: 8px !important; /* 精致圆角 */
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 220ms ease, color 220ms ease;
+}
+
+:root[data-display-scheme="artistic"] .sidebar-brand:hover .brand-mark {
+  transform: rotate(8deg) scale(1.08);
+}
+
+/* 默认风格下的品牌图标色彩 */
+:root[data-display-scheme="artistic"]:not([data-menu^="inverted"]) .brand-mark {
+  background: color-mix(in srgb, var(--artistic-primary) 12%, transparent) !important;
+  color: var(--artistic-primary) !important;
+}
+
+/* 反色风格下的品牌图标色彩 (避免使用深色底，改用亮白金偏色) */
+:root[data-display-scheme="artistic"][data-menu^="inverted"] .brand-mark {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* 品牌文字 go-desktop 字体放大且加粗 */
+:root[data-display-scheme="artistic"] .brand-copy strong {
+  font-size: 16px !important;
+  font-weight: 750 !important;
+  color: var(--foreground) !important;
+}
+
+/* 反色风格下的品牌文字：在深色背景下强制高亮反白显示 */
+:root[data-display-scheme="artistic"][data-menu^="inverted"] .brand-copy strong {
+  color: #ffffff !important;
+}
+
+/* 4. 侧栏导航选项 */
+:root[data-display-scheme="artistic"] .sidebar-item {
+  border-radius: 8px !important; /* 对齐精致圆角 */
+  padding: 8px 12px !important;
+  font-weight: 550;
+  transition: transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1),
+              background-color 220ms ease,
+              color 220ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] .sidebar-item:hover {
+  transform: translateX(4px);
+  background: var(--sidebar-accent) !important;
+  color: var(--sidebar-accent-foreground) !important;
+}
+
+:root[data-display-scheme="artistic"] .sidebar-item.is-active {
+  transform: translateX(4px);
+  background: var(--sidebar-accent) !important;
+  color: var(--sidebar-accent-foreground) !important;
+  font-weight: 700;
+}
+
+/* 5. 导航图标舱 */
+:root[data-display-scheme="artistic"] .sidebar-item .nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px !important; /* 使侧边栏图标舱圆角非常饱满清晰 */
+  transition: transform 220ms ease, background-color 220ms ease, color 220ms ease !important;
+}
+
+/* 普通风格下导航选项图标的常态与 Hover 状态 */
+:root[data-display-scheme="artistic"]:not([data-menu^="inverted"]) .sidebar-item .nav-icon {
+  background: color-mix(in srgb, var(--sidebar-foreground) 8%, transparent);
+  color: var(--sidebar-foreground);
+}
+
+:root[data-display-scheme="artistic"]:not([data-menu^="inverted"]) .sidebar-item:hover .nav-icon {
+  transform: scale(1.08);
+  background: color-mix(in srgb, var(--artistic-primary) 12%, transparent);
+  color: var(--artistic-primary);
+}
+
+/* 反色风格下导航选项图标的常态与 Hover 状态 */
+:root[data-display-scheme="artistic"][data-menu^="inverted"] .sidebar-item .nav-icon {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+:root[data-display-scheme="artistic"][data-menu^="inverted"] .sidebar-item:hover .nav-icon {
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+/* 激活选中状态下图标舱的高亮 (普通与反色共享统一的精致发光暖橘) */
+:root[data-display-scheme="artistic"] .sidebar-item.is-active .nav-icon {
+  background: var(--sidebar-primary) !important;
+  color: var(--sidebar-primary-foreground) !important;
+  box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--artistic-primary) 35%, transparent) !important;
+}

@@ -1,0 +1,25 @@
+/* Artistic Sonner: 覆盖 shadcn Sonner primitive，实现通知气泡磨砂毛玻璃 */
+
+:root[data-display-scheme="artistic"] [data-sonner-toast] {
+  border: var(--artistic-glass-border) !important;
+  border-radius: var(--radius) !important;
+  background-color: var(--popover) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: var(--artistic-shadow-lg) !important;
+  color: var(--foreground) !important;
+  font-weight: 500 !important;
+}
+
+:root[data-display-scheme="artistic"] [data-sonner-toast] [data-close-button] {
+  border-radius: 99px !important;
+  border-color: var(--border) !important;
+  background-color: var(--card) !important;
+  transition: background-color 220ms ease, color 220ms ease, transform 220ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-sonner-toast] [data-close-button]:hover {
+  background-color: var(--artistic-error) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  transform: scale(1.1);
+}

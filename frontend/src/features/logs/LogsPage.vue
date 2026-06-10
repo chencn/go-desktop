@@ -66,9 +66,14 @@ const Stat = defineComponent({
     label: { type: String, required: true },
     tone: { type: String, default: '' },
     value: { type: Number, required: true },
+    isActive: { type: Boolean, default: false },
   },
-  setup(props) {
-    return () => h('div', { class: cn('log-stat-item', props.tone === 'danger' && 'is-danger') }, [
+  emits: ['click'],
+  setup(props, { emit }) {
+    return () => h('div', {
+      class: cn('log-stat-item', props.tone && `is-${props.tone}`, props.isActive && 'is-active'),
+      onClick: () => emit('click'),
+    }, [
       h('strong', String(props.value)),
       h('span', props.label),
     ])
@@ -239,29 +244,44 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
                 <UiLabel>日期/日志文件</UiLabel>
                 <span class="input-with-icon">
                   <FileText class="icon-tone-gray" :size="17" />
-                  <UiNativeSelect v-model="selectedLogFileName" :disabled="appStore.logFiles.length === 0">
-                    <option v-if="appStore.logFiles.length === 0" value="">内存临时日志</option>
-                    <option v-for="file in appStore.logFiles" :key="file.fileName" :value="file.fileName">
-                      {{ formatLogFileOption(file) }}
-                    </option>
-                  </UiNativeSelect>
+                  <UiSelect :model-value="selectedLogFileName" :disabled="appStore.logFiles.length === 0" @update:model-value="selectedLogFileName = String($event)">
+                    <UiSelectTrigger class="settings-control-select" aria-label="日志文件">
+                      <UiSelectValue placeholder="日志文件" />
+                    </UiSelectTrigger>
+                    <UiSelectContent>
+                      <UiSelectItem v-if="appStore.logFiles.length === 0" value="">内存临时日志</UiSelectItem>
+                      <UiSelectItem v-for="file in appStore.logFiles" :key="file.fileName" :value="file.fileName">
+                        {{ formatLogFileOption(file) }}
+                      </UiSelectItem>
+                    </UiSelectContent>
+                  </UiSelect>
                 </span>
               </UiField>
               <UiField>
                 <UiLabel>作用域</UiLabel>
-                <UiNativeSelect v-model="scope">
-                  <option v-for="item in logScopes" :key="item" :value="item">{{ logScopeLabel(item) }}</option>
-                </UiNativeSelect>
+                <UiSelect :model-value="scope" @update:model-value="scope = String($event)">
+                  <UiSelectTrigger class="settings-control-select" aria-label="作用域">
+                    <UiSelectValue placeholder="全部作用域" />
+                  </UiSelectTrigger>
+                  <UiSelectContent>
+                    <UiSelectItem v-for="item in logScopes" :key="item" :value="item">{{ logScopeLabel(item) }}</UiSelectItem>
+                  </UiSelectContent>
+                </UiSelect>
               </UiField>
               <UiField>
                 <UiLabel>级别</UiLabel>
-                <UiNativeSelect v-model="severity">
-                  <option value="all">全部级别</option>
-                  <option value="debug">debug</option>
-                  <option value="info">info</option>
-                  <option value="warning">warning</option>
-                  <option value="error">error</option>
-                </UiNativeSelect>
+                <UiSelect :model-value="severity" @update:model-value="severity = String($event)">
+                  <UiSelectTrigger class="settings-control-select" aria-label="级别">
+                    <UiSelectValue placeholder="全部级别" />
+                  </UiSelectTrigger>
+                  <UiSelectContent>
+                    <UiSelectItem value="all">全部级别</UiSelectItem>
+                    <UiSelectItem value="debug">debug</UiSelectItem>
+                    <UiSelectItem value="info">info</UiSelectItem>
+                    <UiSelectItem value="warning">warning</UiSelectItem>
+                    <UiSelectItem value="error">error</UiSelectItem>
+                  </UiSelectContent>
+                </UiSelect>
               </UiField>
               <UiField class="log-search">
                 <UiLabel>关键词</UiLabel>
@@ -281,11 +301,11 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
           </section>
 
           <section class="log-stats-strip" aria-label="日志统计">
-            <Stat label="全部" :value="appStore.logStats.total" />
-            <Stat label="debug" :value="appStore.logStats.debug" />
-            <Stat label="info" :value="appStore.logStats.info" />
-            <Stat label="warning" :value="appStore.logStats.warning" />
-            <Stat label="error" :value="appStore.logStats.error" tone="danger" />
+            <Stat label="全部" :value="appStore.logStats.total" tone="all" :is-active="severity === 'all'" @click="severity = 'all'" />
+            <Stat label="debug" :value="appStore.logStats.debug" tone="debug" :is-active="severity === 'debug'" @click="severity = 'debug'" />
+            <Stat label="info" :value="appStore.logStats.info" tone="info" :is-active="severity === 'info'" @click="severity = 'info'" />
+            <Stat label="warning" :value="appStore.logStats.warning" tone="warning" :is-active="severity === 'warning'" @click="severity = 'warning'" />
+            <Stat label="error" :value="appStore.logStats.error" tone="error" :is-active="severity === 'error'" @click="severity = 'error'" />
           </section>
 
           <section class="log-stream-panel" aria-label="日志流">

@@ -120,8 +120,8 @@ type DisplayProfile struct {
 // DisplayProfiles 用稳定 JSON 字段承载所有方案 profile。
 // 前端依赖字段名而不是 map，保证生成模型简单且可预测。
 type DisplayProfiles struct {
-	Shadcn DisplayProfile `json:"shadcn"` // Shadcn 保存 shadcn-vue profile。
-	AntD   DisplayProfile `json:"antd"`   // AntD 保存 Ant Design 风格 profile。
+	Shadcn   DisplayProfile `json:"shadcn"`   // Shadcn 保存 shadcn-vue profile。
+	Artistic DisplayProfile `json:"artistic"` // Artistic 保存落日艺术风格 profile。
 }
 
 // DisplayPreferences 是暴露给 UI 的 typed 显示偏好快照。
@@ -562,8 +562,8 @@ func toDisplayPreferences(value appruntime.DisplayPreferences) DisplayPreference
 		TextSize:      value.TextSize,
 		CardBorder:    value.CardBorder,
 		Profiles: DisplayProfiles{
-			Shadcn: toDisplayProfile(value.Profiles.Shadcn),
-			AntD:   toDisplayProfile(value.Profiles.AntD),
+			Shadcn:   toDisplayProfile(value.Profiles.Shadcn),
+			Artistic: toDisplayProfile(value.Profiles.Artistic),
 		},
 	}
 }
@@ -585,8 +585,8 @@ func fromDisplayPreferences(value DisplayPreferences) appruntime.DisplayPreferen
 		TextSize:      value.TextSize,
 		CardBorder:    value.CardBorder,
 		Profiles: appruntime.DisplayProfiles{
-			Shadcn: fromDisplayProfile(value.Profiles.Shadcn),
-			AntD:   fromDisplayProfile(value.Profiles.AntD),
+			Shadcn:   fromDisplayProfile(value.Profiles.Shadcn),
+			Artistic: fromDisplayProfile(value.Profiles.Artistic),
 		},
 	}
 }

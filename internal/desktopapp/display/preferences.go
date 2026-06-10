@@ -16,8 +16,8 @@ const (
 type Scheme string
 
 const (
-	SchemeShadcn Scheme = "shadcn"
-	SchemeAntD   Scheme = "antd"
+	SchemeShadcn   Scheme = "shadcn"
+	SchemeArtistic Scheme = "artistic"
 )
 
 // Profile 是单个显示方案的可持久化配置；不同方案只会归一化并使用各自支持字段。
@@ -64,18 +64,18 @@ type Preferences struct {
 
 // Default 返回默认方案的生效偏好。
 func Default() Preferences {
-	return effectiveShadcn(DefaultV2().ThemeMode, defaultShadcnProfile())
+	return effectiveArtistic(DefaultV2().ThemeMode, defaultArtisticProfile())
 }
 
-// DefaultV2 返回完整 V2 默认偏好，包含 shadcn 和 antd 两套独立 profile。
+// DefaultV2 返回完整 V2 默认偏好，包含 shadcn 和 artistic 两套独立 profile。
 func DefaultV2() PreferencesV2 {
 	return PreferencesV2{
 		Version:       preferencesVersion,
-		DisplayScheme: string(SchemeShadcn),
+		DisplayScheme: string(SchemeArtistic),
 		ThemeMode:     "light",
 		Profiles: map[string]Profile{
-			string(SchemeShadcn): defaultShadcnProfile(),
-			string(SchemeAntD):   defaultAntDProfile(),
+			string(SchemeShadcn):   defaultShadcnProfile(),
+			string(SchemeArtistic): defaultArtisticProfile(),
 		},
 	}
 }
@@ -90,15 +90,15 @@ func NormalizeV2(value PreferencesV2) PreferencesV2 {
 		value.Profiles = map[string]Profile{}
 	}
 	value.Profiles[string(SchemeShadcn)] = normalizeShadcnProfile(value.Profiles[string(SchemeShadcn)])
-	value.Profiles[string(SchemeAntD)] = normalizeAntDProfile(value.Profiles[string(SchemeAntD)])
+	value.Profiles[string(SchemeArtistic)] = normalizeArtisticProfile(value.Profiles[string(SchemeArtistic)])
 	return value
 }
 
 // Effective 根据 DisplayScheme 从 V2 模型中计算当前方案生效偏好。
 func Effective(value PreferencesV2) Preferences {
 	value = NormalizeV2(value)
-	if value.DisplayScheme == string(SchemeAntD) {
-		return effectiveAntD(value.ThemeMode, value.Profiles[string(SchemeAntD)])
+	if value.DisplayScheme == string(SchemeArtistic) {
+		return effectiveArtistic(value.ThemeMode, value.Profiles[string(SchemeArtistic)])
 	}
 	return effectiveShadcn(value.ThemeMode, value.Profiles[string(SchemeShadcn)])
 }
@@ -144,16 +144,20 @@ func ApplyEffectivePreferences(current PreferencesV2, incoming Preferences) Pref
 	if next.Profiles == nil {
 		next.Profiles = map[string]Profile{}
 	}
-	if targetScheme == string(SchemeAntD) {
-		next.Profiles[string(SchemeAntD)] = normalizeAntDProfile(Profile{
-			ChartColor: incoming.ChartColor,
-			IconTone:   incoming.IconTone,
-			Menu:       incoming.Menu,
-			MenuAccent: incoming.MenuAccent,
-			Radius:     incoming.Radius,
-			Density:    incoming.Density,
-			TextSize:   incoming.TextSize,
-			CardBorder: incoming.CardBorder,
+	if targetScheme == string(SchemeArtistic) {
+		next.Profiles[string(SchemeArtistic)] = normalizeArtisticProfile(Profile{
+			UIStyle:     incoming.UIStyle,
+			BaseColor:   incoming.BaseColor,
+			ThemeColor:  incoming.ThemeColor,
+			AccentColor: incoming.AccentColor,
+			ChartColor:  incoming.ChartColor,
+			IconTone:    incoming.IconTone,
+			Menu:        incoming.Menu,
+			MenuAccent:  incoming.MenuAccent,
+			Radius:      incoming.Radius,
+			Density:     incoming.Density,
+			TextSize:    incoming.TextSize,
+			CardBorder:  incoming.CardBorder,
 		})
 		return NormalizeV2(next)
 	}
@@ -200,17 +204,21 @@ func defaultShadcnProfile() Profile {
 	}
 }
 
-// defaultAntDProfile 返回 Ant Design 方案默认 profile。
-func defaultAntDProfile() Profile {
+// defaultArtisticProfile 返回 artistic 方案默认 profile。
+func defaultArtisticProfile() Profile {
 	return Profile{
-		ChartColor: "blue",
-		IconTone:   "default",
-		Menu:       "default",
-		MenuAccent: "subtle",
-		Radius:     "medium",
-		Density:    "comfortable",
-		TextSize:   "normal",
-		CardBorder: "visible",
+		UIStyle:     "vega",
+		BaseColor:   "stone",
+		ThemeColor:  "orange",
+		AccentColor: "orange",
+		ChartColor:  "emerald",
+		IconTone:    "colorful",
+		Menu:        "default",
+		MenuAccent:  "bold",
+		Radius:      "large",
+		Density:     "comfortable",
+		TextSize:    "normal",
+		CardBorder:  "soft",
 	}
 }
 
@@ -235,16 +243,16 @@ func effectiveShadcn(themeMode string, profile Profile) Preferences {
 	}
 }
 
-// effectiveAntD 计算 Ant Design 方案生效偏好；不支持的 shadcn 字段使用固定兼容值。
-func effectiveAntD(themeMode string, profile Profile) Preferences {
-	profile = normalizeAntDProfile(profile)
+// effectiveArtistic 计算 artistic 方案生效偏好。
+func effectiveArtistic(themeMode string, profile Profile) Preferences {
+	profile = normalizeArtisticProfile(profile)
 	return Preferences{
-		DisplayScheme: string(SchemeAntD),
-		UIStyle:       "vega",
+		DisplayScheme: string(SchemeArtistic),
+		UIStyle:       profile.UIStyle,
 		ThemeMode:     allowedOrDefault(themeMode, allowedThemeModes, "light"),
-		BaseColor:     "neutral",
-		ThemeColor:    "blue",
-		AccentColor:   "blue",
+		BaseColor:     profile.BaseColor,
+		ThemeColor:    profile.ThemeColor,
+		AccentColor:   profile.AccentColor,
 		ChartColor:    profile.ChartColor,
 		IconTone:      profile.IconTone,
 		Menu:          profile.Menu,
@@ -275,27 +283,32 @@ func normalizeShadcnProfile(profile Profile) Profile {
 	}
 }
 
-// normalizeAntDProfile 只接受 Ant Design 方案允许的 token 值。
-func normalizeAntDProfile(profile Profile) Profile {
-	defaults := defaultAntDProfile()
+// normalizeArtisticProfile 只接受 artistic 方案允许的 token 值。
+func normalizeArtisticProfile(profile Profile) Profile {
+	defaults := defaultArtisticProfile()
+	themeColor := allowedOrDefault(profile.ThemeColor, allowedAccentColors, defaults.ThemeColor)
 	return Profile{
-		ChartColor: allowedOrDefault(profile.ChartColor, allowedAccentColors, defaults.ChartColor),
-		IconTone:   allowedOrDefault(profile.IconTone, allowedIconTones, defaults.IconTone),
-		Menu:       allowedOrDefault(profile.Menu, allowedAntDMenus, defaults.Menu),
-		MenuAccent: allowedOrDefault(profile.MenuAccent, allowedMenuAccents, defaults.MenuAccent),
-		Radius:     allowedOrDefault(profile.Radius, allowedAntDRadii, defaults.Radius),
-		Density:    allowedOrDefault(profile.Density, allowedDensities, defaults.Density),
-		TextSize:   allowedOrDefault(profile.TextSize, allowedTextSizes, defaults.TextSize),
-		CardBorder: allowedOrDefault(profile.CardBorder, allowedCardBorders, defaults.CardBorder),
+		UIStyle:     allowedOrDefault(profile.UIStyle, allowedUIStyles, defaults.UIStyle),
+		BaseColor:   allowedOrDefault(profile.BaseColor, allowedBaseColors, defaults.BaseColor),
+		ThemeColor:  themeColor,
+		AccentColor: themeColor,
+		ChartColor:  allowedOrDefault(profile.ChartColor, allowedAccentColors, defaults.ChartColor),
+		IconTone:    allowedOrDefault(profile.IconTone, allowedIconTones, defaults.IconTone),
+		Menu:        allowedOrDefault(profile.Menu, allowedMenus, defaults.Menu),
+		MenuAccent:  allowedOrDefault(profile.MenuAccent, allowedMenuAccents, defaults.MenuAccent),
+		Radius:      allowedOrDefault(profile.Radius, allowedRadii, defaults.Radius),
+		Density:     allowedOrDefault(profile.Density, allowedDensities, defaults.Density),
+		TextSize:    allowedOrDefault(profile.TextSize, allowedTextSizes, defaults.TextSize),
+		CardBorder:  allowedOrDefault(profile.CardBorder, allowedCardBorders, defaults.CardBorder),
 	}
 }
 
 // normalizeScheme 只允许已注册显示方案，非法值回退到 fallback 或 shadcn。
 func normalizeScheme(value string, fallback string) string {
-	if value == string(SchemeShadcn) || value == string(SchemeAntD) {
+	if value == string(SchemeShadcn) || value == string(SchemeArtistic) {
 		return value
 	}
-	if fallback == string(SchemeAntD) {
+	if fallback == string(SchemeArtistic) {
 		return fallback
 	}
 	return string(SchemeShadcn)
@@ -325,10 +338,8 @@ var (
 	allowedAccentColors = stringSet("neutral", "stone", "zinc", "mauve", "olive", "mist", "taupe", "amber", "blue", "cyan", "emerald", "fuchsia", "green", "indigo", "lime", "orange", "pink", "purple", "red", "rose", "sky", "teal", "violet", "yellow")
 	allowedIconTones    = stringSet("default", "colorful")
 	allowedMenus        = stringSet("default", "inverted", "default-translucent", "inverted-translucent")
-	allowedAntDMenus    = stringSet("default", "inverted")
 	allowedMenuAccents  = stringSet("subtle", "bold")
 	allowedRadii        = stringSet("default", "none", "small", "medium", "large")
-	allowedAntDRadii    = stringSet("default", "small", "medium", "large")
 	allowedDensities    = stringSet("compact", "comfortable")
 	allowedTextSizes    = stringSet("small", "normal", "medium", "large")
 	allowedCardBorders  = stringSet("visible", "soft", "hidden")

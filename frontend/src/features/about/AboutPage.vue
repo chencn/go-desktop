@@ -263,8 +263,8 @@ const InfoRow = defineComponent({
         <UiCardContent class="about-card-content">
           <div class="about-tech-grid">
             <div v-for="group in techGroups" :key="group.title" class="about-tech-group">
-              <div>
-                <ServerCog :size="16" aria-hidden="true" />
+              <div class="tech-group-title-row">
+                <span class="tech-group-icon" aria-hidden="true"><ServerCog :size="15" /></span>
                 <strong>{{ group.title }}</strong>
               </div>
               <p>{{ group.description }}</p>

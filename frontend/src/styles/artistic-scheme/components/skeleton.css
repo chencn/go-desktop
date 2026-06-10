@@ -1,0 +1,22 @@
+/* Artistic Skeleton: 覆盖 shadcn Skeleton primitive，实现暖金色淡雅呼吸效果 */
+
+:root[data-display-scheme="artistic"] [data-slot="skeleton"] {
+  border-radius: var(--radius) !important;
+  background-color: color-mix(in srgb, var(--artistic-primary) 6%, var(--card)) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  animation: artistic-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="skeleton"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+@keyframes artistic-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .4;
+  }
+}

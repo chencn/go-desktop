@@ -1,0 +1,95 @@
+/* Artistic Button: 覆盖 shadcn Button primitive，提供富有弹性（bouncy）的悬浮按压动画与绚丽色彩 */
+
+:root[data-display-scheme="artistic"] [data-slot="button"] {
+  height: var(--control-height, 36px);
+  min-height: var(--control-height, 36px);
+  border-radius: var(--radius);
+  font-weight: 600;
+  letter-spacing: 0;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 220ms ease,
+              box-shadow 220ms ease,
+              border-color 220ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="button"]:not(:disabled):hover {
+  transform: scale(1.04);
+  box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--artistic-primary) 30%, transparent) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="button"]:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+/* 按钮变体样式 */
+:root[data-display-scheme="artistic"] [data-slot="button"][data-size="icon"] {
+  width: var(--control-height, 36px);
+  padding: 0;
+  border-radius: 999px; /* 圆形图标按钮更艺术 */
+}
+
+/* 主操作按钮：落日暖红渐变，明亮充满朝气 */
+:root[data-display-scheme="artistic"] [data-slot="button"]:not([data-variant]),
+:root[data-display-scheme="artistic"] [data-slot="button"][data-variant="default"] {
+  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 75%, #f43f5e)) !important;
+  color: var(--primary-foreground, #ffffff) !important;
+  border: 0 !important;
+  box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--artistic-primary) 35%, transparent) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="button"]:not([data-variant]):hover,
+:root[data-display-scheme="artistic"] [data-slot="button"][data-variant="default"]:hover {
+  filter: brightness(1.08);
+}
+
+/* 次要/描边按钮：半透明白，橘色字 */
+:root[data-display-scheme="artistic"] [data-slot="button"][data-variant="outline"],
+:root[data-display-scheme="artistic"] [data-slot="button"][data-variant="secondary"] {
+  border: 1px solid var(--border) !important;
+  background: rgba(255, 255, 255, 0.65) !important;
+  color: var(--artistic-primary) !important;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="button"][data-variant="outline"],
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="button"][data-variant="secondary"] {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--artistic-primary) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="button"][data-variant="outline"]:hover,
+:root[data-display-scheme="artistic"] [data-slot="button"][data-variant="secondary"]:hover {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: var(--artistic-primary) !important;
+}
+
+/* 幽灵按钮：完全透明，Hover 时变成半透明强调色 */
+:root[data-display-scheme="artistic"] [data-slot="button"][data-variant="ghost"] {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--foreground) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="button"][data-variant="ghost"]:hover {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+/* 危险按钮：蔷薇红渐变 */
+:root[data-display-scheme="artistic"] [data-slot="button"][data-variant="destructive"] {
+  background: linear-gradient(135deg, var(--artistic-error), #be123c) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--artistic-error) 35%, transparent) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="button"][data-variant="destructive"]:hover {
+  filter: brightness(1.08);
+}
+
+:root[data-display-scheme="artistic"] [data-slot="button"]:disabled {
+  opacity: 0.5;
+  transform: none !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}

@@ -1,0 +1,43 @@
+/* Artistic Tags Input: 覆盖 shadcn TagsInput primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="tags-input"] {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  padding: 6px 12px !important;
+  transition: border-color 220ms ease, box-shadow 220ms ease !important;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="tags-input"] {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="tags-input"]:has(input:focus-visible) {
+  border-color: var(--artistic-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+}
+
+/* 内部 Tag 标签小芯片 */
+:root[data-display-scheme="artistic"] [data-slot="tags-input-item"] {
+  background-color: color-mix(in srgb, var(--artistic-primary) 10%, var(--card)) !important;
+  color: var(--artistic-primary) !important;
+  border: 1px solid color-mix(in srgb, var(--artistic-primary) 20%, var(--border)) !important;
+  border-radius: calc(var(--radius) - 6px) !important;
+  padding: 2px 8px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* Tag 的清除按钮 */
+:root[data-display-scheme="artistic"] [data-slot="tags-input-item-delete"] {
+  border-radius: 999px !important;
+  transition: background-color 200ms ease, color 200ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="tags-input-item-delete"]:hover {
+  background-color: var(--artistic-error) !important;
+  color: #ffffff !important;
+}

@@ -1,0 +1,58 @@
+/* Artistic Table: 覆盖 shadcn Table primitive，实现带有浮光效果的轻量日志与数据网格 */
+
+:root[data-display-scheme="artistic"] [data-slot="table-container"] {
+  border: var(--artistic-glass-border) !important;
+  border-radius: var(--radius) !important;
+  background: var(--card) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: var(--artistic-shadow) !important;
+  overflow: auto;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="table"] {
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--foreground) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="table-head"] {
+  background: color-mix(in srgb, var(--artistic-primary) 8%, var(--card)) !important;
+  color: var(--foreground) !important;
+  font-weight: 700 !important;
+  font-size: var(--fs-caption) !important;
+  text-align: start;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  border-bottom: 2px solid var(--border) !important;
+  padding: 14px 16px !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="table-cell"] {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border) !important;
+  text-align: start;
+  overflow-wrap: break-word;
+  transition: background-color 160ms ease !important;
+}
+
+/* 斑马线/交替背景，带软色调 */
+:root[data-display-scheme="artistic"] [data-slot="table-body"] [data-slot="table-row"]:nth-child(even) {
+  background: color-mix(in srgb, var(--artistic-primary) 3%, transparent);
+}
+
+:root[data-display-scheme="artistic"] [data-slot="table-row"]:hover {
+  background: color-mix(in srgb, var(--artistic-primary) 8%, transparent) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="table-row"]:hover > [data-slot="table-cell"] {
+  background: transparent !important; /* 让 row hover 背景直接透过来 */
+}
+
+:root[data-display-scheme="artistic"] [data-slot="table-body"] [data-slot="table-row"]:last-child > [data-slot="table-cell"] {
+  border-bottom: 0 !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="table-footer"] {
+  background: color-mix(in srgb, var(--artistic-primary) 6%, var(--card)) !important;
+  font-weight: 700;
+}

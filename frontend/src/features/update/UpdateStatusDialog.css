@@ -18,7 +18,14 @@
   line-height: 1.55;
 }
 
-.dialog-header-actions,
+.dialog-header-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .dialog-actions {
   display: flex;
   min-width: 0;
@@ -26,10 +33,11 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  margin-top: 20px;
 }
 
 .user-version-line {
-  margin: 0;
+  margin: 10px 0 16px;
   color: var(--muted-foreground);
   font-size: var(--fs-caption);
   line-height: 1.45;
@@ -38,10 +46,19 @@
 .progress-block {
   display: grid;
   gap: 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--background);
+  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent) !important;
+  border-radius: var(--radius) !important;
+  background: color-mix(in oklch, var(--card) 60%, transparent) !important;
+  backdrop-filter: blur(8px);
   padding: 14px;
+  transition: all 260ms cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.progress-block:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--artistic-primary) 30%, var(--border)) !important;
+  background: color-mix(in srgb, var(--artistic-primary) 3%, var(--card)) !important;
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--artistic-primary) 12%, transparent) !important;
 }
 
 .progress-block > div {

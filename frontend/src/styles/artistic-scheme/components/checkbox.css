@@ -1,0 +1,41 @@
+/* Artistic Checkbox: 覆盖 shadcn Checkbox primitive，实现落日暖橘与微动效 */
+
+:root[data-display-scheme="artistic"] [data-slot="checkbox"] {
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important; /* 更艺术圆润的圆角 */
+  background: rgba(255, 255, 255, 0.45) !important;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 200ms ease,
+              border-color 200ms ease,
+              box-shadow 200ms ease !important;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="checkbox"] {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="checkbox"]:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--artistic-primary) 60%, var(--border)) !important;
+  transform: scale(1.08);
+}
+
+:root[data-display-scheme="artistic"] [data-slot="checkbox"]:focus-visible {
+  border-color: var(--artistic-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+  outline: none !important;
+}
+
+/* 选中状态：橘粉渐变底色，无边框，伴随微小发光阴影 */
+:root[data-display-scheme="artistic"] [data-slot="checkbox"][data-state="checked"] {
+  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, #f43f5e)) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 8px -2px color-mix(in srgb, var(--artistic-primary) 40%, transparent) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="checkbox"]:disabled {
+  opacity: 0.4 !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+}

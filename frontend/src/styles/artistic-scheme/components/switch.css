@@ -1,0 +1,72 @@
+/* Artistic Switch: 覆盖 shadcn/reka Switch primitive，提供活泼的渐变滑块与弹性按压拉伸效果 */
+
+:root[data-display-scheme="artistic"] [data-slot="switch"] {
+  position: relative;
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 24px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  background: rgba(120, 119, 130, 0.2) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  padding: 0 !important;
+  cursor: pointer;
+  transition: background-color 280ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 280ms ease !important;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="switch"] {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="switch"][data-state="checked"] {
+  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 75%, #f43f5e)) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="switch-thumb"] {
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  translate: none !important;
+  transform: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  background: #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15),
+              0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  transition: all 280ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="switch"][data-state="checked"] [data-slot="switch-thumb"] {
+  inset-inline-start: calc(100% - 18px - 3px) !important;
+}
+
+/* 悬停微动 */
+:root[data-display-scheme="artistic"] [data-slot="switch"]:hover {
+  filter: brightness(1.05);
+}
+
+/* 按钮被按住时，圆点稍微拉伸 (Stretching effect) */
+:root[data-display-scheme="artistic"] [data-slot="switch"]:active:not(:disabled):not([data-disabled]) [data-slot="switch-thumb"] {
+  width: 22px !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="switch"][data-state="checked"]:active:not(:disabled):not([data-disabled]) [data-slot="switch-thumb"] {
+  inset-inline-start: calc(100% - 22px - 3px) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="switch"]:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 25%, transparent) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="switch"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(120, 119, 130, 0.15) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="switch"]:disabled [data-slot="switch-thumb"] {
+  box-shadow: none !important;
+}

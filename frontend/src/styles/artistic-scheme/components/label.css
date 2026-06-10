@@ -1,0 +1,13 @@
+/* Artistic Label: 覆盖 shadcn Label primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="label"] {
+  font-size: var(--fs-caption) !important;
+  font-weight: 600 !important;
+  color: var(--foreground) !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* 当表单行内聚焦时，标签呈现微微的高亮提示 */
+:root[data-display-scheme="artistic"] [data-slot="form-item"]:has(:focus-visible) [data-slot="label"] {
+  color: var(--artistic-primary) !important;
+}

@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { AppWindow, Moon, RefreshCw, Sun } from '@lucide/vue'
+import { Cpu, Moon, RefreshCw, Sun } from '@lucide/vue'
 import { useDisplayPreferences } from '@/app/display'
 import { toMessage } from '@/app/state'
 import { useAppStore } from '@/stores/app'
@@ -63,7 +63,7 @@ function updateIconTone(status?: string) {
     <aside class="app-sidebar" aria-label="主导航">
       <div class="sidebar-brand">
         <span class="brand-mark" aria-hidden="true">
-          <AppWindow :size="19" />
+          <Cpu :size="19" />
         </span>
         <span class="brand-copy">
           <strong>{{ appStore.appInfo?.name ?? projectMetadata.appName }}</strong>

@@ -1,0 +1,13 @@
+/* Artistic Resizable: 覆盖 shadcn Resizable primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="resizable-handle"] {
+  background-color: var(--border) !important;
+  transition: background-color 220ms ease !important;
+  width: 4px !important;
+  position: relative !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="resizable-handle"]:hover,
+:root[data-display-scheme="artistic"] [data-slot="resizable-handle"][data-state="drag"] {
+  background-color: var(--artistic-primary) !important;
+}

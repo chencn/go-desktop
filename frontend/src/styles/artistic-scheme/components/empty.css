@@ -1,0 +1,29 @@
+/* Artistic Empty: 覆盖 shadcn Empty primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="empty"] {
+  padding: 40px 24px !important;
+  text-align: center !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="empty-icon"] {
+  color: var(--border) !important;
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), color 220ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="empty"]:hover [data-slot="empty-icon"] {
+  transform: translateY(-4px) scale(1.1);
+  color: var(--artistic-primary) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="empty-title"] {
+  font-size: var(--fs-section) !important;
+  font-weight: 700 !important;
+  color: var(--foreground) !important;
+  margin-top: 12px !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="empty-description"] {
+  font-size: var(--fs-caption) !important;
+  color: var(--muted-foreground) !important;
+  margin-top: 6px !important;
+}

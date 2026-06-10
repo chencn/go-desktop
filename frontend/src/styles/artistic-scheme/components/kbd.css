@@ -1,0 +1,18 @@
+/* Artistic Kbd: 覆盖 shadcn Kbd primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="kbd"] {
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  background-color: color-mix(in srgb, var(--artistic-primary) 4%, var(--card)) !important;
+  color: var(--foreground) !important;
+  font-family: var(--ff-mono, monospace) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 2px 5px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="kbd"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}

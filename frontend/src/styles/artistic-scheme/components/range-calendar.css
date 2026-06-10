@@ -1,0 +1,31 @@
+/* Artistic Range Calendar: 覆盖 shadcn RangeCalendar primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="range-calendar"] {
+  padding: 16px !important;
+  background-color: var(--card) !important;
+  backdrop-filter: blur(14px) !important;
+  border: var(--artistic-glass-border) !important;
+  border-radius: var(--radius) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="range-calendar"] button {
+  border-radius: calc(var(--radius) - 6px) !important;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 180ms ease,
+              color 180ms ease !important;
+}
+
+/* 范围的起点与终点 */
+:root[data-display-scheme="artistic"] [data-slot="range-calendar"] [data-selection-start],
+:root[data-display-scheme="artistic"] [data-slot="range-calendar"] [data-selection-end] {
+  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, #f43f5e)) !important;
+  color: #ffffff !important;
+  transform: scale(1.1) !important;
+}
+
+/* 范围的中间部分：暖橘极淡偏色 */
+:root[data-display-scheme="artistic"] [data-slot="range-calendar"] [data-highlighted] {
+  background-color: color-mix(in srgb, var(--artistic-primary) 15%, var(--card)) !important;
+  color: var(--artistic-primary) !important;
+  border-radius: 0 !important;
+}

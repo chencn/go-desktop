@@ -1,0 +1,20 @@
+/* Artistic Popover: 覆盖 shadcn Popover primitive，实现毛玻璃效果 */
+
+:root[data-display-scheme="artistic"] [data-slot="popover-content"] {
+  border: var(--artistic-glass-border) !important;
+  border-radius: var(--radius) !important;
+  background: var(--popover) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: var(--artistic-shadow-lg) !important;
+  padding: 16px !important;
+}
+
+/* 覆盖 Popover 尖角箭头 */
+:root[data-display-scheme="artistic"] [data-slot="popover-content"] [class*="bg-foreground"],
+:root[data-display-scheme="artistic"] [data-slot="popover-content"] [class*="fill-foreground"],
+:root[data-display-scheme="artistic"] [data-slot="popover-content"] svg,
+:root[data-display-scheme="artistic"] [data-slot="popover-content"] polygon {
+  background: var(--popover) !important;
+  background-color: var(--popover) !important;
+  fill: var(--popover) !important;
+}

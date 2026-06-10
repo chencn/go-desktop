@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CardAction, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import AlertDialogCompat from './AlertDialog.vue'
 import CardCompat from './Card.vue'
@@ -31,6 +32,11 @@ const components: Record<string, Component> = {
   UiInput: Input,
   UiLabel: Label,
   UiNativeSelect: NativeSelect,
+  UiSelect: Select,
+  UiSelectContent: SelectContent,
+  UiSelectItem: SelectItem,
+  UiSelectTrigger: SelectTrigger,
+  UiSelectValue: SelectValue,
   UiProgress: ProgressCompat,
   UiSwitch: SwitchCompat,
   UiTable: Table,

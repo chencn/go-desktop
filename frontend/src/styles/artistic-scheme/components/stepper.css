@@ -1,0 +1,23 @@
+/* Artistic Stepper: 覆盖 shadcn Stepper primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="stepper-trigger"] {
+  border-radius: var(--radius) !important;
+  transition: transform 220ms ease, background-color 220ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="stepper-trigger"]:hover {
+  transform: scale(1.03) !important;
+}
+
+/* 激活态步骤节点 */
+:root[data-display-scheme="artistic"] [data-slot="stepper-item"][data-state="active"] [data-slot="stepper-trigger"] {
+  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, #f43f5e)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--artistic-primary) 35%, transparent) !important;
+}
+
+/* 完成态步骤节点 */
+:root[data-display-scheme="artistic"] [data-slot="stepper-item"][data-state="completed"] [data-slot="stepper-trigger"] {
+  background-color: var(--soft-success) !important;
+  color: var(--artistic-success) !important;
+}

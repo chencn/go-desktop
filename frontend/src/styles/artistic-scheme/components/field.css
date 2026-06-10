@@ -1,0 +1,16 @@
+/* Artistic Form: 覆盖项目 UiField / UiLabel 轻量表单包装 */
+
+:root[data-display-scheme="artistic"] .ui-field {
+  gap: 8px;
+  color: var(--foreground);
+  font-size: var(--fs-body);
+}
+
+:root[data-display-scheme="artistic"] .ui-label {
+  display: inline-flex;
+  align-items: center;
+  color: var(--foreground);
+  font-size: var(--fs-body);
+  font-weight: 700; /* 更具个性的加粗 */
+  letter-spacing: 0;
+}

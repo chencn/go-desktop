@@ -1,0 +1,39 @@
+/* Artistic Tooltip: 覆盖 shadcn Tooltip primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="tooltip-content"],
+:root[data-display-scheme="artistic"] .bg-foreground.text-background.z-50 {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: calc(var(--radius) - 6px) !important;
+  background: var(--popover) !important;
+  backdrop-filter: blur(8px) !important;
+  color: var(--popover-foreground) !important;
+  box-shadow: var(--artistic-shadow-lg) !important;
+  padding: 6px 10px !important;
+  font-size: var(--fs-caption) !important;
+  font-weight: 500 !important;
+  word-wrap: break-word;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="tooltip-content"],
+:root[data-theme="night"][data-display-scheme="artistic"] .bg-foreground.text-background.z-50 {
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: var(--popover) !important;
+}
+
+/* 覆盖尖角指示器小箭头：Radix/Reka UI TooltipArrow */
+:root[data-display-scheme="artistic"] [data-slot="tooltip-content"] [class*="bg-foreground"],
+:root[data-display-scheme="artistic"] [data-slot="tooltip-content"] [class*="fill-foreground"],
+:root[data-display-scheme="artistic"] [data-slot="tooltip-content"] svg,
+:root[data-display-scheme="artistic"] [data-slot="tooltip-content"] polygon,
+:root[data-display-scheme="artistic"] .bg-foreground.text-background.z-50 [class*="bg-foreground"],
+:root[data-display-scheme="artistic"] .bg-foreground.text-background.z-50 [class*="fill-foreground"],
+:root[data-display-scheme="artistic"] .bg-foreground.text-background.z-50 svg,
+:root[data-display-scheme="artistic"] .bg-foreground.text-background.z-50 polygon,
+:root[data-display-scheme="artistic"] [data-slot="tooltip-content"] > svg,
+:root[data-display-scheme="artistic"] .bg-foreground.text-background.z-50 > svg {
+  background: var(--popover) !important;
+  background-color: var(--popover) !important;
+  fill: var(--popover) !important;
+  color: var(--popover) !important;
+}
+

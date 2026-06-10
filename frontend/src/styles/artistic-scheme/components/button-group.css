@@ -1,0 +1,20 @@
+/* Artistic Button Group: 覆盖 shadcn ButtonGroup primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="button-group"] {
+  display: inline-flex !important;
+  border-radius: var(--radius) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="button-group"] > * {
+  border-radius: 0 !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="button-group"] > *:first-child {
+  border-top-left-radius: var(--radius) !important;
+  border-bottom-left-radius: var(--radius) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="button-group"] > *:last-child {
+  border-top-right-radius: var(--radius) !important;
+  border-bottom-right-radius: var(--radius) !important;
+}

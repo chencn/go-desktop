@@ -1,0 +1,43 @@
+/* Artistic Sheet: 覆盖 shadcn Sheet primitive，实现高级侧边抽屉毛玻璃效果 */
+
+:root[data-display-scheme="artistic"] [data-slot="sheet-content"] {
+  border-left: var(--artistic-glass-border) !important;
+  border-right: var(--artistic-glass-border) !important;
+  background: var(--popover) !important;
+  backdrop-filter: blur(28px) !important;
+  box-shadow: var(--artistic-shadow-lg) !important;
+  padding: 24px !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="sheet-header"] {
+  margin-bottom: 20px !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="sheet-title"] {
+  font-size: var(--fs-title);
+  font-weight: 750;
+  color: var(--foreground);
+  background: linear-gradient(135deg, var(--foreground), var(--artistic-primary));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="sheet-description"] {
+  font-size: var(--fs-caption);
+  color: var(--muted-foreground);
+  margin-top: 6px;
+}
+
+/* 关闭按钮圆角化与微动效 */
+:root[data-display-scheme="artistic"] [data-slot="sheet-content"] button[aria-label="Close"],
+:root[data-display-scheme="artistic"] [data-slot="sheet-content"] .absolute.right-4.top-4 {
+  border-radius: 999px !important;
+  transition: transform 220ms ease, background-color 220ms ease, color 220ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="sheet-content"] button[aria-label="Close"]:hover,
+:root[data-display-scheme="artistic"] [data-slot="sheet-content"] .absolute.right-4.top-4:hover {
+  background-color: var(--accent) !important;
+  color: var(--artistic-primary) !important;
+  transform: rotate(90deg) scale(1.08);
+}

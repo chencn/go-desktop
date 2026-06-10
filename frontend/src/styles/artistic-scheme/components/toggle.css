@@ -1,0 +1,23 @@
+/* Artistic Toggle: 覆盖 shadcn Toggle primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="toggle"] {
+  border-radius: calc(var(--radius) - 6px) !important;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 200ms ease,
+              color 200ms ease,
+              box-shadow 200ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="toggle"]:hover {
+  transform: scale(1.05);
+  background-color: color-mix(in srgb, var(--artistic-primary) 8%, var(--card)) !important;
+  color: var(--artistic-primary) !important;
+}
+
+/* 激活选中态：暖橘偏色气泡，橘色字 */
+:root[data-display-scheme="artistic"] [data-slot="toggle"][data-state="on"] {
+  background-color: color-mix(in srgb, var(--artistic-primary) 15%, var(--card)) !important;
+  color: var(--artistic-primary) !important;
+  border: 1px solid color-mix(in srgb, var(--artistic-primary) 30%, var(--border)) !important;
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+}

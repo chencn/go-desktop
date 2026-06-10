@@ -118,7 +118,7 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 
 | 轴 | 值 | DOM |
 | --- | --- | --- |
-| Display Scheme | `shadcn / antd` | `data-display-scheme` |
+| Display Scheme | `shadcn / artistic` | `data-display-scheme` |
 | Mode | `light / dark` | `.dark`、`data-theme="day|night"` |
 | Style | `reka / vega / nova / maia / lyra / mira / luma / sera` | `data-style` |
 | Base Color | `neutral / stone / zinc / mauve / olive / mist / taupe` | `data-base-color` |
@@ -126,7 +126,7 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 | Accent Color | 24 色集合 | `data-accent-color` |
 | Chart Color | 24 色集合 | `data-chart-color` |
 | Icon Tone | `default / colorful` | `data-icon-tone` |
-| Menu | `default / inverted / default-translucent / inverted-translucent` | `data-menu` |
+| Menu | 持久化支持 `default / inverted / default-translucent / inverted-translucent`；设置页只暴露 `default / inverted` | `data-menu` |
 | Menu Accent | `subtle / bold` | `data-menu-accent` |
 | Radius | `default / none / small / medium / large` | `data-radius` + `--radius` |
 | Density | `compact / comfortable` | `data-density` |
@@ -143,26 +143,26 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 export type BaseColor = "neutral" | "stone" | "zinc" | "mauve" | "olive" | "mist" | "taupe"
 ```
 
-Theme / Accent / Chart Color 是三条独立显示轴：Theme 控制主强调，Accent 控制辅助强调，Chart Color 只控制统计图表 token。Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
+Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控制主强调，Accent 控制辅助强调，Chart Color 只控制统计图表 token。设置页当前只暴露经过主题筛选的常用色盘，持久化层仍接受 24 色集合并做标准化。设置页品牌辅助色显示为 disabled 托管项，跟随品牌主题色，视觉使用同色系浅一号，不提供独立选择入口。Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
 
 显示偏好规则：
 
 - 显示偏好持久化使用 `display.preferences.v2` JSON。
-- `displayScheme=shadcn` 使用 `profiles.shadcn`，当前所有显示偏好都可编辑。
-- `displayScheme=antd` 使用 `profiles.antd` 并叠加 AntD preset；preset 覆盖常用控件和应用骨架，不只是颜色。
-- AntD 下 `uiStyle / baseColor / themeColor / accentColor / iconTone` 由方案托管，`themeMode / chartColor / menu / menuAccent / radius / density / textSize / cardBorder` 可编辑。
+- `displayScheme=shadcn` 使用 `profiles.shadcn`，设置页当前不提供品牌辅助色独立选择入口。
+- `displayScheme=artistic` 使用 `profiles.artistic` 并叠加温暖落日毛玻璃主题覆盖；覆盖范围包括常用控件和应用骨架，不只是颜色。
+- Artistic 下使用同一套显示偏好 token；主题层通过 `frontend/src/styles/artistic-scheme/**` 解释这些 token，不在业务页面里重造控件。
 - 切换显示方案只切换当前方案，不把一个方案的 profile 写进另一个方案；切回原方案必须恢复该方案之前的偏好。
 - 显示偏好不使用拆分 `display.*` KV。
 - 切换后立即更新 DOM，再异步保存到 SQLite 配置项。
 - 保存失败时显示错误，但不阻塞即时预览。
 - 切换不允许触发页面 reload。
 - `themeColor` 控制主按钮、选中态、焦点环和关键进度。
-- `accentColor` 控制次级强调和 hover / focus 辅助强调。
+- `accentColor` 控制次级强调和 hover / focus 辅助强调；设置页由 `themeColor` 托管，当前只显示 disabled 的品牌辅助色浅色盘。
 - `chartColor` 只服务图表和统计色，不偷用 Theme 或 Accent。
 - Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
 - 禁止远程字体加载，字体族固定系统字体。
-- AntD preset 的外观范围包括按钮、输入、下拉、开关、卡片、表格、弹窗、Badge、菜单、顶栏、focus、hover、active 和暗色状态。
-- AntD preset 参考 Ant Design token 体系：默认主色 `#1677ff`、默认字号 `14px`、基础圆角 `6px`、默认控件高度 `32px`、菜单项高度 `40px`、卡片内容留白 `24px`。
+- Artistic 主题的外观范围包括按钮、输入、shadcn Select、原生 select 兜底、开关、卡片、表格、弹窗、Badge、菜单、顶栏、focus、hover、active 和暗色状态。
+- Artistic 主题默认主色为落日橘，辅以薄荷绿、晴空蓝和毛玻璃面板；具体变量以 `frontend/src/styles/artistic-scheme/common.css` 为准。
 
 ## 5. 主题和 CSS 归属规则
 
@@ -186,9 +186,16 @@ Theme / Accent / Chart Color 是三条独立显示轴：Theme 控制主强调，
 - `frontend/src/features/settings/SettingsPage.css`
 - `frontend/src/features/update/UpdateStatusDialog.css`
 
+主题/组件覆盖必须放在 `frontend/src/styles/artistic-scheme/**`，例如：
+
+- `[data-slot]` primitive 覆盖放到对应 `components/*.css`。
+- shadcn Select 的 `[data-slot="select-*"]` 外观、选中项和原生 select 兜底放到 `components/select.css`；禁止在主题外重写下拉视觉。
+- `.settings-*`、`.app-sidebar`、`.topbar` 等非 shadcn primitive 的 artistic 项目级覆盖放到 `common.css`；页面布局仍保留在 `features/settings/SettingsPage.css`。
+
 禁止项：
 
 - 页面前缀样式进入 `styles.css`，例如 `.settings-*`、`.log-*`、`.about-*`。
+- 组件选择器进入 `styles.css`，例如页面私有下拉选择器、`[data-slot]`。
 - 在业务页面手写一套普通按钮、表格、弹窗、分段控件。
 - 卡片嵌套卡片。
 - 远程字体 `@import url(...)`。
@@ -211,8 +218,9 @@ Theme / Accent / Chart Color 是三条独立显示轴：Theme 控制主强调，
 | `UiCard` | `shared/ui` / `components/ui/card` | 页面内容分组 |
 | `UiBadge` | `components/ui/badge` | 状态、版本、计数 |
 | `UiSwitch` | `components/ui/switch` | 二元设置 |
-| `UiNativeSelect` | `shared/ui/NativeSelect.vue` | 简单下拉 |
-| `SettingsColorSelect` | `features/settings` | 带 swatch 的颜色选择 |
+| `UiSelect` / `UiSelectTrigger` / `UiSelectContent` / `UiSelectItem` | `components/ui/select` | 设置页和常规下拉 |
+| `UiNativeSelect` | `shared/ui/NativeSelect.vue` | 原生 select 兼容兜底 |
+| 设置页色盘按钮 | `features/settings/SettingsPage.vue` | 平铺 swatch 选择主题色和图表色 |
 | `UiDialog` | `components/ui/dialog` | 更新状态弹窗 |
 | `UiAlertDialog` | `components/ui/alert-dialog` | 清空日志、危险确认 |
 | `UiTooltip` | `components/ui/tooltip` | 顶栏图标按钮解释 |
@@ -227,10 +235,10 @@ Theme / Accent / Chart Color 是三条独立显示轴：Theme 控制主强调，
 - 普通命令按钮优先 `UiButton`。
 - 危险确认使用 `AlertDialog`，禁止 `window.confirm`。
 - 表格型数据使用 `Table` primitive。
-- 简单选择器使用 `UiNativeSelect`；需要搜索、分组或复杂弹层时再补官方 `Select`。
+- 简单选择器优先使用 shadcn Select；只有必须保留浏览器原生行为时才使用 `UiNativeSelect` 兜底。
 - 图标默认 `16-20px`。
 - 按钮默认高度 `36px`，紧凑按钮 `32px`，图标按钮宽高一致。
-- `displayScheme=antd` 时，常用控件按 AntD preset 覆盖：默认按钮为 AntD blue，次级按钮白底浅灰边框，输入和下拉使用蓝色 hover/focus 边框和 2px focus shadow，卡片为白底浅灰边框 8px 圆角，表格表头为浅灰背景，菜单选中态为 AntD 浅蓝底或深色侧栏蓝底。
+- `displayScheme=artistic` 时，常用控件按 artistic 主题覆盖：按钮、输入、shadcn Select、原生 select 兜底、开关、卡片、表格、弹窗、Badge、菜单、顶栏和暗色状态都在 `frontend/src/styles/artistic-scheme/**` 内维护。
 
 ## 7. 更新链路
 

@@ -1,0 +1,36 @@
+/* Artistic Alert: 覆盖 shadcn Alert primitive，实现通透毛玻璃提示框 */
+
+:root[data-display-scheme="artistic"] [data-slot="alert"] {
+  border: var(--artistic-glass-border) !important;
+  border-radius: var(--radius) !important;
+  background: var(--card) !important;
+  backdrop-filter: blur(14px) !important;
+  padding: 14px 16px !important;
+  box-shadow: var(--artistic-shadow) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="alert-title"] {
+  font-weight: 700 !important;
+  color: var(--foreground) !important;
+  font-size: var(--fs-body) !important;
+  margin-bottom: 4px !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="alert-description"] {
+  color: var(--muted-foreground) !important;
+  font-size: var(--fs-caption) !important;
+  opacity: 0.9 !important;
+}
+
+/* 危险提示框变体 */
+:root[data-display-scheme="artistic"] [data-slot="alert"].destructive,
+:root[data-display-scheme="artistic"] [data-slot="alert"][data-variant="destructive"] {
+  background-color: color-mix(in srgb, var(--artistic-error) 8%, var(--card)) !important;
+  border-color: color-mix(in srgb, var(--artistic-error) 30%, var(--border)) !important;
+  color: var(--artistic-error) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="alert"].destructive [data-slot="alert-title"],
+:root[data-display-scheme="artistic"] [data-slot="alert"].destructive [data-slot="alert-description"] {
+  color: var(--artistic-error) !important;
+}

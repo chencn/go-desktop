@@ -67,20 +67,16 @@
   line-height: 1.5;
 }
 
-.license-status svg {
-  flex: 0 0 auto;
-  margin-top: 1px;
-  color: var(--primary);
-}
-
 .license-status.is-error {
   border-color: rgb(239 68 68 / 32%);
   background: rgb(254 242 242);
   color: rgb(153 27 27);
 }
 
-.license-status.is-error svg {
-  color: rgb(220 38 38);
+.license-status svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--primary);
 }
 
 .license-form {

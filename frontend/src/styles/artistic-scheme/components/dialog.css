@@ -1,0 +1,57 @@
+/* Artistic Dialog: 覆盖 shadcn Dialog primitive，引入深邃模糊的蒙层与弹性弹窗 */
+
+:root[data-display-scheme="artistic"] [data-slot="dialog-overlay"] {
+  background: rgba(18, 14, 10, 0.45) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="dialog-content"] {
+  border: var(--artistic-glass-border) !important;
+  border-radius: var(--radius) !important;
+  background: var(--popover) !important;
+  backdrop-filter: blur(28px) !important;
+  box-shadow: var(--artistic-shadow-lg) !important;
+  color: var(--foreground) !important;
+  padding: 24px !important;
+  animation: artistic-dialog-show 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:root[data-display-scheme="artistic"] [data-slot="dialog-title"] {
+  font-size: var(--fs-title);
+  font-weight: 800;
+  letter-spacing: 0;
+  background: linear-gradient(135deg, var(--foreground), var(--artistic-primary));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="dialog-description"] {
+  color: var(--muted-foreground);
+  font-size: var(--fs-body);
+}
+
+:root[data-display-scheme="artistic"] [data-slot="dialog-close"] {
+  top: 16px;
+  right: 16px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--artistic-primary) 8%, transparent);
+  color: var(--artistic-primary);
+  transition: all 220ms ease;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="dialog-close"]:hover {
+  background: var(--artistic-primary);
+  color: #ffffff;
+  transform: scale(1.08) rotate(90deg);
+}
+
+@keyframes artistic-dialog-show {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}

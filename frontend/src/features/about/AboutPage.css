@@ -9,6 +9,12 @@
 .about-identity-card {
   gap: 0;
   padding: 0;
+  transition: all 220ms ease;
+}
+
+.about-identity-card:hover {
+  border-color: color-mix(in oklch, var(--primary) 15%, var(--border));
+  box-shadow: var(--artistic-shadow, 0 10px 30px -8px rgba(0, 0, 0, 0.08));
 }
 
 .about-identity-header {
@@ -16,6 +22,7 @@
   align-items: center;
   gap: 14px;
   padding: 18px 20px;
+  border-bottom: 0 !important;
 }
 
 .about-title-block {
@@ -53,34 +60,41 @@
   align-content: center;
   gap: 6px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: color-mix(in oklch, var(--background) 78%, var(--card));
+  border-radius: var(--radius);
+  background: var(--card);
   padding: 14px;
+  transition: all 220ms cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.about-status-item:hover {
+  transform: translateY(-2px);
+  background: color-mix(in oklch, var(--background) 2%, var(--card));
+  border-color: color-mix(in oklch, var(--primary) 18%, var(--border));
+  box-shadow: var(--artistic-shadow, 0 8px 20px -6px rgba(0, 0, 0, 0.05));
 }
 
 .about-status-item svg {
   color: var(--primary);
+  transition: transform 220ms ease, color 220ms ease;
 }
 
-.about-status-item span,
-.about-info-row span {
+.about-status-item:hover svg {
+  transform: scale(1.1);
+}
+
+.about-status-item span {
   color: var(--muted-foreground);
   font-size: var(--fs-caption);
 }
 
-.about-status-item strong,
-.about-info-row strong {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: var(--foreground);
-  font-weight: 650;
-}
-
 .about-status-item strong {
+  min-width: 0;
   overflow: hidden;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--foreground);
+  font-weight: 650;
 }
 
 .about-section-grid {
@@ -107,28 +121,38 @@
 .about-info-list {
   display: grid;
   min-width: 0;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: color-mix(in oklch, var(--background) 78%, var(--card));
+  gap: 10px;
 }
 
 .about-info-row {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(112px, 0.34fr) minmax(0, 1fr);
-  gap: 14px;
-  align-items: start;
-  border-top: 1px solid var(--border);
-  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  transition: all 200ms ease;
 }
 
-.about-info-row:first-child {
-  border-top: 0;
+.about-info-row:hover {
+  background: color-mix(in oklch, var(--background) 2%, var(--card));
+  border-color: color-mix(in oklch, var(--primary) 15%, var(--border));
+  transform: translateY(-1px);
+  box-shadow: var(--artistic-shadow, 0 4px 12px rgba(0, 0, 0, 0.03));
+}
+
+.about-info-row span {
+  color: var(--muted-foreground);
+  font-size: var(--fs-caption);
 }
 
 .about-info-row strong {
-  justify-self: end;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-weight: 650;
   text-align: right;
 }
 
@@ -145,20 +169,40 @@
   align-content: start;
   gap: 10px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: color-mix(in oklch, var(--background) 78%, var(--card));
+  border-radius: var(--radius);
+  background: var(--card);
   padding: 14px;
+  transition: all 220ms cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.about-tech-group > div:first-child {
+.about-tech-group:hover {
+  transform: translateY(-2px);
+  background: color-mix(in oklch, var(--background) 2%, var(--card));
+  border-color: color-mix(in oklch, var(--primary) 18%, var(--border));
+  box-shadow: var(--artistic-shadow, 0 10px 24px -8px rgba(0, 0, 0, 0.06));
+}
+
+.tech-group-title-row {
   display: flex;
-  min-width: 0;
   align-items: center;
   gap: 8px;
 }
 
-.about-tech-group svg {
+.tech-group-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--primary) 8%, transparent);
   color: var(--primary);
+  transition: all 220ms ease;
+}
+
+.about-tech-group:hover .tech-group-icon {
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .about-tech-group strong {
@@ -206,11 +250,12 @@
   }
 
   .about-info-row {
-    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
 
   .about-info-row strong {
-    justify-self: start;
     text-align: left;
   }
 }

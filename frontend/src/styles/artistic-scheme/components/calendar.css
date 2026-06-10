@@ -1,0 +1,38 @@
+/* Artistic Calendar: 覆盖 shadcn Calendar primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="calendar"] {
+  padding: 16px !important;
+  background-color: var(--card) !important;
+  backdrop-filter: blur(14px) !important;
+  border: var(--artistic-glass-border) !important;
+  border-radius: var(--radius) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="calendar"] button {
+  border-radius: calc(var(--radius) - 6px) !important;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 180ms ease,
+              color 180ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="calendar"] button:hover {
+  transform: scale(1.1);
+  background-color: color-mix(in srgb, var(--artistic-primary) 12%, var(--card)) !important;
+  color: var(--artistic-primary) !important;
+}
+
+/* 选中态：暖橘渐变圆药丸 */
+:root[data-display-scheme="artistic"] [data-slot="calendar"] [data-selected],
+:root[data-display-scheme="artistic"] [data-slot="calendar"] button[aria-selected="true"] {
+  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, #f43f5e)) !important;
+  color: #ffffff !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--artistic-primary) 35%, transparent) !important;
+}
+
+/* 今天指示器 */
+:root[data-display-scheme="artistic"] [data-slot="calendar"] button[aria-current="date"],
+:root[data-display-scheme="artistic"] [data-slot="calendar"] .rdp-day_today {
+  border: 1px solid var(--artistic-primary) !important;
+  color: var(--artistic-primary) !important;
+}

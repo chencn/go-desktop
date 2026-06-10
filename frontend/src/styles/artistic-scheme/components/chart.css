@@ -1,0 +1,22 @@
+/* Artistic Chart: 覆盖 shadcn Chart primitive，对图表 Tooltip 进行艺术美化 */
+
+:root[data-display-scheme="artistic"] [data-slot="chart-tooltip-content"],
+:root[data-display-scheme="artistic"] .recharts-default-tooltip {
+  border: var(--artistic-glass-border) !important;
+  border-radius: calc(var(--radius) - 4px) !important;
+  background: var(--popover) !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: var(--artistic-shadow-lg) !important;
+  padding: 8px 12px !important;
+}
+
+:root[data-display-scheme="artistic"] .recharts-tooltip-label {
+  font-weight: 700 !important;
+  color: var(--foreground) !important;
+  margin-bottom: 4px !important;
+}
+
+:root[data-display-scheme="artistic"] .recharts-legend-item-text {
+  font-weight: 600 !important;
+  color: var(--foreground) !important;
+}

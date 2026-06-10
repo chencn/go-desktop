@@ -1,0 +1,39 @@
+/* Artistic Slider: 覆盖 shadcn Slider primitive，实现落日渐变滑轨与高交互滑块 */
+
+:root[data-display-scheme="artistic"] [data-slot="slider-track"] {
+  background-color: var(--border) !important;
+  border-radius: 999px !important;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="slider-track"] {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* 活跃范围：温暖落日渐变色彩 */
+:root[data-display-scheme="artistic"] [data-slot="slider-range"] {
+  background: linear-gradient(90deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, #f43f5e)) !important;
+}
+
+/* 滑动块手柄：圆润发光，Hover 缩放 */
+:root[data-display-scheme="artistic"] [data-slot="slider-thumb"] {
+  border: 2px solid var(--artistic-primary) !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 180ms ease,
+              border-color 180ms ease !important;
+}
+
+:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="slider-thumb"] {
+  background-color: #1a1b23 !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="slider-thumb"]:hover {
+  transform: scale(1.22);
+  box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--artistic-primary) 40%, transparent) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="slider-thumb"]:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 25%, transparent) !important;
+}

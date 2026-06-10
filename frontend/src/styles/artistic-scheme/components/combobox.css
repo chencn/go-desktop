@@ -1,0 +1,17 @@
+/* Artistic Combobox: 覆盖 shadcn Combobox primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="combobox-trigger"] {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  background-color: var(--card) !important;
+  transition: border-color 220ms ease, box-shadow 220ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="combobox-trigger"]:hover {
+  border-color: color-mix(in srgb, var(--artistic-primary) 50%, var(--border)) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="combobox-trigger"]:focus {
+  border-color: var(--artistic-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, transparent) !important;
+}

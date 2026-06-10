@@ -1,0 +1,34 @@
+/* Artistic Badge: 覆盖 shadcn Badge primitive，提供明亮圆润的彩色胶囊标签 */
+
+:root[data-display-scheme="artistic"] [data-slot="badge"] {
+  border-radius: 999px !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  letter-spacing: 0;
+  padding: 2px 10px !important;
+  border: 1px solid color-mix(in srgb, var(--artistic-primary) 25%, transparent) !important;
+  background: color-mix(in srgb, var(--artistic-primary) 12%, transparent) !important;
+  color: var(--artistic-primary) !important;
+  text-transform: uppercase;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="badge"].is-positive,
+:root[data-display-scheme="artistic"] [data-slot="badge"].status-success {
+  border-color: rgba(16, 185, 129, 0.25) !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+  color: #10b981 !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="badge"].is-negative,
+:root[data-display-scheme="artistic"] [data-slot="badge"].status-error {
+  border-color: rgba(244, 63, 94, 0.25) !important;
+  background: rgba(244, 63, 94, 0.1) !important;
+  color: #f43f5e !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="badge"].is-neutral,
+:root[data-display-scheme="artistic"] [data-slot="badge"].status-warning {
+  border-color: rgba(245, 158, 11, 0.25) !important;
+  background: rgba(245, 158, 11, 0.1) !important;
+  color: #f59e0b !important;
+}

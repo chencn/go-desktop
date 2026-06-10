@@ -4,8 +4,8 @@ import { readonly, ref, watch } from 'vue'
 
 // 显示偏好由后端持久化，前端用字面量联合约束可写入的 token 值。
 export type ThemeMode = 'light' | 'dark'
-// DisplayScheme 定义当前显示偏好方案，shadcn 保留全量自定义，antd 使用 Ant Design 托管项。
-export type DisplayScheme = 'shadcn' | 'antd'
+// DisplayScheme 定义当前显示偏好方案，shadcn 保留经典中性外观，artistic 使用主题样式扩展。
+export type DisplayScheme = 'shadcn' | 'artistic'
 export type TextSize = 'small' | 'normal' | 'medium' | 'large'
 export type UIStyle = 'reka' | 'vega' | 'nova' | 'maia' | 'lyra' | 'mira' | 'luma' | 'sera'
 export type BaseColor = 'neutral' | 'stone' | 'zinc' | 'mauve' | 'olive' | 'mist' | 'taupe'
@@ -75,35 +75,35 @@ const shadcnProfileDefaults = {
   uiStyle: 'vega',
 } satisfies DisplayProfile
 
-const antDesignProfileDefaults = {
-  accentColor: 'blue',
-  baseColor: 'neutral',
-  cardBorder: 'visible',
-  chartColor: 'blue',
+const artisticProfileDefaults = {
+  accentColor: 'orange',
+  baseColor: 'stone',
+  cardBorder: 'soft',
+  chartColor: 'emerald',
   density: 'comfortable',
-  iconTone: 'default',
+  iconTone: 'colorful',
   menu: 'default',
-  menuAccent: 'subtle',
-  radius: 'medium',
+  menuAccent: 'bold',
+  radius: 'large',
   textSize: 'normal',
-  themeColor: 'blue',
+  themeColor: 'orange',
   uiStyle: 'vega',
 } satisfies DisplayProfile
 
 // 前端默认值用于冷启动和 preview fallback；真实运行时会被后端持久化值覆盖。
 export const displayPreferenceDefaults = {
-  ...shadcnProfileDefaults,
-  displayScheme: 'shadcn',
+  ...artisticProfileDefaults,
+  displayScheme: 'artistic',
   themeMode: 'light',
   profiles: {
     shadcn: { ...shadcnProfileDefaults },
-    antd: { ...antDesignProfileDefaults },
+    artistic: { ...artisticProfileDefaults },
   },
 } satisfies DisplayPreferences
 
 const displayProfiles: Record<DisplayScheme, DisplayProfile> = {
   shadcn: { ...shadcnProfileDefaults },
-  antd: { ...antDesignProfileDefaults },
+  artistic: { ...artisticProfileDefaults },
 }
 
 // 模块级响应式状态让 AppChrome、SettingsPage 和 CSS dataset 使用同一份显示偏好。
@@ -185,10 +185,13 @@ export function setBaseColor(value: BaseColor) {
 
 export function setThemeColor(value: ThemeColor) {
   themeColor.value = value
+  if (displayScheme.value === 'artistic') {
+    accentColor.value = value
+  }
 }
 
 export function setAccentColor(value: AccentColor) {
-  accentColor.value = value
+  accentColor.value = displayScheme.value === 'artistic' ? themeColor.value : value
 }
 
 export function setChartColor(value: ChartColor) {
@@ -219,10 +222,12 @@ export function setCardBorder(value: CardBorder) {
   cardBorder.value = value
 }
 
-// 恢复全局默认：回到 shadcn 方案，同时重置亮暗模式。
+// 恢复全局默认：回到当前默认方案，同时重置亮暗模式。
 export function resetDisplayPreferences() {
+  displayProfiles.shadcn = { ...shadcnProfileDefaults }
+  displayProfiles.artistic = { ...artisticProfileDefaults }
   displayScheme.value = displayPreferenceDefaults.displayScheme
-  applyProfile(shadcnProfileDefaults)
+  applyProfile(profileFallback(displayPreferenceDefaults.displayScheme))
   setThemeMode(displayPreferenceDefaults.themeMode)
   rememberCurrentProfile(displayScheme.value)
 }
@@ -230,10 +235,10 @@ export function resetDisplayPreferences() {
 // resetDisplayPreferencesForCurrentScheme 按当前显示方案恢复默认值，保留全局亮暗模式。
 export function resetDisplayPreferencesForCurrentScheme() {
   const mode = themeMode.value
-  if (displayScheme.value === 'antd') {
-    applyProfile(antDesignProfileDefaults)
+  if (displayScheme.value === 'artistic') {
+    applyProfile(artisticProfileDefaults)
     setThemeMode(mode)
-    rememberCurrentProfile('antd')
+    rememberCurrentProfile('artistic')
     return
   }
   applyProfile(shadcnProfileDefaults)
@@ -247,7 +252,7 @@ export function hydrateDisplayPreferences(preferences?: IncomingDisplayPreferenc
   const nextScheme = normaliseValue(preferences.displayScheme, isDisplayScheme, displayPreferenceDefaults.displayScheme)
   const nextProfiles = normaliseProfiles(preferences, nextScheme)
   displayProfiles.shadcn = nextProfiles.shadcn
-  displayProfiles.antd = nextProfiles.antd
+  displayProfiles.artistic = nextProfiles.artistic
   displayScheme.value = nextScheme
   applyProfile(displayProfiles[nextScheme])
   setThemeMode(normaliseValue(preferences.themeMode, isThemeMode, displayPreferenceDefaults.themeMode))
@@ -273,7 +278,7 @@ export function exportDisplayPreferences(): DisplayPreferences {
     uiStyle: uiStyle.value,
     profiles: {
       shadcn: cloneProfile(displayProfiles.shadcn),
-      antd: cloneProfile(displayProfiles.antd),
+      artistic: cloneProfile(displayProfiles.artistic),
     },
   }
 }
@@ -395,7 +400,8 @@ function currentProfile(): DisplayProfile {
 }
 
 function profileFallback(scheme: DisplayScheme) {
-  return scheme === 'antd' ? antDesignProfileDefaults : shadcnProfileDefaults
+  if (scheme === 'artistic') return artisticProfileDefaults
+  return shadcnProfileDefaults
 }
 
 function rememberCurrentProfile(scheme: DisplayScheme) {
@@ -419,30 +425,29 @@ function applyProfile(profile: DisplayProfile) {
 
 function normaliseProfiles(preferences: IncomingDisplayPreferences, scheme: DisplayScheme): DisplayProfiles {
   const explicitShadcn = preferences.profiles?.shadcn
-  const explicitAntD = preferences.profiles?.antd
+  const explicitArtistic = preferences.profiles?.artistic
   const flatProfile = normaliseProfile(preferences, scheme)
   return {
     shadcn: normaliseProfile(explicitShadcn ?? (scheme === 'shadcn' ? flatProfile : displayProfiles.shadcn), 'shadcn'),
-    antd: normaliseProfile(explicitAntD ?? (scheme === 'antd' ? flatProfile : displayProfiles.antd), 'antd'),
+    artistic: normaliseProfile(explicitArtistic ?? (scheme === 'artistic' ? flatProfile : displayProfiles.artistic), 'artistic'),
   }
 }
 
 function normaliseProfile(profile: IncomingDisplayProfile, scheme: DisplayScheme): DisplayProfile {
   const fallback = profileFallback(scheme)
-  const menuGuard = scheme === 'antd' ? isAntDesignMenu : isMenu
-  const radiusGuard = scheme === 'antd' ? isAntDesignRadius : isRadius
+  const themeColorValue = normaliseValue(profile.themeColor, isThemeColor, fallback.themeColor)
   return {
-    accentColor: normaliseValue(profile.accentColor, isAccentColor, fallback.accentColor),
+    accentColor: scheme === 'artistic' ? themeColorValue : normaliseValue(profile.accentColor, isAccentColor, fallback.accentColor),
     baseColor: normaliseValue(profile.baseColor, isBaseColor, fallback.baseColor),
     cardBorder: normaliseValue(profile.cardBorder, isCardBorder, fallback.cardBorder),
     chartColor: normaliseValue(profile.chartColor, isChartColor, fallback.chartColor),
     density: normaliseValue(profile.density, isDensity, fallback.density),
     iconTone: normaliseValue(profile.iconTone, isIconTone, fallback.iconTone),
-    menu: normaliseValue(profile.menu, menuGuard, fallback.menu),
+    menu: normaliseValue(profile.menu, isMenu, fallback.menu),
     menuAccent: normaliseValue(profile.menuAccent, isMenuAccent, fallback.menuAccent),
-    radius: normaliseValue(profile.radius, radiusGuard, fallback.radius),
+    radius: normaliseValue(profile.radius, isRadius, fallback.radius),
     textSize: normaliseValue(profile.textSize, isTextSize, fallback.textSize),
-    themeColor: normaliseValue(profile.themeColor, isThemeColor, fallback.themeColor),
+    themeColor: themeColorValue,
     uiStyle: normaliseValue(profile.uiStyle, isUIStyle, fallback.uiStyle),
   }
 }
@@ -479,7 +484,7 @@ function isThemeMode(value: string | null): value is ThemeMode {
 
 // isDisplayScheme 校验显示方案。
 function isDisplayScheme(value: string | null): value is DisplayScheme {
-  return value === 'shadcn' || value === 'antd'
+  return value === 'shadcn' || value === 'artistic'
 }
 
 function isUIStyle(value: string | null): value is UIStyle {
@@ -510,20 +515,12 @@ function isMenu(value: string | null): value is Menu {
   return value === 'default' || value === 'inverted' || value === 'default-translucent' || value === 'inverted-translucent'
 }
 
-function isAntDesignMenu(value: string | null): value is Menu {
-  return value === 'default' || value === 'inverted'
-}
-
 function isMenuAccent(value: string | null): value is MenuAccent {
   return value === 'subtle' || value === 'bold'
 }
 
 function isRadius(value: string | null): value is Radius {
   return value === 'default' || value === 'none' || value === 'small' || value === 'medium' || value === 'large'
-}
-
-function isAntDesignRadius(value: string | null): value is Radius {
-  return value === 'default' || value === 'small' || value === 'medium' || value === 'large'
 }
 
 function isDensity(value: string | null): value is Density {

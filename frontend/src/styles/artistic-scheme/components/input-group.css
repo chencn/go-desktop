@@ -1,0 +1,21 @@
+/* Artistic Input Group: 覆盖 shadcn InputGroup primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="input-group"] {
+  display: inline-flex !important;
+  width: 100% !important;
+  border-radius: var(--radius) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="input-group"] > * {
+  border-radius: 0 !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="input-group"] > *:first-child {
+  border-top-left-radius: var(--radius) !important;
+  border-bottom-left-radius: var(--radius) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="input-group"] > *:last-child {
+  border-top-right-radius: var(--radius) !important;
+  border-bottom-right-radius: var(--radius) !important;
+}

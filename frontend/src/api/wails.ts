@@ -172,6 +172,7 @@ export type Settings = {
   launchHiddenToTray: boolean
 }
 
+
 export const defaultRuntimeSettings: Settings = {
   ...defaultSettings,
   logLevel: 'info',
@@ -206,7 +207,7 @@ export type DisplayProfile = {
 
 export type DisplayProfiles = {
   shadcn: DisplayProfile
-  antd: DisplayProfile
+  artistic: DisplayProfile
 }
 
 /** 显示偏好 */
@@ -234,29 +235,31 @@ const defaultShadcnDisplayProfile: DisplayProfile = {
   uiStyle: 'vega',
 }
 
-const defaultAntDesignDisplayProfile: DisplayProfile = {
-  accentColor: 'blue',
-  baseColor: 'neutral',
-  cardBorder: 'visible',
-  chartColor: 'blue',
+
+
+const defaultArtisticDisplayProfile: DisplayProfile = {
+  accentColor: 'orange',
+  baseColor: 'stone',
+  cardBorder: 'soft',
+  chartColor: 'emerald',
   density: 'comfortable',
-  iconTone: 'default',
+  iconTone: 'colorful',
   menu: 'default',
-  menuAccent: 'subtle',
-  radius: 'medium',
+  menuAccent: 'bold',
+  radius: 'large',
   textSize: 'normal',
-  themeColor: 'blue',
+  themeColor: 'orange',
   uiStyle: 'vega',
 }
 
 /** 前端预览模式使用的显示偏好默认值，真实运行时以后端 SQLite KV 为准。 */
 export const defaultDisplayPreferences: DisplayPreferences = {
-  ...defaultShadcnDisplayProfile,
-  displayScheme: 'shadcn',
+  ...defaultArtisticDisplayProfile,
+  displayScheme: 'artistic',
   themeMode: 'light',
   profiles: {
     shadcn: { ...defaultShadcnDisplayProfile },
-    antd: { ...defaultAntDesignDisplayProfile },
+    artistic: { ...defaultArtisticDisplayProfile },
   },
 }
 
@@ -531,8 +534,29 @@ function cloneDisplayPreferences(value: DisplayPreferences): DisplayPreferences 
   return {
     ...value,
     profiles: {
-      shadcn: { ...value.profiles.shadcn },
-      antd: { ...value.profiles.antd },
+      shadcn: { ...(value.profiles?.shadcn ?? defaultDisplayPreferences.profiles.shadcn) },
+      artistic: { ...(value.profiles?.artistic ?? defaultDisplayPreferences.profiles.artistic) },
+    },
+  }
+}
+
+function normalisePreviewDisplayPreferences(value: unknown): DisplayPreferences {
+  const parsed = typeof value === 'object' && value !== null ? value as Partial<DisplayPreferences> : {}
+  const profiles = typeof parsed.profiles === 'object' && parsed.profiles !== null ? parsed.profiles as Partial<DisplayProfiles> : {}
+  const displayScheme = parsed.displayScheme === 'shadcn' ? 'shadcn' : defaultDisplayPreferences.displayScheme
+  return {
+    ...cloneDisplayPreferences(defaultDisplayPreferences),
+    ...parsed,
+    displayScheme,
+    profiles: {
+      shadcn: {
+        ...defaultDisplayPreferences.profiles.shadcn,
+        ...profiles.shadcn,
+      },
+      artistic: {
+        ...defaultDisplayPreferences.profiles.artistic,
+        ...profiles.artistic,
+      },
     },
   }
 }
@@ -543,10 +567,7 @@ function readPreviewDisplayPreferences(): DisplayPreferences {
   const raw = window.localStorage.getItem(previewDisplayPreferencesStorageKey)
   if (!raw) return cloneDisplayPreferences(defaultDisplayPreferences)
   try {
-    return {
-      ...cloneDisplayPreferences(defaultDisplayPreferences),
-      ...JSON.parse(raw),
-    }
+    return normalisePreviewDisplayPreferences(JSON.parse(raw))
   } catch {
     return cloneDisplayPreferences(defaultDisplayPreferences)
   }

@@ -1,0 +1,22 @@
+/* Artistic Carousel: 覆盖 shadcn Carousel primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="carousel-previous"],
+:root[data-display-scheme="artistic"] [data-slot="carousel-next"] {
+  border: var(--artistic-glass-border) !important;
+  background-color: var(--card) !important;
+  backdrop-filter: blur(10px) !important;
+  color: var(--foreground) !important;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 220ms ease,
+              color 220ms ease,
+              box-shadow 220ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="carousel-previous"]:hover,
+:root[data-display-scheme="artistic"] [data-slot="carousel-next"]:hover {
+  transform: scale(1.15) !important;
+  background-color: var(--artistic-primary) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--artistic-primary) 35%, transparent) !important;
+}

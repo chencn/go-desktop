@@ -35,8 +35,8 @@ type DisplayProfile struct {
 
 // DisplayProfiles 保存所有平级显示方案的独立 profile，用于切换方案时保留各自偏好。
 type DisplayProfiles struct {
-	Shadcn DisplayProfile `json:"shadcn"`
-	AntD   DisplayProfile `json:"antd"`
+	Shadcn   DisplayProfile `json:"shadcn"`
+	Artistic DisplayProfile `json:"artistic"`
 }
 
 // DisplayPreferences 是前端显示偏好的 typed 快照。
@@ -170,8 +170,8 @@ func toDomainPreferencesV2(current display.PreferencesV2, value DisplayPreferenc
 		DisplayScheme: value.DisplayScheme,
 		ThemeMode:     value.ThemeMode,
 		Profiles: map[string]display.Profile{
-			string(display.SchemeShadcn): toDomainDisplayProfile(value.Profiles.Shadcn),
-			string(display.SchemeAntD):   toDomainDisplayProfile(value.Profiles.AntD),
+			string(display.SchemeShadcn):   toDomainDisplayProfile(value.Profiles.Shadcn),
+			string(display.SchemeArtistic): toDomainDisplayProfile(value.Profiles.Artistic),
 		},
 	})
 }
@@ -221,8 +221,8 @@ func fromDomainPreferencesV2(value display.PreferencesV2) DisplayPreferences {
 	value = display.NormalizeV2(value)
 	effective := fromDomainDisplayPreferences(display.Effective(value))
 	effective.Profiles = DisplayProfiles{
-		Shadcn: fromDomainDisplayProfile(value.Profiles[string(display.SchemeShadcn)]),
-		AntD:   fromDomainDisplayProfile(value.Profiles[string(display.SchemeAntD)]),
+		Shadcn:   fromDomainDisplayProfile(value.Profiles[string(display.SchemeShadcn)]),
+		Artistic: fromDomainDisplayProfile(value.Profiles[string(display.SchemeArtistic)]),
 	}
 	return effective
 }
@@ -265,7 +265,7 @@ func fromDomainDisplayProfile(value display.Profile) DisplayProfile {
 
 // hasDisplayProfiles 判断请求是否携带完整 profile 模型，用于区分旧扁平保存协议。
 func hasDisplayProfiles(value DisplayProfiles) bool {
-	return hasDisplayProfile(value.Shadcn) || hasDisplayProfile(value.AntD)
+	return hasDisplayProfile(value.Shadcn) || hasDisplayProfile(value.Artistic)
 }
 
 // hasDisplayProfile 判断单个 profile 是否包含任意可保存字段。

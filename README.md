@@ -262,8 +262,8 @@ go run ./scripts/sync_project_metadata.go -sync
 - 业务页面默认使用全局 `Ui*` 组件。
 - 普通按钮、弹窗、表格、tooltip、progress 优先使用 shadcn primitive。
 - `components/ui` 内禁止放业务组件、业务 class、全局注册和项目 wrapper。
-- 颜色选择使用 `features/settings/SettingsColorSelect.vue`。
-- 简单下拉使用 `shared/ui/NativeSelect.vue`。
+- 设置页颜色选择使用页面内平铺 swatch 按钮，持久化层仍保留完整颜色 token。
+- 简单下拉优先使用 shadcn `Select` primitive；只有必须保留浏览器原生行为时才用 `shared/ui/NativeSelect.vue` 兜底。
 
 ## Windows 环境兜底
 

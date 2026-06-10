@@ -1,0 +1,21 @@
+/* Artistic Breadcrumb: 覆盖 shadcn Breadcrumb primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="breadcrumb-link"] {
+  transition: color 200ms ease, transform 200ms ease !important;
+  font-weight: 500 !important;
+  display: inline-block !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="breadcrumb-link"]:hover {
+  color: var(--artistic-primary) !important;
+  transform: translateY(-1px);
+}
+
+:root[data-display-scheme="artistic"] [data-slot="breadcrumb-page"] {
+  font-weight: 600 !important;
+  color: var(--foreground) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="breadcrumb-separator"] {
+  color: var(--border) !important;
+}

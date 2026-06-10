@@ -160,7 +160,7 @@ function primaryActionIcon() {
 
 <template>
   <UiDialog :open="props.open" label="更新状态" placement="top-right" @close="closeDialog">
-      <header class="dialog-header">
+      <header class="dialog-header" :class="{ 'is-no-update': status === 'no_update' }">
         <div>
           <h2>{{ userStatusTitle() }}</h2>
           <p v-if="description">{{ description }}</p>
@@ -183,7 +183,7 @@ function primaryActionIcon() {
       </div>
 
       <div class="dialog-actions">
-        <UiButton class="antd-primary-action" :disabled="isBusy" @click="runPrimaryAction">
+        <UiButton :disabled="isBusy" @click="runPrimaryAction">
           <component :is="primaryActionIcon()" :class="{ 'animate-spin': isBusy }" :size="18" />
           {{ primaryActionLabel() }}
         </UiButton>

@@ -69,27 +69,59 @@ describe('wails api fallback boundaries', () => {
 
     await saveDisplayPreferences({
       ...defaultDisplayPreferences,
-      displayScheme: 'antd',
+      displayScheme: 'artistic',
       themeMode: 'dark',
       profiles: {
         ...defaultDisplayPreferences.profiles,
-        antd: {
-          ...defaultDisplayPreferences.profiles.antd,
+        artistic: {
+          ...defaultDisplayPreferences.profiles.artistic,
           menu: 'inverted',
         },
       },
     })
 
     await expect(getDisplayPreferences()).resolves.toMatchObject({
-      displayScheme: 'antd',
+      displayScheme: 'artistic',
       themeMode: 'dark',
       profiles: {
-        antd: {
+        artistic: {
           menu: 'inverted',
         },
       },
     })
   })
+
+  it('normalizes preview display profiles without legacy scheme aliases', async () => {
+    vi.stubEnv('VITE_PREVIEW', 'true')
+    window.localStorage.setItem('go-desktop.preview.displayPreferences', JSON.stringify({
+      displayScheme: 'artistic',
+      themeMode: 'dark',
+      profiles: {
+        shadcn: {
+          themeColor: 'red',
+        },
+        artistic: {
+          menu: 'inverted',
+        },
+      },
+    }))
+    const { getDisplayPreferences } = await import('../../frontend/src/api/wails')
+
+    await expect(getDisplayPreferences()).resolves.toMatchObject({
+      displayScheme: 'artistic',
+      themeMode: 'dark',
+      profiles: {
+        shadcn: {
+          themeColor: 'red',
+        },
+        artistic: {
+          themeColor: 'orange',
+          menu: 'inverted',
+        },
+      },
+    })
+  })
+
 
   it('预览模式下授权状态默认关闭并允许进入应用', async () => {
     vi.stubEnv('VITE_PREVIEW', 'true')

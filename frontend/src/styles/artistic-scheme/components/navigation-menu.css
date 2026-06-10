@@ -1,0 +1,35 @@
+/* Artistic Navigation Menu: 覆盖 shadcn NavigationMenu primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="navigation-menu-list"] {
+  display: flex !important;
+  gap: 6px !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="navigation-menu-trigger"] {
+  border-radius: calc(var(--radius) - 6px) !important;
+  font-weight: 600 !important;
+  transition: background-color 220ms ease, color 220ms ease, transform 220ms ease !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="navigation-menu-trigger"]:hover,
+:root[data-display-scheme="artistic"] [data-slot="navigation-menu-trigger"][data-state="open"] {
+  background-color: color-mix(in srgb, var(--artistic-primary) 10%, var(--card)) !important;
+  color: var(--artistic-primary) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="navigation-menu-content"] {
+  border: var(--artistic-glass-border) !important;
+  border-radius: var(--radius) !important;
+  background: var(--popover) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: var(--artistic-shadow-lg) !important;
+  padding: 16px !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="navigation-menu-viewport"] {
+  border: var(--artistic-glass-border) !important;
+  border-radius: var(--radius) !important;
+  background: var(--popover) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: var(--artistic-shadow-lg) !important;
+}

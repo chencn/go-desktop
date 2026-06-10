@@ -77,6 +77,10 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
   --page-gutter: 28px;
   --sidebar-width: 256px;
   --topbar-height: 76px;
@@ -108,38 +112,38 @@
 .dark,
 :root[data-theme="night"] {
   color-scheme: dark;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --background: oklch(0.129 0.013 252);         /* 高级星夜深蓝灰黑，更具深邃质感 */
+  --foreground: oklch(0.985 0.002 252);
+  --card: oklch(0.18 0.015 252);                /* 明暗对比度极佳的卡片底色 */
+  --card-foreground: oklch(0.985 0.002 252);
+  --popover: oklch(0.18 0.015 252);
+  --popover-foreground: oklch(0.985 0.002 252);
+  --primary: oklch(0.922 0.004 252);
+  --primary-foreground: oklch(0.18 0.015 252);
+  --secondary: oklch(0.23 0.018 252);
+  --secondary-foreground: oklch(0.985 0.002 252);
+  --muted: oklch(0.23 0.018 252);
+  --muted-foreground: oklch(0.65 0.015 252);
+  --accent: oklch(0.23 0.018 252);
+  --accent-foreground: oklch(0.985 0.002 252);
+  --destructive: oklch(0.63 0.22 28);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.556 0 0);
+  --border: oklch(1 0 0 / 16%);                  /* 提高不透明度，界定明晰的物理边界感 */
+  --input: oklch(1 0 0 / 20%);                   /* 增强输入框边界线 */
+  --ring: oklch(0.556 0.02 252);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar: oklch(0.18 0.015 252);
+  --sidebar-foreground: oklch(0.985 0.002 252);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-accent: oklch(0.23 0.018 252);
+  --sidebar-accent-foreground: oklch(0.985 0.002 252);
+  --sidebar-border: oklch(1 0 0 / 12%);          /* 界定明确的侧栏边界 */
+  --sidebar-ring: oklch(0.556 0.02 252);
   --icon-blue: #60a5fa;
   --icon-cyan: #38bdf8;
   --icon-indigo: #818cf8;
@@ -461,103 +465,127 @@
   --sidebar-ring: oklch(0.7 0.028 82);
 }
 
-:root[data-radius="default"] {
+:root {
+  --density-offset: 0px;
+}
+
+:root[data-radius="default"],
+:root[data-radius="medium"] {
   --radius: 0.625rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
 }
 
 :root[data-radius="none"] {
   --radius: 0rem;
+  --radius-sm: 0rem;
+  --radius-md: 0rem;
+  --radius-lg: 0rem;
+  --radius-xl: 0rem;
 }
 
-:root[data-radius="sm"],
 :root[data-radius="small"] {
   --radius: 0.375rem;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
 }
 
-:root[data-radius="md"],
-:root[data-radius="medium"] {
-  --radius: 0.625rem;
-}
-
-:root[data-radius="lg"],
 :root[data-radius="large"] {
   --radius: 0.875rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1rem;
 }
 
 :root[data-radius="xl"] {
   --radius: 1.125rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.25rem;
 }
 
 :root[data-density="compact"] {
+  --density-offset: -4px;
   --page-gutter: 20px;
   --topbar-height: 64px;
-  --control-height: 32px;
-  --control-height-sm: 28px;
 }
 
 :root[data-density="comfortable"] {
-  --control-height: 36px;
-  --control-height-sm: 32px;
+  --density-offset: 0px;
 }
 
-:root[data-text-size="small"] {
+html[data-text-size="small"], :root[data-text-size="small"] {
+  font-size: 13px !important;
+  --fs-body: 13px !important;
   --fs-title: 22px;
   --fs-section: 17px;
-  --fs-body: 13px;
   --fs-caption: 11px;
   --fs-mono: 11px;
 }
 
-:root[data-text-size="medium"] {
+html[data-text-size="normal"], :root[data-text-size="normal"] {
+  font-size: 14px !important;
+  --fs-body: 14px !important;
+}
+
+html[data-text-size="medium"], :root[data-text-size="medium"] {
+  font-size: 15px !important;
+  --fs-body: 15px !important;
   --fs-title: 25px;
   --fs-section: 19px;
-  --fs-body: 15px;
   --fs-caption: 13px;
   --fs-mono: 13px;
 }
 
-:root[data-text-size="large"] {
+html[data-text-size="large"], :root[data-text-size="large"] {
+  font-size: 16px !important;
+  --fs-body: 16px !important;
   --fs-title: 28px;
   --fs-section: 21px;
-  --fs-body: 16px;
   --fs-caption: 14px;
   --fs-mono: 14px;
 }
 
 :root[data-style="reka"],
 :root[data-style="vega"] {
-  --control-height: 36px;
-  --control-height-sm: 32px;
+  --control-height: calc(36px + var(--density-offset));
+  --control-height-sm: calc(32px + var(--density-offset));
 }
 
 :root[data-style="nova"] {
-  --control-height: 40px;
-  --control-height-sm: 34px;
+  --control-height: calc(40px + var(--density-offset));
+  --control-height-sm: calc(34px + var(--density-offset));
 }
 
 :root[data-style="maia"] {
-  --control-height: 34px;
-  --control-height-sm: 30px;
+  --control-height: calc(34px + var(--density-offset));
+  --control-height-sm: calc(30px + var(--density-offset));
 }
 
 :root[data-style="lyra"] {
-  --control-height: 38px;
-  --control-height-sm: 32px;
+  --control-height: calc(38px + var(--density-offset));
+  --control-height-sm: calc(32px + var(--density-offset));
 }
 
 :root[data-style="mira"] {
-  --control-height: 36px;
-  --control-height-sm: 30px;
+  --control-height: calc(36px + var(--density-offset));
+  --control-height-sm: calc(30px + var(--density-offset));
 }
 
 :root[data-style="luma"] {
-  --control-height: 42px;
-  --control-height-sm: 36px;
+  --control-height: calc(42px + var(--density-offset));
+  --control-height-sm: calc(36px + var(--density-offset));
 }
 
 :root[data-style="sera"] {
-  --control-height: 35px;
-  --control-height-sm: 31px;
+  --control-height: calc(35px + var(--density-offset));
+  --control-height-sm: calc(31px + var(--density-offset));
 }
 
 :root {
@@ -569,7 +597,7 @@
   --runtime-color-mist: oklch(0.55 0.08 235);
   --runtime-color-taupe: oklch(0.48 0.045 82);
   --runtime-color-amber: oklch(0.769 0.188 70.08);
-  --runtime-color-blue: oklch(0.546 0.245 262.881);
+  --runtime-color-blue: #1677ff;
   --runtime-color-cyan: oklch(0.609 0.126 221.723);
   --runtime-color-emerald: oklch(0.596 0.145 163.225);
   --runtime-color-fuchsia: oklch(0.667 0.295 322.15);
@@ -738,7 +766,6 @@ button {
     --sidebar-width: 280px;
   }
 }
-
 @media (max-width: 1260px) {
   :root,
   :root[data-theme="day"],
@@ -747,7 +774,6 @@ button {
     --sidebar-width: 220px;
   }
 }
-
 @media (max-width: 980px) {
   :root,
   :root[data-theme="day"],

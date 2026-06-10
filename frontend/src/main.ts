@@ -6,6 +6,6 @@ import App from './App.vue'
 import { uiPlugin } from './shared/ui/plugin'
 import './styles.css'
 import './styles/layout.css'
-import './styles/antd-scheme.css'
+import './styles/artistic-scheme.css'
 
 createApp(App).use(createPinia()).use(uiPlugin).mount('#app')

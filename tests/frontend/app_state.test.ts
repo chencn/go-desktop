@@ -30,12 +30,17 @@ vi.mock('../../frontend/src/api/wails', () => {
     themeColor: 'neutral',
     uiStyle: 'vega',
   }
-  const defaultAntDesignDisplayProfile = {
+  const defaultArtisticDisplayProfile = {
     ...defaultShadcnDisplayProfile,
-    accentColor: 'blue',
-    chartColor: 'blue',
-    radius: 'medium',
-    themeColor: 'blue',
+    accentColor: 'orange',
+    baseColor: 'stone',
+    cardBorder: 'soft',
+    chartColor: 'emerald',
+    iconTone: 'colorful',
+    menu: 'default',
+    menuAccent: 'bold',
+    radius: 'large',
+    themeColor: 'orange',
   }
 
   return {
@@ -48,12 +53,12 @@ vi.mock('../../frontend/src/api/wails', () => {
       message: '授权未启用',
     },
     defaultDisplayPreferences: {
-      ...defaultShadcnDisplayProfile,
-      displayScheme: 'shadcn',
+      ...defaultArtisticDisplayProfile,
+      displayScheme: 'artistic',
       themeMode: 'light',
       profiles: {
         shadcn: defaultShadcnDisplayProfile,
-        antd: defaultAntDesignDisplayProfile,
+        artistic: defaultArtisticDisplayProfile,
       },
     },
   }
@@ -70,6 +75,8 @@ import type {
   LogResponse,
   UpdateCheckResult,
 } from '../../frontend/src/api/wails'
+
+const display = await import('../../frontend/src/app/display')
 
 // checkResult 是最小更新检查样例；缺少 sha256 时必须进入受保护错误态。
 const checkResult: UpdateCheckResult = {
@@ -166,5 +173,40 @@ describe('app state reducer', () => {
 
     expect(next.currentLogQuery).toEqual(query)
     expect(initialAppState.currentLogQuery.scope).toBe('all')
+  })
+})
+
+describe('display preference state', () => {
+  it('preserves persisted 24-color tokens while artistic accent follows theme color', () => {
+    display.hydrateDisplayPreferences({
+      displayScheme: 'artistic',
+      themeMode: 'dark',
+      profiles: {
+        shadcn: {
+          accentColor: 'purple',
+          chartColor: 'sky',
+          themeColor: 'red',
+        },
+        artistic: {
+          accentColor: 'cyan',
+          chartColor: 'yellow',
+          themeColor: 'violet',
+        },
+      },
+    })
+
+    let exported = display.exportDisplayPreferences()
+    expect(exported.displayScheme).toBe('artistic')
+    expect(exported.themeColor).toBe('violet')
+    expect(exported.accentColor).toBe('violet')
+    expect(exported.chartColor).toBe('yellow')
+    expect(exported.profiles.artistic.accentColor).toBe('violet')
+
+    display.useDisplayPreferences().setDisplayScheme('shadcn')
+    exported = display.exportDisplayPreferences()
+    expect(exported.displayScheme).toBe('shadcn')
+    expect(exported.themeColor).toBe('red')
+    expect(exported.accentColor).toBe('purple')
+    expect(exported.chartColor).toBe('sky')
   })
 })

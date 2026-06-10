@@ -1,0 +1,17 @@
+/* Artistic Number Field: 覆盖 shadcn NumberField primitive */
+
+:root[data-display-scheme="artistic"] [data-slot="number-field"] {
+  position: relative !important;
+}
+
+/* 里面的微型上下调节按钮 */
+:root[data-display-scheme="artistic"] [data-slot="number-field"] button {
+  border-radius: 4px !important;
+  transition: background-color 200ms ease, color 200ms ease !important;
+  color: var(--muted-foreground) !important;
+}
+
+:root[data-display-scheme="artistic"] [data-slot="number-field"] button:hover {
+  background-color: color-mix(in srgb, var(--artistic-primary) 12%, var(--card)) !important;
+  color: var(--artistic-primary) !important;
+}
