@@ -118,11 +118,17 @@ func TestMainInstallsEarliestCrashReporter(t *testing.T) {
 		"desktopapp.StartCrashReporter(crashLogPath, crashStatePath, os.Args)",
 		"defer crashReporter.Finish(\"主入口\")",
 		"appRuntime.RecordPreviousCrash(previousCrash, hasPreviousCrash, crashLogPath)",
+		"crashReporter.TrimLog()",
 		"crashReporter.Phase(\"运行 Wails\")",
 	} {
 		if !strings.Contains(source, required) {
 			t.Fatalf("main.go should install earliest crash reporter before Wails runtime: missing %q", required)
 		}
+	}
+	importCrashIndex := strings.Index(source, "appRuntime.RecordPreviousCrash(previousCrash, hasPreviousCrash, crashLogPath)")
+	trimCrashIndex := strings.Index(source, "crashReporter.TrimLog()")
+	if importCrashIndex < 0 || trimCrashIndex < 0 || importCrashIndex > trimCrashIndex {
+		t.Fatalf("main.go should import previous crash log before trimming crash.log: import=%d trim=%d", importCrashIndex, trimCrashIndex)
 	}
 	for _, required := range []string{
 		"func DefaultCrashLogPath(appName string) string",
@@ -178,6 +184,8 @@ func TestMainInstallsEarliestCrashReporter(t *testing.T) {
 		"type Reporter struct",
 		"func StartReporter(",
 		"func (r *Reporter) InstallRuntimeCrashOutput()",
+		"func (r *Reporter) TrimLog()",
+		"func TrimLogFile(",
 		"debug.SetCrashOutput",
 		"debug.SetTraceback(\"all\")",
 		"func (r *Reporter) Finish(operation string)",

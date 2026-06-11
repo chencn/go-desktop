@@ -273,6 +273,7 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 - 已校验安装包状态可以持久化，但只表示当前可安装包，不是历史记录。
 - pending 更新只写 `data/updates/pending.json`，不写 SQLite。
 - 启动期只允许消费 `data/updates/` 缓存目录内的安装包。
+- 启动期清理 `data/updates/` 中版本小于等于当前应用版本的 `pending.json` / `verified.json` 和版本目录。
 - 安装前必须重新计算 SHA256。
 - SHA256 不匹配时删除本地安装包并清理 pending / verified 状态。
 - 更新入口不出现在侧边栏和窄屏导航。
@@ -281,9 +282,10 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 
 日志来源：
 
-- 文件日志：`data/logs/*.jsonl`。
+- 文件日志：`data/logs/*.log`，内容为每日 JSONL。
 - 内存 ring buffer：只服务当前前端视图和即时反馈。
 - SQLite：只保存配置项，不保存日志、日志历史、更新历史。
+- `crash.log` 是 Runtime 创建前的早期崩溃兜底文件；启动时先导入上次异常退出尾部，再裁剪到最近尾部，避免无限增长。
 
 日志页规则：
 
@@ -302,7 +304,7 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 | 路径 | 用途 |
 | --- | --- |
 | `data/go-desktop.db` | SQLite KV 配置 |
-| `data/logs/` | 每日 JSONL 日志 |
+| `data/logs/` | 每日 JSONL 日志和早期 `crash.log` |
 | `data/updates/` | 更新安装包、verified / pending 状态 |
 | `data/updates/pending.json` | 下次启动安装状态 |
 

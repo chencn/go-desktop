@@ -103,7 +103,8 @@ func (s *Runtime) initRuntimeLogger() {
 	fileHandler := slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: s.logLevel})
 	logger := slog.New(&runtimeLogHandler{runtime: s, file: fileHandler})
 	s.lock.Lock()
-	if s.shuttingDown {
+	// 并发懒初始化时只保留先完成的一方，避免后到者覆盖导致已打开的文件句柄泄漏。
+	if s.shuttingDown || s.logger != nil {
 		s.lock.Unlock()
 		if openedWriter != nil {
 			_ = openedWriter.Close()

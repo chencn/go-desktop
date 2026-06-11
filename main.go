@@ -69,7 +69,9 @@ func main() {
 			AssetNames:     releaseAssetNames,
 		}),
 	})
+	// crash.log 保留为早期崩溃兜底；启动时先把上次异常退出尾部导入正常日志，再裁剪 crash.log。
 	appRuntime.RecordPreviousCrash(previousCrash, hasPreviousCrash, crashLogPath)
+	crashReporter.TrimLog()
 	appRuntime.RecordStartupLaunch(startupLaunch)
 
 	crashReporter.Phase("安装进程日志捕获")

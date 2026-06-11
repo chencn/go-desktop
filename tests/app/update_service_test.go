@@ -74,6 +74,98 @@ func TestDownloadUpdateVerifiesAndWaitsForUserInstall(t *testing.T) {
 	}
 }
 
+func TestRecordUpdateCheckResultKeepsVerifiedStatusForSameVersionBackgroundCheck(t *testing.T) {
+	payload := []byte("installer")
+	cacheDir := t.TempDir()
+	runtime := app.NewRuntime(app.ServiceOptions{
+		Version:   "1.0.0",
+		CachePath: cacheDir,
+		UpdateManager: updater.NewManager(updater.Config{
+			CacheDir: cacheDir,
+			Client:   updateHTTPClient(http.StatusOK, payload),
+		}),
+	})
+	defer runtime.Shutdown()
+
+	runtime.RecordUpdateCheckResult(githubrelease.CheckResult{
+		Status:           githubrelease.StatusUpdateAvailable,
+		CurrentVersion:   "1.0.0",
+		LatestVersion:    "1.2.3",
+		TagName:          "v1.2.3",
+		AssetName:        "go-desktop-v1.2.3-windows-amd64.exe",
+		AssetDownloadURL: "https://example.test/installer.exe",
+		Sha256:           sha256Text(payload),
+		CheckedAt:        "2026-06-03T00:00:00Z",
+		Message:          "发现新版本。",
+	})
+	if status := runtime.DownloadUpdate(); status.Status != "verified" || !status.Verified {
+		t.Fatalf("expected verified status before background check, got %#v", status)
+	}
+
+	runtime.RecordUpdateCheckResult(githubrelease.CheckResult{
+		Status:         githubrelease.StatusNoUpdate,
+		CurrentVersion: "1.2.3",
+		LatestVersion:  "1.2.3",
+		TagName:        "v1.2.3",
+		CheckedAt:      "2026-06-03T00:01:00Z",
+		Message:        "当前已经是最新版本。",
+	})
+
+	status := runtime.GetUpdateStatus()
+	if status.Status != "verified" || !status.Verified || status.Version != "1.2.3" {
+		t.Fatalf("expected background same-version check to keep verified status, got %#v", status)
+	}
+}
+
+func TestDownloadUpdateReusesVerifiedCacheForSameVersionAndChecksum(t *testing.T) {
+	payload := []byte("installer")
+	var downloadRequests int32
+	cacheDir := t.TempDir()
+	manager := updater.NewManager(updater.Config{
+		CacheDir: cacheDir,
+		Client: &http.Client{Transport: updateRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+			atomic.AddInt32(&downloadRequests, 1)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Length": []string{strconv.Itoa(len(payload))}},
+				Body:       io.NopCloser(bytes.NewReader(payload)),
+				Request:    req,
+			}, nil
+		})},
+	})
+	runtime := app.NewRuntime(app.ServiceOptions{
+		Version:       "1.0.0",
+		CachePath:     cacheDir,
+		UpdateManager: manager,
+	})
+	defer runtime.Shutdown()
+
+	check := githubrelease.CheckResult{
+		Status:           githubrelease.StatusUpdateAvailable,
+		CurrentVersion:   "1.0.0",
+		LatestVersion:    "1.2.3",
+		TagName:          "v1.2.3",
+		AssetName:        "go-desktop-v1.2.3-windows-amd64.exe",
+		AssetDownloadURL: "https://example.test/installer.exe",
+		Sha256:           sha256Text(payload),
+		CheckedAt:        "2026-06-03T00:00:00Z",
+		Message:          "发现新版本。",
+	}
+	runtime.RecordUpdateCheckResult(check)
+	first := runtime.DownloadUpdate()
+	if first.Status != "verified" || !first.Verified {
+		t.Fatalf("expected first download to verify package, got %#v", first)
+	}
+	runtime.RecordUpdateCheckResult(check)
+	second := runtime.DownloadUpdate()
+	if second.Status != "verified" || !second.Verified || second.FilePath != first.FilePath {
+		t.Fatalf("expected second download to reuse verified cache, first=%#v second=%#v", first, second)
+	}
+	if got := atomic.LoadInt32(&downloadRequests); got != 1 {
+		t.Fatalf("expected verified cache reuse to avoid repeated HTTP download, got %d requests", got)
+	}
+}
+
 func TestGetUpdateStatusRestoresVerifiedDownloadFromDisk(t *testing.T) {
 	payload := []byte("installer")
 	cacheDir := t.TempDir()
@@ -150,6 +242,7 @@ func TestGetUpdateStatusClearsStaleVerifiedDownloadForCurrentVersion(t *testing.
 	if status := firstRuntime.DownloadUpdate(); status.Status != "verified" {
 		t.Fatalf("expected verified download before restart, got %#v", status)
 	}
+	staleVersionDir := filepath.Join(cacheDir, "1.2.3")
 	firstRuntime.Shutdown()
 
 	restarted := app.NewRuntime(app.ServiceOptions{
@@ -167,6 +260,53 @@ func TestGetUpdateStatusClearsStaleVerifiedDownloadForCurrentVersion(t *testing.
 	}
 	if _, err := os.Stat(filepath.Join(cacheDir, "verified.json")); !os.IsNotExist(err) {
 		t.Fatalf("expected stale verified cache to be cleared, stat err=%v", err)
+	}
+	if _, err := os.Stat(staleVersionDir); !os.IsNotExist(err) {
+		t.Fatalf("expected installed version cache directory to be removed, stat err=%v", err)
+	}
+}
+
+func TestStartupCleansInstalledUpdateCacheDirectoriesAndStateFiles(t *testing.T) {
+	payload := []byte("installer")
+	cacheDir := t.TempDir()
+	oldDir := filepath.Join(cacheDir, "1.1.0")
+	currentDir := filepath.Join(cacheDir, "1.2.3")
+	futureDir := filepath.Join(cacheDir, "1.3.0")
+	manualDir := filepath.Join(cacheDir, "manual-cache")
+	oldInstaller := filepath.Join(oldDir, "go-desktop-v1.1.0-windows-amd64.exe")
+	currentInstaller := filepath.Join(currentDir, "go-desktop-v1.2.3-windows-amd64.exe")
+	futureInstaller := filepath.Join(futureDir, "go-desktop-v1.3.0-windows-amd64.exe")
+	manualFile := filepath.Join(manualDir, "notes.txt")
+
+	for _, path := range []string{oldInstaller, currentInstaller, futureInstaller, manualFile} {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("create cache dir for %s: %v", path, err)
+		}
+		if err := os.WriteFile(path, payload, 0o600); err != nil {
+			t.Fatalf("write cache file %s: %v", path, err)
+		}
+	}
+	writeUpdateState(t, filepath.Join(cacheDir, "pending.json"), "1.2.3", currentInstaller, sha256Text(payload))
+	writeUpdateState(t, filepath.Join(cacheDir, "verified.json"), "1.3.0", futureInstaller, sha256Text(payload))
+
+	runtime := app.NewRuntime(app.ServiceOptions{
+		Version:   "1.2.3",
+		CachePath: cacheDir,
+		UpdateManager: updater.NewManager(updater.Config{
+			CacheDir: cacheDir,
+		}),
+	})
+	defer runtime.Shutdown()
+
+	for _, path := range []string{oldDir, currentDir, filepath.Join(cacheDir, "pending.json")} {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("expected installed cache path to be removed: %s stat err=%v", path, err)
+		}
+	}
+	for _, path := range []string{futureDir, futureInstaller, manualDir, manualFile, filepath.Join(cacheDir, "verified.json")} {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("expected future or manual cache path to remain: %s stat err=%v", path, err)
+		}
 	}
 }
 
@@ -806,6 +946,30 @@ func TestScheduleDownloadedUpdateOnStartupRequiresVerifiedDownload(t *testing.T)
 	status := runtime.ScheduleDownloadedUpdateOnStartup()
 	if status.Status != "error" || status.ErrorReason != "not_verified" {
 		t.Fatalf("expected not_verified error before download, got %#v", status)
+	}
+}
+
+func writeUpdateState(t *testing.T, path string, version string, filePath string, sha256 string) {
+	t.Helper()
+	state, err := json.Marshal(map[string]any{
+		"status":          "verified",
+		"message":         "安装包已下载并通过 SHA256 校验，等待用户选择安装时机。",
+		"version":         version,
+		"assetName":       filepath.Base(filePath),
+		"filePath":        filePath,
+		"downloadedBytes": int64(9),
+		"totalBytes":      int64(9),
+		"progressPercent": float64(100),
+		"sha256":          sha256,
+		"verified":        true,
+		"source":          "github",
+		"updatedAt":       "2026-06-03T00:00:00Z",
+	})
+	if err != nil {
+		t.Fatalf("marshal update state: %v", err)
+	}
+	if err := os.WriteFile(path, state, 0o600); err != nil {
+		t.Fatalf("write update state %s: %v", path, err)
 	}
 }
 

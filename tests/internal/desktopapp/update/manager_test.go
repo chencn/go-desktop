@@ -96,11 +96,19 @@ func TestDownloadAndVerifyDeletesTempFileOnInterruptedDownload(t *testing.T) {
 	}
 }
 
-// TestDownloadAndVerifyDeletesFileOnChecksumMismatch 验证 SHA256 不匹配时删除已写入安装包。
-func TestDownloadAndVerifyDeletesFileOnChecksumMismatch(t *testing.T) {
-	payload := []byte("installer")
-
+// TestDownloadAndVerifyKeepsExistingTargetOnChecksumMismatch 验证 SHA256 不匹配时只清理本次临时下载。
+func TestDownloadAndVerifyKeepsExistingTargetOnChecksumMismatch(t *testing.T) {
+	previousPayload := []byte("verified installer")
+	payload := []byte("corrupt installer")
 	cacheDir := t.TempDir()
+	target := filepath.Join(cacheDir, "1.2.3", "go-desktop-v1.2.3-windows-amd64.exe")
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		t.Fatalf("create target dir: %v", err)
+	}
+	if err := os.WriteFile(target, previousPayload, 0o600); err != nil {
+		t.Fatalf("write previous verified target: %v", err)
+	}
+
 	_, err := updater.NewManager(updater.Config{
 		CacheDir: cacheDir,
 		Client:   httpClient(http.StatusOK, payload),
@@ -114,9 +122,15 @@ func TestDownloadAndVerifyDeletesFileOnChecksumMismatch(t *testing.T) {
 	if !errors.As(err, &mismatch) {
 		t.Fatalf("expected checksum mismatch, got %v", err)
 	}
-	target := filepath.Join(cacheDir, "1.2.3", "go-desktop-v1.2.3-windows-amd64.exe")
-	if _, err := os.Stat(target); !os.IsNotExist(err) {
-		t.Fatalf("expected failed download to be deleted, stat err=%v", err)
+	data, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatalf("expected previous verified target to remain: %v", err)
+	}
+	if string(data) != string(previousPayload) {
+		t.Fatalf("expected previous verified target to remain unchanged, got %q", string(data))
+	}
+	if _, err := os.Stat(target + ".download"); !os.IsNotExist(err) {
+		t.Fatalf("expected failed temp download to be deleted, stat err=%v", err)
 	}
 }
 

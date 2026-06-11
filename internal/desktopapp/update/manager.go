@@ -196,8 +196,8 @@ func (m *Manager) DownloadAndVerify(ctx context.Context, asset ReleaseAsset, pro
 		return DownloadResult{}, err
 	}
 	if !strings.EqualFold(actual, asset.Sha256) {
+		// 只清理本次下载的临时文件；targetPath 可能是上一轮已验证、verified.json 仍指向的完好安装包。
 		_ = os.Remove(tempPath)
-		_ = os.Remove(targetPath)
 		return DownloadResult{}, ChecksumMismatchError{Expected: asset.Sha256, Actual: actual}
 	}
 	_ = os.Remove(targetPath)

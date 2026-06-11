@@ -1,8 +1,10 @@
 package crash
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -12,6 +14,9 @@ import (
 
 	"github.com/chencn/go-desktop/internal/platform/process"
 )
+
+// maxCrashLogBytes 限制 crash.log 兜底文件大小；只保留最近尾部，避免无限增长。
+const maxCrashLogBytes int64 = 512 * 1024
 
 // State 记录一次桌面进程启动的关键阶段；状态文件未被清理时，下次启动会把它视为异常退出线索。
 type State struct {
@@ -157,6 +162,52 @@ func (r *Reporter) Append(scope string, format string, args ...any) {
 	defer file.Close()
 	message := fmt.Sprintf(format, args...)
 	_, _ = fmt.Fprintf(file, "%s\t%s\terror\t%s\n", time.Now().UTC().Format(time.RFC3339Nano), scope, fileLogMessage(message))
+}
+
+// TrimLog 保留 crash.log 作为早期崩溃兜底，并在启动导入上次异常退出后裁剪到最近 512 KiB。
+func (r *Reporter) TrimLog() {
+	if r == nil || r.logPath == "" {
+		return
+	}
+	if err := TrimLogFile(r.logPath, maxCrashLogBytes); err != nil {
+		r.Append("crash", "清理 crash.log 失败：%s", err)
+	}
+}
+
+// TrimLogFile 按完整行裁剪 crash.log，只保留最近尾部；不会整文件删除。
+// maxBytes<=0 或文件未超过上限时不处理。
+func TrimLogFile(path string, maxBytes int64) error {
+	path = strings.TrimSpace(path)
+	if path == "" || maxBytes <= 0 {
+		return nil
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	if info.IsDir() || info.Size() <= maxBytes {
+		return nil
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if _, err := file.Seek(info.Size()-maxBytes, io.SeekStart); err != nil {
+		return err
+	}
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	if index := bytes.IndexByte(data, '\n'); index >= 0 && index+1 < len(data) {
+		data = data[index+1:]
+	}
+	return os.WriteFile(path, data, 0o644)
 }
 
 // fileLogMessage 将 crash 文本日志内容压成单行，避免堆栈里的换行破坏一行一条。

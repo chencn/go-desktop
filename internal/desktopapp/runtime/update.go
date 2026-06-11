@@ -93,12 +93,27 @@ func localUpdateManifestURL(baseURL, manifestPath string) string {
 }
 
 // RecordUpdateCheckResult 保存当前进程最近一次更新检查结果。
+// 当前已处于下载/已校验/待安装等活跃状态、且检查结果没有发现更新的版本时，
+// 保留活跃状态，避免后台周期检查把 pending_install/verified 打回 update_available。
 func (s *Runtime) RecordUpdateCheckResult(result githubrelease.CheckResult) {
 	s.lock.Lock()
 	s.latestUpdateCheck = result
 	s.hasUpdateCheck = true
+	state := s.updateState
 	s.lock.Unlock()
+	if preservesActiveUpdateState(state, result) {
+		return
+	}
 	s.setUpdateStatus(statusFromCheckResult(result))
+}
+
+// preservesActiveUpdateState 判断检查结果是否应保留当前活跃更新状态。
+// 只有检查发现比活跃状态更新的版本时才允许覆盖。
+func preservesActiveUpdateState(state UpdateStatus, result githubrelease.CheckResult) bool {
+	if !shouldReturnMemoryUpdateStatus(state) {
+		return false
+	}
+	return semver.Compare(result.LatestVersion, state.Version) <= 0
 }
 
 // GetUpdateStatus API 方法，返回当前更新状态。
@@ -183,6 +198,12 @@ func (s *Runtime) downloadUpdateForCheck(check githubrelease.CheckResult, ok boo
 	}
 	if strings.TrimSpace(check.AssetDownloadURL) == "" || strings.TrimSpace(check.AssetName) == "" {
 		return s.failUpdateFromStatus(statusFromCheckResult(check), "asset_missing", "发现新版本，但安装资产信息不完整。")
+	}
+
+	// 同版本安装包已下载并校验过时直接复用本地缓存，避免后台周期检查反复重新下载。
+	if state := s.GetUpdateStatus(); canReuseVerifiedUpdate(state, check) {
+		s.RecordLog("update", "新版本安装包已下载并通过校验，复用本地缓存，跳过重新下载")
+		return state
 	}
 
 	s.setUpdateStatus(UpdateStatus{
@@ -403,6 +424,27 @@ func shouldReturnMemoryUpdateStatus(status UpdateStatus) bool {
 	default:
 		return false
 	}
+}
+
+// canReuseVerifiedUpdate 判断当前已校验状态是否与检查结果指向同一安装包，可跳过重新下载。
+// 只比对版本、SHA256 和文件存在性；安装前 InstallDownloadedUpdate 仍会复算 SHA256。
+func canReuseVerifiedUpdate(state UpdateStatus, check githubrelease.CheckResult) bool {
+	if !state.Verified || strings.TrimSpace(state.FilePath) == "" {
+		return false
+	}
+	switch state.Status {
+	case "verified", "pending_install":
+	default:
+		return false
+	}
+	if state.Version != check.LatestVersion {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(state.Sha256), strings.TrimSpace(check.Sha256)) {
+		return false
+	}
+	info, err := os.Stat(state.FilePath)
+	return err == nil && !info.IsDir()
 }
 
 // setUpdateStatus 更新内存状态，并在主窗口已存在时向前端广播 update:status:changed。

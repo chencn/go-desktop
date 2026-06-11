@@ -596,6 +596,7 @@ func NewRuntime(options ServiceOptions) *Runtime {
 		runtime.logLevel.Set(SlogLevelFromLogLevel(runtime.SettingsSnapshot().LogLevel))
 	}
 	runtime.startLogRetentionCleanup()
+	runtime.cleanupInstalledUpdateCache()
 	runtime.loadDisplayPreferences()
 
 	return runtime
