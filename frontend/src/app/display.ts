@@ -185,13 +185,12 @@ export function setBaseColor(value: BaseColor) {
 
 export function setThemeColor(value: ThemeColor) {
   themeColor.value = value
-  if (displayScheme.value === 'artistic') {
-    accentColor.value = value
-  }
+  // 品牌辅助色在两个方案下都由主题色托管，与设置页"跟随品牌主题色"的说明保持一致。
+  accentColor.value = value
 }
 
-export function setAccentColor(value: AccentColor) {
-  accentColor.value = displayScheme.value === 'artistic' ? themeColor.value : value
+export function setAccentColor(_value: AccentColor) {
+  accentColor.value = themeColor.value
 }
 
 export function setChartColor(value: ChartColor) {
@@ -343,10 +342,9 @@ watch(menuAccent, (value) => {
 
 watch(radius, (value) => {
   const root = documentRoot()
-  if (root) {
-    root.dataset.radius = value
-    root.style.setProperty('--radius', radiusValue(value))
-  }
+  // 只同步 dataset；--radius 数值由 styles.css 和 artistic 方案层的 [data-radius] 规则解释，
+  // 不写内联 style，否则会压过方案专属的圆角刻度。
+  if (root) root.dataset.radius = value
 }, { immediate: true })
 
 watch(density, (value) => {
@@ -437,7 +435,8 @@ function normaliseProfile(profile: IncomingDisplayProfile, scheme: DisplayScheme
   const fallback = profileFallback(scheme)
   const themeColorValue = normaliseValue(profile.themeColor, isThemeColor, fallback.themeColor)
   return {
-    accentColor: scheme === 'artistic' ? themeColorValue : normaliseValue(profile.accentColor, isAccentColor, fallback.accentColor),
+    // 辅助色由主题色托管，持久化里的历史 accentColor 不再独立生效。
+    accentColor: themeColorValue,
     baseColor: normaliseValue(profile.baseColor, isBaseColor, fallback.baseColor),
     cardBorder: normaliseValue(profile.cardBorder, isCardBorder, fallback.cardBorder),
     chartColor: normaliseValue(profile.chartColor, isChartColor, fallback.chartColor),
@@ -460,18 +459,6 @@ function cloneProfile(profile: DisplayProfile): DisplayProfile {
 function documentRoot() {
   if (typeof document === 'undefined') return undefined
   return document.documentElement
-}
-
-// Radius 字面量映射到全局 --radius，组件再由 CSS 变量派生具体圆角。
-function radiusValue(value: Radius) {
-  const values: Record<Radius, string> = {
-    default: '0.625rem',
-    none: '0rem',
-    small: '0.375rem',
-    medium: '0.625rem',
-    large: '0.875rem',
-  }
-  return values[value]
 }
 
 function isTextSize(value: string | null): value is TextSize {

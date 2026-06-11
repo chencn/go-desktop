@@ -13,6 +13,6 @@
 
 :root[data-display-scheme="artistic"] [data-slot="progress-indicator"] {
   border-radius: 999px !important;
-  background: linear-gradient(90deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 70%, var(--color-value-f43f5e))) !important;
+  background: var(--artistic-primary) !important;
   box-shadow: 0 0 8px color-mix(in srgb, var(--artistic-primary) 50%, var(--color-transparent)) !important;
 }

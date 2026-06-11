@@ -127,14 +127,14 @@
 }
 
 .active-badge {
-  font-size: 11px;
+  font-size: calc(var(--fs-caption) - 1px);
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--artistic-primary);
-  background: color-mix(in srgb, var(--artistic-primary) 12%, var(--color-transparent));
+  color: var(--artistic-primary, var(--primary));
+  background: color-mix(in srgb, var(--artistic-primary, var(--primary)) 12%, var(--color-transparent));
   padding: 2px 8px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent));
+  border: 1px solid color-mix(in srgb, var(--artistic-primary, var(--primary)) 20%, var(--color-transparent));
 }
 
 /* 显示方案卡片设计 */
@@ -170,7 +170,7 @@
 }
 
 .scheme-card-box.is-active::before {
-  border-color: var(--artistic-primary);
+  border-color: var(--artistic-primary, var(--primary));
 }
 
 .scheme-card-box.is-active {
@@ -183,7 +183,7 @@
   box-shadow: 0 8px 24px -8px var(--color-value-rgba-100-116-139-0p35);
 }
 .scheme-card-box.glow-artistic.is-active {
-  box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--artistic-primary) 45%, var(--color-transparent));
+  box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--artistic-primary, var(--primary)) 45%, var(--color-transparent));
 }
 
 .scheme-title-text {
@@ -195,7 +195,7 @@
 }
 
 .scheme-desc-text {
-  font-size: 11px;
+  font-size: calc(var(--fs-caption) - 1px);
   color: var(--muted-foreground);
   line-height: 1.35;
   z-index: 2;
@@ -225,7 +225,7 @@
   border-radius: calc(var(--radius) - 4px);
   background: var(--color-transparent);
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: calc(var(--fs-body) - 1px);
   font-weight: 600;
   cursor: pointer;
   transition: all 200ms ease;
@@ -242,7 +242,7 @@
 
 .visual-segment-btn.is-active {
   background: var(--color-white-solid);
-  color: var(--artistic-primary);
+  color: var(--artistic-primary, var(--primary));
   box-shadow: 0 3px 10px var(--color-black-alpha-060);
 }
 

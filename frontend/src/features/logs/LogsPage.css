@@ -170,15 +170,15 @@
   font-size: var(--fs-caption);
 }
 
-/* 5个统计卡片的语义色常态与 Hover / Active 配置 */
+/* 5个统计卡片的语义色常态与 Hover / Active 配置；shadcn 方案没有 --artistic-* 变量，必须带 fallback。 */
 .log-stat-item.is-all strong {
-  color: var(--artistic-primary) !important;
+  color: var(--artistic-primary, var(--primary)) !important;
 }
 .log-stat-item.is-all:hover,
 .log-stat-item.is-all.is-active {
-  border-color: color-mix(in srgb, var(--artistic-primary) 50%, var(--border)) !important;
-  background: color-mix(in srgb, var(--artistic-primary) 8%, var(--card)) !important;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-primary) 15%, var(--color-transparent)) !important;
+  border-color: color-mix(in srgb, var(--artistic-primary, var(--primary)) 50%, var(--border)) !important;
+  background: color-mix(in srgb, var(--artistic-primary, var(--primary)) 8%, var(--card)) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-primary, var(--primary)) 15%, var(--color-transparent)) !important;
 }
 
 .log-stat-item.is-debug strong {
@@ -192,33 +192,33 @@
 }
 
 .log-stat-item.is-info strong {
-  color: var(--artistic-info) !important;
+  color: var(--log-level-info) !important;
 }
 .log-stat-item.is-info:hover,
 .log-stat-item.is-info.is-active {
-  border-color: color-mix(in srgb, var(--artistic-info) 50%, var(--border)) !important;
-  background: color-mix(in srgb, var(--artistic-info) 8%, var(--card)) !important;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-info) 15%, var(--color-transparent)) !important;
+  border-color: color-mix(in srgb, var(--log-level-info) 50%, var(--border)) !important;
+  background: color-mix(in srgb, var(--log-level-info) 8%, var(--card)) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--log-level-info) 15%, var(--color-transparent)) !important;
 }
 
 .log-stat-item.is-warning strong {
-  color: var(--artistic-warning) !important;
+  color: var(--log-level-warning) !important;
 }
 .log-stat-item.is-warning:hover,
 .log-stat-item.is-warning.is-active {
-  border-color: color-mix(in srgb, var(--artistic-warning) 50%, var(--border)) !important;
-  background: color-mix(in srgb, var(--artistic-warning) 8%, var(--card)) !important;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-warning) 15%, var(--color-transparent)) !important;
+  border-color: color-mix(in srgb, var(--log-level-warning) 50%, var(--border)) !important;
+  background: color-mix(in srgb, var(--log-level-warning) 8%, var(--card)) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--log-level-warning) 15%, var(--color-transparent)) !important;
 }
 
 .log-stat-item.is-error strong {
-  color: var(--artistic-error) !important;
+  color: var(--log-level-error) !important;
 }
 .log-stat-item.is-error:hover,
 .log-stat-item.is-error.is-active {
-  border-color: color-mix(in srgb, var(--artistic-error) 50%, var(--border)) !important;
-  background: color-mix(in srgb, var(--artistic-error) 8%, var(--card)) !important;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--artistic-error) 15%, var(--color-transparent)) !important;
+  border-color: color-mix(in srgb, var(--log-level-error) 50%, var(--border)) !important;
+  background: color-mix(in srgb, var(--log-level-error) 8%, var(--card)) !important;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--log-level-error) 15%, var(--color-transparent)) !important;
 }
 
 .log-stream-header {

@@ -27,9 +27,7 @@
   font-size: var(--fs-title);
   font-weight: 800;
   letter-spacing: 0;
-  background: linear-gradient(135deg, var(--foreground), var(--artistic-primary));
-  -webkit-background-clip: text;
-  background-clip: text;
+  color: var(--foreground);
 }
 
 :root[data-display-scheme="artistic"] [data-slot="dialog-description"] {

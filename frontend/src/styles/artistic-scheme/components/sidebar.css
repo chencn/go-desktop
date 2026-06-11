@@ -25,6 +25,20 @@
   color: var(--color-white-alpha-800) !important;
 }
 
+/* 反色半透明 (深色玻璃)；设置页暂不暴露该选项，但持久化值仍需正确渲染。 */
+:root[data-display-scheme="artistic"][data-menu="inverted-translucent"] .app-sidebar {
+  --sidebar: color-mix(in srgb, var(--color-value-rgba-20-16-25-0p95) 86%, var(--color-transparent)) !important;
+  --sidebar-foreground: var(--color-white-alpha-800) !important;
+  --sidebar-accent: color-mix(in srgb, var(--artistic-primary) 15%, var(--color-transparent)) !important;
+  --sidebar-accent-foreground: var(--artistic-primary) !important;
+  --sidebar-border: var(--color-white-alpha-080) !important;
+  background: var(--sidebar) !important;
+  background-color: var(--sidebar) !important;
+  backdrop-filter: blur(14px) !important;
+  border-right: 1px solid var(--sidebar-border) !important;
+  color: var(--color-white-alpha-800) !important;
+}
+
 /* 3. 品牌 Header 区域 */
 :root[data-display-scheme="artistic"] .brand-mark {
   border-radius: 8px !important; /* 精致圆角 */

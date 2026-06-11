@@ -13,7 +13,7 @@
   gap: 22px;
   padding: 28px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--card);
   color: var(--card-foreground);
   box-shadow: 0 20px 50px var(--color-value-rgb-15-23-42-alpha-10pct);
@@ -33,7 +33,7 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: color-mix(in oklch, var(--primary) 10%, var(--color-transparent));
   color: var(--primary);
 }
@@ -41,13 +41,13 @@
 .license-kicker {
   margin: 0 0 4px;
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: calc(var(--fs-body) - 1px);
   line-height: 1.4;
 }
 
 .license-heading h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--fs-title);
   line-height: 1.2;
   font-weight: 650;
   letter-spacing: 0;
@@ -60,10 +60,10 @@
   min-width: 0;
   padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: color-mix(in oklch, var(--muted) 50%, var(--color-transparent));
   color: var(--foreground);
-  font-size: 14px;
+  font-size: var(--fs-body);
   line-height: 1.5;
 }
 
@@ -107,11 +107,11 @@
   resize: vertical;
   padding: 8px 12px;
   border: 1px solid var(--input);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--color-transparent);
   color: var(--foreground);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  font-size: 14px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-body);
   line-height: 1.5;
   outline: none;
   transition: color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;

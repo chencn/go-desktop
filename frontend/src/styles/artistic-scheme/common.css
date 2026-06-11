@@ -15,7 +15,8 @@
 
   /* 基础面板颜色 (浅灰背景 + 近实体白面板) */
   --background: var(--color-value-f7f8fb);
-  --foreground: color-mix(in srgb, var(--artistic-primary) 2%, var(--foreground, var(--color-value-1f2937)));
+  /* 注意：自定义属性引用自身会形成循环并整体失效，这里必须直接写基准 token。 */
+  --foreground: color-mix(in srgb, var(--artistic-primary) 2%, var(--color-value-1f2937));
   --card: var(--color-white-alpha-940);
   --card-foreground: var(--foreground);
   --popover: var(--color-white-alpha-980);
@@ -44,13 +45,8 @@
   --soft-warning: var(--color-value-rgba-245-158-11-0p08);
   --soft-success: var(--color-value-rgba-16-185-129-0p08);
 
-  /* 图体尺寸与圆角 */
+  /* 圆角基准；字号 token 跟随 styles.css 的 data-text-size 规则，方案层不再钉死。 */
   --radius: 1rem; /* 16px 圆角 */
-  --fs-title: 25px;
-  --fs-section: 18px;
-  --fs-body: 14px;
-  --fs-caption: 12px;
-  --fs-mono: 12px;
 
   /* 中性阴影，保留层级但不产生橘色光晕 */
   --artistic-shadow: 0 12px 28px var(--color-value-rgba-15-23-42-0p06),
@@ -69,8 +65,8 @@
   --artistic-primary-active: color-mix(in oklch, var(--artistic-primary) 80%, var(--color-black-solid));
 
   /* 基础面板颜色 (极具质感与通透度的黑曜石深海蓝水晶毛玻璃基底) */
-  --background: var(--background, var(--color-value-08090d));            /* 星海深空蓝黑，彻底告别死黑与脏褐色 */
-  --foreground: color-mix(in srgb, var(--artistic-primary) 4%, var(--foreground, var(--color-value-fafaf9)));
+  --background: var(--color-value-08090d);            /* 星海深空蓝黑，彻底告别死黑与脏褐色 */
+  --foreground: color-mix(in srgb, var(--artistic-primary) 4%, var(--color-value-fafaf9));
   --card: var(--color-value-rgba-13-16-26-0p65);                     /* 通透冰蓝黑水晶卡片 */
   --card-foreground: var(--foreground);
   --popover: var(--color-value-rgba-18-22-33-0p92);                  /* 浮层面板 */
@@ -88,7 +84,7 @@
   --sidebar: var(--color-value-rgba-10-12-19-0p55);
   --sidebar-foreground: var(--foreground);
   --sidebar-border: var(--color-white-alpha-260);
-  --sidebar-accent: var(--color-value-rgba-251-146-60-0p12);
+  --sidebar-accent: color-mix(in srgb, var(--artistic-primary) 12%, var(--color-transparent));
   --sidebar-accent-foreground: var(--artistic-primary);
 
   /* 状态软色彩 */
@@ -154,7 +150,7 @@
 /* 全局控制密度支持 */
 :root[data-display-scheme="artistic"][data-density="compact"] {
   --page-gutter: 20px;
-  --topbar-height: 60px;
+  --topbar-height: 64px;
 }
 :root[data-display-scheme="artistic"][data-density="comfortable"] {
   --page-gutter: 28px;

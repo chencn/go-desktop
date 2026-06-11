@@ -56,9 +56,9 @@
 
 .progress-block:hover {
   transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--artistic-primary) 30%, var(--border)) !important;
-  background: color-mix(in srgb, var(--artistic-primary) 3%, var(--card)) !important;
-  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--artistic-primary) 12%, var(--color-transparent)) !important;
+  border-color: color-mix(in srgb, var(--artistic-primary, var(--primary)) 30%, var(--border)) !important;
+  background: color-mix(in srgb, var(--artistic-primary, var(--primary)) 3%, var(--card)) !important;
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--artistic-primary, var(--primary)) 12%, var(--color-transparent)) !important;
 }
 
 .progress-block > div {

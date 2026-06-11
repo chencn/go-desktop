@@ -25,7 +25,7 @@
 :root[data-display-scheme="artistic"] [data-slot="dropdown-menu-item"]:not([data-disabled]):focus,
 :root[data-display-scheme="artistic"] [data-slot="dropdown-menu-checkbox-item"]:not([data-disabled]):focus,
 :root[data-display-scheme="artistic"] [data-slot="dropdown-menu-radio-item"]:not([data-disabled]):focus {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, var(--color-value-f43f5e))) !important;
+  background: var(--artistic-primary) !important;
   color: var(--color-white-solid) !important;
   transform: translateX(3px);
   outline: none !important;

@@ -501,24 +501,6 @@
   --radius-xl: 1rem;
 }
 
-:root[data-radius="xl"] {
-  --radius: 1.125rem;
-  --radius-sm: 0.75rem;
-  --radius-md: 1rem;
-  --radius-lg: 1.125rem;
-  --radius-xl: 1.25rem;
-}
-
-:root[data-density="compact"] {
-  --density-offset: -4px;
-  --page-gutter: 20px;
-  --topbar-height: 64px;
-}
-
-:root[data-density="comfortable"] {
-  --density-offset: 0px;
-}
-
 html[data-text-size="small"], :root[data-text-size="small"] {
   font-size: 13px !important;
   --fs-body: 13px !important;
@@ -767,6 +749,17 @@ button {
     --topbar-height: 64px;
     --page-gutter: 18px;
   }
+}
+
+/* 密度规则放在响应式断点之后，保证紧凑密度的间距不被窄窗口断点反向放大。 */
+:root[data-density="compact"] {
+  --density-offset: -4px;
+  --page-gutter: 20px;
+  --topbar-height: 64px;
+}
+
+:root[data-density="comfortable"] {
+  --density-offset: 0px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -17,9 +17,6 @@
   font-size: var(--fs-title);
   font-weight: 750;
   color: var(--foreground);
-  background: linear-gradient(135deg, var(--foreground), var(--artistic-primary));
-  -webkit-background-clip: text;
-  background-clip: text;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="sheet-description"] {

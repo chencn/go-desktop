@@ -1942,11 +1942,15 @@ func TestArtisticSchemeComponentDetailsMatchThemeTokens(t *testing.T) {
 
 	for _, required := range []string{
 		`var(--control-height`,
-		`linear-gradient`,
+		`background: var(--artistic-primary)`,
 	} {
 		if !strings.Contains(buttonStyles, required) {
 			t.Fatalf("button.css should use artistic control detail %q", required)
 		}
+	}
+	// 品牌填充不允许再掺固定色渐变；主题色必须原样生效。
+	if strings.Contains(buttonStyles, "linear-gradient") {
+		t.Fatal("button.css should fill primary buttons with the solid theme color instead of a gradient")
 	}
 
 	for _, required := range []string{

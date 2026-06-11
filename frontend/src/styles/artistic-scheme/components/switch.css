@@ -20,7 +20,7 @@
 }
 
 :root[data-display-scheme="artistic"] [data-slot="switch"][data-state="checked"] {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 75%, var(--color-value-f43f5e))) !important;
+  background: var(--artistic-primary) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="switch-thumb"] {

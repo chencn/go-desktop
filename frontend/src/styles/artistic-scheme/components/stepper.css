@@ -11,7 +11,7 @@
 
 /* 激活态步骤节点 */
 :root[data-display-scheme="artistic"] [data-slot="stepper-item"][data-state="active"] [data-slot="stepper-trigger"] {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, var(--color-value-f43f5e))) !important;
+  background: var(--artistic-primary) !important;
   color: var(--color-white-solid) !important;
   box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--artistic-primary) 35%, var(--color-transparent)) !important;
 }

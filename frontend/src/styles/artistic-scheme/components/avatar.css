@@ -6,12 +6,12 @@
 }
 
 :root[data-display-scheme="artistic"] [data-slot="avatar-fallback"] {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--artistic-primary) 20%, var(--color-value-fef3c7)), color-mix(in srgb, var(--artistic-primary) 10%, var(--color-white-solid))) !important;
+  background: color-mix(in srgb, var(--artistic-primary) 12%, var(--color-white-solid)) !important;
   color: var(--artistic-primary) !important;
   font-weight: 700 !important;
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] [data-slot="avatar-fallback"] {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--artistic-primary) 25%, var(--color-value-1e1b4b)), var(--color-value-0f172a)) !important;
+  background: color-mix(in srgb, var(--artistic-primary) 18%, var(--color-value-0f172a)) !important;
   color: var(--artistic-primary) !important;
 }

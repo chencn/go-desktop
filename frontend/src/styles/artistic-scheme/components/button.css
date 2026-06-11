@@ -31,7 +31,7 @@
 /* 主操作按钮：落日暖红渐变，明亮充满朝气 */
 :root[data-display-scheme="artistic"] [data-slot="button"]:not([data-variant]),
 :root[data-display-scheme="artistic"] [data-slot="button"][data-variant="default"] {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 75%, var(--color-value-f43f5e))) !important;
+  background: var(--artistic-primary) !important;
   color: var(--primary-foreground, var(--color-white-solid)) !important;
   border: 0 !important;
   box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--artistic-primary) 35%, var(--color-transparent)) !important;

@@ -43,7 +43,7 @@
 }
 
 :root[data-display-scheme="artistic"] [data-slot="menubar-item"]:not([data-disabled]):focus {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, var(--color-value-f43f5e))) !important;
+  background: var(--artistic-primary) !important;
   color: var(--color-white-solid) !important;
   transform: translateX(3px);
 }

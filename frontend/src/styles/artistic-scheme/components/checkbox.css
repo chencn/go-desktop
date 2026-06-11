@@ -28,7 +28,7 @@
 
 /* 选中状态：橘粉渐变底色，无边框，伴随微小发光阴影 */
 :root[data-display-scheme="artistic"] [data-slot="checkbox"][data-state="checked"] {
-  background: linear-gradient(135deg, var(--artistic-primary), color-mix(in srgb, var(--artistic-primary) 80%, var(--color-value-f43f5e))) !important;
+  background: var(--artistic-primary) !important;
   border-color: var(--color-transparent) !important;
   color: var(--color-white-solid) !important;
   box-shadow: 0 3px 8px -2px color-mix(in srgb, var(--artistic-primary) 40%, var(--color-transparent)) !important;

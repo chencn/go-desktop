@@ -177,7 +177,7 @@ describe('app state reducer', () => {
 })
 
 describe('display preference state', () => {
-  it('preserves persisted color tokens while artistic accent follows theme color', () => {
+  it('preserves persisted color tokens while accent follows theme color in every scheme', () => {
     display.hydrateDisplayPreferences({
       displayScheme: 'artistic',
       themeMode: 'dark',
@@ -206,7 +206,33 @@ describe('display preference state', () => {
     exported = display.exportDisplayPreferences()
     expect(exported.displayScheme).toBe('shadcn')
     expect(exported.themeColor).toBe('rose')
-    expect(exported.accentColor).toBe('teal')
+    expect(exported.accentColor).toBe('rose')
     expect(exported.chartColor).toBe('sky')
+    expect(exported.profiles.shadcn.accentColor).toBe('rose')
+  })
+
+  it('ignores direct accent color writes because accent is managed by theme color', () => {
+    display.resetDisplayPreferences()
+    const preferences = display.useDisplayPreferences()
+
+    preferences.setDisplayScheme('shadcn')
+    preferences.setThemeColor('rose')
+    preferences.setAccentColor('teal')
+
+    let exported = display.exportDisplayPreferences()
+    expect(exported.displayScheme).toBe('shadcn')
+    expect(exported.themeColor).toBe('rose')
+    expect(exported.accentColor).toBe('rose')
+    expect(exported.profiles.shadcn.accentColor).toBe('rose')
+
+    preferences.setDisplayScheme('artistic')
+    preferences.setThemeColor('indigo')
+    preferences.setAccentColor('cyan')
+
+    exported = display.exportDisplayPreferences()
+    expect(exported.displayScheme).toBe('artistic')
+    expect(exported.themeColor).toBe('indigo')
+    expect(exported.accentColor).toBe('indigo')
+    expect(exported.profiles.artistic.accentColor).toBe('indigo')
   })
 })

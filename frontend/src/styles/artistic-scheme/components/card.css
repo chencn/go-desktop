@@ -33,9 +33,6 @@
   font-weight: 700;
   color: var(--foreground);
   letter-spacing: 0;
-  background: linear-gradient(135deg, var(--foreground), color-mix(in srgb, var(--primary) 60%, var(--foreground)));
-  -webkit-background-clip: text;
-  background-clip: text;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="card-description"] {
