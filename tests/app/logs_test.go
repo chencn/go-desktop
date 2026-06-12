@@ -433,8 +433,6 @@ func TestStartupDeletesExpiredDailyLogFilesByRetentionDays(t *testing.T) {
 	})
 	defer runtime.Shutdown()
 	if _, err := runtime.SaveSettings(app.Settings{
-		GitHubOwner:              "chencn",
-		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 12,
 		MinimizeToTray:           true,
 		LogRetentionDays:         7,
@@ -456,8 +454,6 @@ func TestRuntimeLogLevelFiltersLowSeverityLogs(t *testing.T) {
 	defer runtime.Shutdown()
 
 	if _, err := runtime.SaveSettings(app.Settings{
-		GitHubOwner:              "chencn",
-		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 3,
 		MinimizeToTray:           true,
 		LogRetentionDays:         30,

@@ -796,12 +796,14 @@ func TestGeneratedAppBindingsDoNotExposeInternalPackages(t *testing.T) {
 // TestSettingsPageOnlyContainsEditableSettings 验证设置页只放可编辑状态，不展示只读版本、路径或环境信息。
 func TestSettingsPageOnlyContainsEditableSettings(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
+	settingsStyles := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.css")
+	wailsAPI := readRootFile(t, "frontend", "src", "api", "wails.ts")
+	projectMetadata := readRootFile(t, "frontend", "src", "shared", "project.ts")
 
 	for _, forbidden := range []string{
 		"Release 来源",
 		"GitHub Owner",
 		"GitHub Repo",
-		"GitHub API 代理",
 		"无网络策略",
 		"SHA256 策略",
 		"当前日志",
@@ -827,16 +829,47 @@ func TestSettingsPageOnlyContainsEditableSettings(t *testing.T) {
 		"{{ hours }} 小时",
 		"updateIntervalOptions",
 		"normaliseUpdateCheckIntervalHours",
+		"githubProxyBase",
+		"GitHub 更新代理",
+		`v-if="draft.updateSource === 'github'"`,
+		`class="settings-row-item is-input-row"`,
+		`persistSettingsPatch({ githubProxyBase: String($event) })`,
 	} {
 		if !strings.Contains(settingsPage, required) {
 			t.Fatalf("settings page should keep editable setting %q", required)
 		}
 	}
 
+	for _, source := range []struct {
+		name    string
+		content string
+	}{
+		{name: "frontend/src/api/wails.ts", content: wailsAPI},
+		{name: "frontend/src/shared/project.ts", content: projectMetadata},
+	} {
+		for _, forbidden := range []string{"githubOwner", "githubRepo"} {
+			if strings.Contains(source.content, forbidden) {
+				t.Fatalf("%s should not expose repository metadata as Settings field %q", source.name, forbidden)
+			}
+		}
+	}
+
+	for _, required := range []string{
+		"grid-template-columns: auto minmax(0, 1fr) auto",
+		".settings-row-item.is-input-row",
+		".settings-row-item.is-input-row .settings-control-input",
+		"grid-column: 1 / -1",
+		"justify-self: stretch",
+	} {
+		if !strings.Contains(settingsStyles, required) {
+			t.Fatalf("settings page mobile rows should keep switches right-aligned and inputs full-width: missing %q", required)
+		}
+	}
+
 	closeIndex := strings.Index(settingsPage, "<strong>关闭到系统托盘</strong>")
 	autoLaunchIndex := strings.Index(settingsPage, "<strong>开机自启</strong>")
 	intervalIndex := strings.Index(settingsPage, "<strong>自动更新检查间隔</strong>")
-	retentionIndex := strings.Index(settingsPage, "<strong>每日日志保留周期</strong>")
+	retentionIndex := strings.Index(settingsPage, "<strong>日志保留周期</strong>")
 	if closeIndex < 0 || autoLaunchIndex < 0 || intervalIndex < 0 || retentionIndex < 0 || !(closeIndex < autoLaunchIndex && autoLaunchIndex < intervalIndex && intervalIndex < retentionIndex) {
 		t.Fatalf("business settings should order window/startup behavior before time-based selects: close=%d auto=%d interval=%d retention=%d", closeIndex, autoLaunchIndex, intervalIndex, retentionIndex)
 	}
@@ -870,7 +903,8 @@ func TestSettingsPageUsesCurrentDisplayPreferenceControls(t *testing.T) {
 		"界面布局密度",
 		"容器与卡片边框强度",
 		"侧边导航风格",
-		"组件高矮风格",
+		"侧边导航强调",
+		"界面风格",
 		"themeOptions",
 		"displayColorOptions",
 		"baseOptions",
@@ -883,6 +917,7 @@ func TestSettingsPageUsesCurrentDisplayPreferenceControls(t *testing.T) {
 		"densityOptions",
 		"cardBorderOptions",
 		"menuOptions",
+		"menuAccentOptions",
 		"styleOptions",
 	} {
 		if !strings.Contains(settingsPage, required) {
@@ -923,6 +958,7 @@ func TestSettingsPageUsesCurrentDisplayPreferenceControls(t *testing.T) {
 		"setChartColor",
 		"setIconTone",
 		"setMenu",
+		"setMenuAccent",
 	} {
 		if !strings.Contains(displayState, required) {
 			t.Fatalf("display state should persist current display preference axis %q", required)
@@ -930,11 +966,12 @@ func TestSettingsPageUsesCurrentDisplayPreferenceControls(t *testing.T) {
 	}
 
 	sidebarStyleStart := strings.Index(settingsPage, "侧边导航风格 (Sidebar Style)")
-	uiStyleStart := strings.Index(settingsPage, "组件高矮风格 (UI Height Base)")
-	if sidebarStyleStart < 0 || uiStyleStart < 0 || !(sidebarStyleStart < uiStyleStart) {
-		t.Fatal("settings page should keep sidebar style before UI height base")
+	menuAccentStart := strings.Index(settingsPage, "侧边导航强调 (Menu Accent)")
+	uiStyleStart := strings.Index(settingsPage, "界面风格 (UI Style)")
+	if sidebarStyleStart < 0 || menuAccentStart < 0 || uiStyleStart < 0 || !(sidebarStyleStart < menuAccentStart && menuAccentStart < uiStyleStart) {
+		t.Fatal("settings page should keep sidebar style, menu accent, then UI style")
 	}
-	sidebarStyleBlock := settingsPage[sidebarStyleStart:uiStyleStart]
+	sidebarStyleBlock := settingsPage[sidebarStyleStart:menuAccentStart]
 	for _, required := range []string{
 		`<div class="visual-segmented-control">`,
 		`v-for="[value, label] in menuOptions"`,
@@ -947,6 +984,19 @@ func TestSettingsPageUsesCurrentDisplayPreferenceControls(t *testing.T) {
 	}
 	if strings.Contains(sidebarStyleBlock, "<UiSelect") {
 		t.Fatal("sidebar style has only two visual modes and should not render as a dropdown")
+	}
+	menuAccentBlock := settingsPage[menuAccentStart:uiStyleStart]
+	for _, required := range []string{
+		`v-for="[value, label] in menuAccentOptions"`,
+		`:class="{ 'is-active': display.menuAccent.value === value }"`,
+		`@click="asMenuAccent(value)"`,
+	} {
+		if !strings.Contains(menuAccentBlock, required) {
+			t.Fatalf("menu accent should use segmented buttons like density, missing %q", required)
+		}
+	}
+	if strings.Contains(menuAccentBlock, "<UiSelect") {
+		t.Fatal("menu accent has only two visual modes and should not render as a dropdown")
 	}
 
 	for _, forbidden := range []string{
@@ -1366,8 +1416,8 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		"<Teleport to=\"body\"",
 		":disabled=\"!fullscreen\"",
 		`cn('page-stack log-page'`,
-		"<UiCard>",
-		`UiCardContent class="log-page-main"`,
+		`<header class="split-header log-page-header">`,
+		`<div class="log-page-main">`,
 		"filtersOpen = ref(false)",
 		"fullscreen = ref(false)",
 		"aria-expanded",
@@ -1415,10 +1465,15 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		":global(:root.is-log-fullscreen .app-shell)",
 		":global(:root.is-log-fullscreen) .log-fullscreen",
 		".page-stack.log-fullscreen",
-		`.log-fullscreen > [data-slot="card"]`,
+		".log-fullscreen .log-page-header",
 		".log-fullscreen .log-page-main",
 		".log-fullscreen.has-open-filters .log-page-main",
 		`.log-fullscreen .log-stream-panel [data-slot="table-container"]`,
+		`.content-scroll.is-logs-view {
+    align-content: start;
+    overflow: auto;
+  }`,
+		`height: min(44vh, 360px)`,
 		"z-index: 40",
 		"height: 100dvh",
 		"background: var(--background)",
@@ -1437,6 +1492,24 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 	}
 	if strings.Contains(logStyles, "z-index: 2147483647") {
 		t.Fatal("log fullscreen must not use max z-index; alert dialogs still need to appear above focused logs")
+	}
+	mobileLogsStart := strings.Index(logStyles, "@media (max-width: 980px)")
+	if mobileLogsStart < 0 {
+		t.Fatal("logs page should keep a mobile-only layout override")
+	}
+	mobileLogStyles := logStyles[mobileLogsStart:]
+	for _, required := range []string{
+		`display: flex;`,
+		`flex-direction: column;`,
+		`align-content: start;`,
+		`align-self: start;`,
+		`height: min(44vh, 360px);`,
+		`overflow-x: auto !important;`,
+		`min-width: 560px;`,
+	} {
+		if !strings.Contains(mobileLogStyles, required) {
+			t.Fatalf("logs page mobile layout should define %q", required)
+		}
 	}
 
 	for _, forbidden := range []string{
@@ -1645,21 +1718,32 @@ func TestTopbarUsesSharedNavigationAndResponsiveUtilityRow(t *testing.T) {
 	}
 	for _, required := range []string{
 		"pageSubtitle",
+		"isWindowControlsDisabled",
+		":disabled=\"isWindowControlsDisabled\"",
+		"if (isWindowControlsDisabled.value) return",
 		"topbar-utility",
 		"topbar-actions",
 		"window-controls",
 		"compact-nav",
-		"grid-template-columns: minmax(0, 1fr) auto auto",
-		"display: contents",
-		"grid-column: auto",
-		"grid-row: auto",
+		"grid-template-columns: minmax(0, 1fr) auto",
+		"grid-template-rows: auto auto",
+		"padding-right: var(--window-controls-width)",
+		"top: 36px",
+		"right: 0",
+		"width: calc(var(--window-controls-width) / 3 * 2)",
+		".topbar-actions > button",
+		"width: calc(var(--window-controls-width) / 3)",
 		"grid-column: 1 / -1",
+		"grid-row: 1",
 		"grid-row: 2",
 		"justify-self: stretch",
 	} {
 		if !strings.Contains(appChrome+views+appChromeStyles, required) {
 			t.Fatalf("responsive topbar should share navigation metadata and utility row %q", required)
 		}
+	}
+	if strings.Contains(appChromeStyles, ".window-controls {\n    position: static") {
+		t.Fatal("mobile topbar must keep native window controls at the original absolute top-right position")
 	}
 }
 

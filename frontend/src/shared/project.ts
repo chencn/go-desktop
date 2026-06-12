@@ -42,8 +42,6 @@ export const projectMetadata = {
 // defaultSettings 从完整元数据中提取运行期可编辑设置的默认值。
 export const defaultSettings = {
   updateSource: projectMetadata.update.defaultSource,
-  githubOwner: projectMetadata.github.owner,
-  githubRepo: projectMetadata.github.repo,
   githubProxyBase: projectMetadata.settingsDefaults.githubProxyBase,
   updateCheckIntervalHours: projectMetadata.settingsDefaults.updateCheckIntervalHours,
   minimizeToTray: projectMetadata.settingsDefaults.minimizeToTray,

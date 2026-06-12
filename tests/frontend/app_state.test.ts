@@ -5,8 +5,6 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('../../frontend/src/api/wails', () => {
   const defaultRuntimeSettings = {
     updateSource: 'local',
-    githubOwner: 'chencn',
-    githubRepo: 'go-desktop',
     githubProxyBase: '',
     updateCheckIntervalHours: 6,
     minimizeToTray: true,
@@ -25,7 +23,7 @@ vi.mock('../../frontend/src/api/wails', () => {
     iconTone: 'default',
     menu: 'default',
     menuAccent: 'subtle',
-    radius: 'default',
+    radius: 'medium',
     textSize: 'normal',
     themeColor: 'neutral',
     uiStyle: 'vega',
@@ -33,13 +31,13 @@ vi.mock('../../frontend/src/api/wails', () => {
   const defaultArtisticDisplayProfile = {
     ...defaultShadcnDisplayProfile,
     accentColor: 'apple-blue',
-    baseColor: 'stone',
-    cardBorder: 'soft',
-    chartColor: 'emerald',
+    baseColor: 'neutral',
+    cardBorder: 'visible',
+    chartColor: 'apple-blue',
     iconTone: 'colorful',
     menu: 'default',
     menuAccent: 'bold',
-    radius: 'large',
+    radius: 'medium',
     themeColor: 'apple-blue',
   }
 

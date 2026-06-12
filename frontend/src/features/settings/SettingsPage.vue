@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Archive, CalendarClock, CloudDownload, EyeOff, ListFilter, MonitorUp, Palette, PanelBottomClose, Rocket, RotateCcw, Sun, Moon, Wrench } from '@lucide/vue'
-import { exportDisplayPreferences, useDisplayPreferences, type AccentColor, type BaseColor, type CardBorder, type ChartColor, type Density, type DisplayScheme, type IconTone, type Menu as MenuPreference, type Radius, type TextSize, type ThemeColor, type ThemeMode, type UIStyle } from '@/app/display'
+import { exportDisplayPreferences, useDisplayPreferences, type AccentColor, type BaseColor, type CardBorder, type ChartColor, type Density, type DisplayScheme, type IconTone, type Menu as MenuPreference, type MenuAccent, type Radius, type TextSize, type ThemeColor, type ThemeMode, type UIStyle } from '@/app/display'
 import { useAppStore } from '@/stores/app'
 import { defaultRuntimeSettings, type LogLevel, type Settings, type UpdateSource } from '@/api/wails'
 
@@ -71,8 +71,8 @@ const displayColorOptions: DisplayColorOption[] = [
   { value: 'emerald', label: '薄荷绿 (Emerald)', kind: 'brand' },
   { value: 'teal', label: '松石绿 (Teal Forest)', kind: 'brand' },
   { value: 'cyan', label: '晴空蓝 (Sky Cyan)', kind: 'brand' },
-  { value: 'apple-blue', label: 'Apple 蓝 (Apple Blue)', kind: 'brand' },
-  { value: 'blue', label: 'AntD 蓝 (Ant Design Blue)', kind: 'brand' },
+  { value: 'apple-blue', label: 'Apple Blue (苹果蓝)', kind: 'brand' },
+  { value: 'blue', label: 'AntD Blue(AntD 蓝)', kind: 'brand' },
   { value: 'indigo', label: '靛蓝色 (Indigo Night)', kind: 'brand' },
   { value: 'sky', label: '天际蓝 (Sky)', kind: 'brand' },
 ]
@@ -106,6 +106,7 @@ const menuOptions: Array<[MenuPreference, string]> = [
   ['default', '默认 (Default)'],
   ['inverted', '反色 (Inverted)']
 ]
+const menuAccentOptions: Array<[MenuAccent, string]> = [['subtle', '轻强调'], ['bold', '强强调']]
 // textOptions 写入 DOM dataset，由 CSS token 层统一响应。
 const textOptions: Array<[TextSize, string]> = [['small', '小'], ['normal', '正常'], ['medium', '中'], ['large', '大']]
 // radiusOptions 写入 --radius，具体边界由主题样式解释。
@@ -130,8 +131,8 @@ const logLevelOptions: Array<[LogLevel, string]> = [['debug', 'debug'], ['info',
 
 // 显示方案卡片信息定义，附带特色色彩发光类
 const schemeCardOptions: Array<[DisplayScheme, string, string, string]> = [
-  ['shadcn', 'shadcn', '经典灵活的自由配置', 'glow-shadcn'],
-  ['artistic', 'Artistic', '清爽柔和的品牌主题', 'glow-artistic']
+  ['artistic', 'Artistic', '清爽柔和的品牌主题', 'glow-artistic'],
+  ['shadcn', 'shadcn', '经典灵活的自由配置', 'glow-shadcn']
 ]
 
 // 辅助函数：快速获取色名对应标签
@@ -194,8 +195,6 @@ function persistSettingsPatch(patch: Partial<Settings>) {
 function normaliseSettingsDraft(settings: Settings): Settings {
   return {
     updateSource: normaliseUpdateSource(settings.updateSource),
-    githubOwner: settings.githubOwner.trim() || defaultRuntimeSettings.githubOwner,
-    githubRepo: settings.githubRepo.trim() || defaultRuntimeSettings.githubRepo,
     githubProxyBase: settings.githubProxyBase.trim(),
     updateCheckIntervalHours: normaliseUpdateCheckIntervalHours(settings.updateCheckIntervalHours),
     minimizeToTray: Boolean(settings.minimizeToTray),
@@ -281,6 +280,12 @@ function asMenu(value: string) {
   persistDisplayPreferences()
 }
 
+function asMenuAccent(value: string) {
+  if (!ensureDisplayReady()) return
+  display.setMenuAccent(value as MenuAccent)
+  persistDisplayPreferences()
+}
+
 function asRadius(value: string) {
   if (!ensureDisplayReady()) return
   display.setRadius(value as Radius)
@@ -359,20 +364,19 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
 
 <template>
   <div class="page-stack">
-    <section class="settings-grid-layout">
+    <section class="settings-section" aria-label="应用与业务设置">
 
-      <!-- 左栏：应用基础与业务设置 -->
-      <UiCard class="settings-main-card">
-        <UiCardHeader>
-          <div class="section-title-row">
-            <span class="nav-icon icon-tone-orange" aria-hidden="true"><Wrench :size="19" /></span>
-            <div>
-              <UiCardTitle>应用与业务设置</UiCardTitle>
-              <UiCardDescription>控制窗口托盘行为、开机自启策略、自动更新周期及每日日志的清理策略。</UiCardDescription>
-            </div>
+      <!-- 应用基础与业务设置 -->
+      <div class="split-header settings-section-heading">
+        <div class="section-title-row">
+          <span class="data-icon icon-tone-orange" aria-hidden="true"><Wrench :size="17" /></span>
+          <div>
+            <h3>应用与业务设置</h3>
+            <p>控制窗口托盘行为、开机自启策略、自动更新周期及每日日志的清理策略。</p>
           </div>
-        </UiCardHeader>
-        <UiCardContent class="settings-control-list">
+        </div>
+      </div>
+      <div class="settings-control-list">
 
           <div class="settings-row-item">
             <span class="data-icon icon-tone-cyan" aria-hidden="true"><PanelBottomClose :size="17" /></span>
@@ -414,7 +418,7 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
             <span class="data-icon icon-tone-blue" aria-hidden="true"><CloudDownload :size="17" /></span>
             <div class="row-copy">
               <strong>系统更新源</strong>
-              <small>选择获取客户端新版本 manifest 的检查来源。</small>
+              <small>选择系统更新源</small>
             </div>
             <UiSelect :model-value="draft.updateSource" :disabled="!settingsReady" @update:model-value="persistSettingsPatch({ updateSource: normaliseUpdateSource(String($event)) })">
               <UiSelectTrigger class="settings-control-select" aria-label="更新源">
@@ -424,6 +428,22 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
                 <UiSelectItem v-for="[value, label] in updateSourceOptions" :key="value" :value="value">{{ label }}</UiSelectItem>
               </UiSelectContent>
             </UiSelect>
+          </div>
+
+          <div v-if="draft.updateSource === 'github'" class="settings-row-item is-input-row">
+            <span class="data-icon icon-tone-cyan" aria-hidden="true"><CloudDownload :size="17" /></span>
+            <div class="row-copy">
+              <strong>GitHub 更新代理</strong>
+              <small>GitHub 更新国内代理加速；</small>
+            </div>
+            <UiInput
+              class="settings-control-input"
+              :model-value="draft.githubProxyBase"
+              :disabled="!settingsReady"
+              aria-label="GitHub 更新代理"
+              placeholder="https://gh-proxy.com"
+              @update:model-value="persistSettingsPatch({ githubProxyBase: String($event) })"
+            />
           </div>
 
           <div class="settings-row-item is-select-row">
@@ -445,8 +465,8 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
           <div class="settings-row-item is-select-row">
             <span class="data-icon icon-tone-orange" aria-hidden="true"><Archive :size="17" /></span>
             <div class="row-copy">
-              <strong>每日日志保留周期</strong>
-              <small>日志文件夹中 JSONL 文本文件保留的最大时长。</small>
+              <strong>日志保留周期</strong>
+              <small>日志保留的最大天数</small>
             </div>
             <UiSelect :model-value="draft.logRetentionDays" :disabled="!settingsReady" @update:model-value="persistSettingsPatch({ logRetentionDays: Number($event) })">
               <UiSelectTrigger class="settings-control-select" aria-label="保留周期">
@@ -462,7 +482,7 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
             <span class="data-icon icon-tone-red" aria-hidden="true"><ListFilter :size="17" /></span>
             <div class="row-copy">
               <strong>控制台日志级别</strong>
-              <small>调低日志级别可以帮您记录更详尽的信息用于异常定位。</small>
+              <small>根据不同场景选择不同的日志级别</small>
             </div>
             <UiSelect :model-value="draft.logLevel" :disabled="!settingsReady" @update:model-value="persistSettingsPatch({ logLevel: normaliseLogLevel(String($event)) })">
               <UiSelectTrigger class="settings-control-select" aria-label="日志级别">
@@ -474,24 +494,24 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
             </UiSelect>
           </div>
 
-        </UiCardContent>
-      </UiCard>
+      </div>
+    </section>
 
-      <!-- 右栏：外观与个性化艺术主题设置 -->
-      <UiCard class="settings-main-card">
-        <UiCardHeader class="aesthetic-card-header">
-          <div class="section-title-row">
-            <span class="nav-icon icon-tone-purple" aria-hidden="true"><Palette :size="19" /></span>
-            <div>
-              <UiCardTitle>外观与个性化</UiCardTitle>
-              <UiCardDescription>选择显示方案、调配主题与圆角，配置仅即时反馈至您的桌面偏好中。</UiCardDescription>
-            </div>
+    <section class="settings-section" aria-label="外观与个性化">
+      <!-- 外观与个性化艺术主题设置 -->
+      <div class="split-header settings-section-heading aesthetic-section-heading">
+        <div class="section-title-row">
+          <span class="data-icon icon-tone-purple" aria-hidden="true"><Palette :size="17" /></span>
+          <div>
+            <h3>外观与个性化</h3>
+            <p>选择显示方案、调配主题与圆角，配置仅即时反馈至您的桌面偏好中。</p>
           </div>
-          <UiButton class="aesthetic-reset-btn" variant="outline" size="sm" :disabled="!displayReady" @click="resetDisplayDialogOpen = true">
-            <RotateCcw :size="14" /> 恢复默认预设
-          </UiButton>
-        </UiCardHeader>
-        <UiCardContent class="aesthetic-content-stack">
+        </div>
+        <UiButton class="aesthetic-reset-btn" variant="outline" size="sm" :disabled="!displayReady" @click="resetDisplayDialogOpen = true">
+          <RotateCcw :size="14" /> 恢复默认预设
+        </UiButton>
+      </div>
+      <div class="aesthetic-content-stack">
 
           <!-- 显示方案选择卡片组 -->
           <div class="aesthetic-field-col scheme-field-container">
@@ -737,9 +757,28 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
             </div>
           </div>
 
+          <!-- 侧边导航选中态强调 -->
+          <div class="aesthetic-field-col">
+            <label class="aesthetic-field-title">侧边导航强调 (Menu Accent)</label>
+            <p class="field-desc-para">控制当前选中菜单项使用轻量底色，还是直接使用品牌主色突出显示。</p>
+            <div class="visual-segmented-control">
+              <button
+                v-for="[value, label] in menuAccentOptions"
+                :key="value"
+                type="button"
+                class="visual-segment-btn"
+                :class="{ 'is-active': display.menuAccent.value === value }"
+                :disabled="!displayReady"
+                @click="asMenuAccent(value)"
+              >
+                <span>{{ label }}</span>
+              </button>
+            </div>
+          </div>
+
           <!-- 组件风格基底 -->
           <div class="aesthetic-field-col">
-            <label class="aesthetic-field-title">组件高矮风格 (UI Height Base)</label>
+            <label class="aesthetic-field-title">界面风格 (UI Style)</label>
             <p class="field-desc-para">调整主要按钮和表单输入框的基础高度与比例。</p>
             <UiSelect :model-value="display.uiStyle.value" :disabled="!displayReady" @update:model-value="asStyle">
               <UiSelectTrigger class="settings-control-select" aria-label="组件风格">
@@ -753,8 +792,7 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
 
 
 
-        </UiCardContent>
-      </UiCard>
+      </div>
 
     </section>
 

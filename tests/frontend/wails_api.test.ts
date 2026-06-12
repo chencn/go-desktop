@@ -51,8 +51,27 @@ describe('wails api fallback boundaries', () => {
     const { getSettings } = await import('../../frontend/src/api/wails')
 
     await expect(getSettings()).resolves.toMatchObject({
-      githubOwner: 'chencn',
-      githubRepo: 'go-desktop',
+      updateSource: 'github',
+      githubProxyBase: 'https://gh-proxy.com',
+    })
+  })
+
+  it('falls back in local Vite browser dev when Wails is unavailable', async () => {
+    vi.stubEnv('DEV', true)
+    vi.stubGlobal('window', {
+      ...window,
+      location: {
+        hostname: '127.0.0.1',
+        port: '9245',
+        protocol: 'http:',
+      },
+      localStorage: window.localStorage,
+    })
+    const { getLicenseStatus } = await import('../../frontend/src/api/wails')
+
+    await expect(getLicenseStatus()).resolves.toMatchObject({
+      required: false,
+      authorized: true,
     })
   })
 

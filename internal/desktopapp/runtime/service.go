@@ -284,13 +284,6 @@ type Settings struct {
 	// UpdateSource 更新源：github 或 local。
 	UpdateSource string `json:"updateSource"`
 
-	// GitHubOwner GitHub 仓库所有者（用户名或组织名）
-	// 用于检查更新时的 API 请求
-	GitHubOwner string `json:"githubOwner"`
-
-	// GitHubRepo GitHub 仓库名称
-	GitHubRepo string `json:"githubRepo"`
-
 	// GitHubProxyBase 会作为 GitHub API、安装资产和 .sha256 URL 的统一前缀；local 源不使用它。
 	GitHubProxyBase string `json:"githubProxyBase"`
 

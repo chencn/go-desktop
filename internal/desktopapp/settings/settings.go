@@ -10,8 +10,6 @@ import (
 
 const (
 	KeyUpdateSource             = "update.source"
-	KeyGitHubOwner              = "github.owner"
-	KeyGitHubRepo               = "github.repo"
 	KeyGitHubProxyBase          = "github.proxy_base"
 	KeyUpdateCheckIntervalHours = "update.check_interval_hours"
 	KeyWindowMinimizeToTray     = "window.minimize_to_tray"
@@ -27,8 +25,6 @@ const defaultLogLevel = "info"
 // Settings 是业务层设置模型；持久化时会拆成 config_items 字符串 KV。
 type Settings struct {
 	UpdateSource             string
-	GitHubOwner              string
-	GitHubRepo               string
 	GitHubProxyBase          string
 	UpdateCheckIntervalHours int
 	MinimizeToTray           bool
@@ -43,8 +39,6 @@ type Settings struct {
 func Default() Settings {
 	return Settings{
 		UpdateSource:             metadata.DefaultUpdateSource,
-		GitHubOwner:              metadata.GitHubOwner,
-		GitHubRepo:               metadata.GitHubRepo,
 		GitHubProxyBase:          metadata.DefaultGitHubProxyBase,
 		UpdateCheckIntervalHours: metadata.DefaultUpdateCheckIntervalHours,
 		MinimizeToTray:           metadata.DefaultMinimizeToTray,
@@ -60,12 +54,6 @@ func Default() Settings {
 // LogRetentionDays=-1 表示永不清理；0 或小于 -1 回退到 metadata 默认值。
 func Normalize(value Settings) Settings {
 	value.UpdateSource = NormalizeUpdateSource(value.UpdateSource)
-	if value.GitHubOwner == "" {
-		value.GitHubOwner = metadata.GitHubOwner
-	}
-	if value.GitHubRepo == "" {
-		value.GitHubRepo = metadata.GitHubRepo
-	}
 	value.UpdateCheckIntervalHours = NormalizeUpdateCheckIntervalHours(value.UpdateCheckIntervalHours)
 	if value.LogRetentionDays == 0 || value.LogRetentionDays < -1 {
 		value.LogRetentionDays = metadata.DefaultLogRetentionDays
@@ -111,8 +99,6 @@ func NormalizeLogLevel(level string) string {
 // FromConfigItems 从 SQLite 配置项恢复 typed 设置，缺失或解析失败的项使用 base。
 func FromConfigItems(items map[string]configstore.ConfigItem, base Settings) Settings {
 	base.UpdateSource = configString(items, KeyUpdateSource, base.UpdateSource)
-	base.GitHubOwner = configString(items, KeyGitHubOwner, base.GitHubOwner)
-	base.GitHubRepo = configString(items, KeyGitHubRepo, base.GitHubRepo)
 	base.GitHubProxyBase = configString(items, KeyGitHubProxyBase, base.GitHubProxyBase)
 	base.UpdateCheckIntervalHours = configInt(items, KeyUpdateCheckIntervalHours, base.UpdateCheckIntervalHours)
 	base.MinimizeToTray = configBool(items, KeyWindowMinimizeToTray, base.MinimizeToTray)
@@ -129,8 +115,6 @@ func Values(value Settings) map[string]string {
 	value = Normalize(value)
 	return map[string]string{
 		KeyUpdateSource:             value.UpdateSource,
-		KeyGitHubOwner:              value.GitHubOwner,
-		KeyGitHubRepo:               value.GitHubRepo,
 		KeyGitHubProxyBase:          value.GitHubProxyBase,
 		KeyUpdateCheckIntervalHours: strconv.Itoa(value.UpdateCheckIntervalHours),
 		KeyWindowMinimizeToTray:     strconv.FormatBool(value.MinimizeToTray),
@@ -147,8 +131,6 @@ func Definitions() []configstore.ConfigItem {
 	defaults := Default()
 	return []configstore.ConfigItem{
 		{Key: KeyUpdateSource, Category: "update", Title: "更新源", Description: "选择 GitHub Release 或本地静态 manifest 作为唯一更新检查来源。", ValueType: "string", DefaultValue: defaults.UpdateSource, Value: defaults.UpdateSource, SortOrder: 90},
-		{Key: KeyGitHubOwner, Category: "github", Title: "GitHub Owner", Description: "用于 Release 更新检查的仓库所有者。", ValueType: "string", DefaultValue: defaults.GitHubOwner, Value: defaults.GitHubOwner, SortOrder: 10},
-		{Key: KeyGitHubRepo, Category: "github", Title: "GitHub Repo", Description: "用于 Release 更新检查的仓库名称。", ValueType: "string", DefaultValue: defaults.GitHubRepo, Value: defaults.GitHubRepo, SortOrder: 20},
 		{Key: KeyGitHubProxyBase, Category: "github", Title: "GitHub API 代理", Description: "为空时直接使用 GitHub 官方 API。", ValueType: "string", DefaultValue: defaults.GitHubProxyBase, Value: defaults.GitHubProxyBase, SortOrder: 30},
 		{Key: KeyUpdateCheckIntervalHours, Category: "update", Title: "检查间隔", Description: "自动检查 GitHub Release 的时间间隔。", ValueType: "int", DefaultValue: strconv.Itoa(defaults.UpdateCheckIntervalHours), Value: strconv.Itoa(defaults.UpdateCheckIntervalHours), SortOrder: 100},
 		{Key: KeyWindowMinimizeToTray, Category: "window", Title: "关闭到系统托盘", Description: "点击关闭按钮时隐藏窗口到系统托盘。", ValueType: "bool", DefaultValue: strconv.FormatBool(defaults.MinimizeToTray), Value: strconv.FormatBool(defaults.MinimizeToTray), SortOrder: 200},

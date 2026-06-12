@@ -422,8 +422,6 @@ func TestCheckUpdateUsesLocalManifestWhenSourceIsLocal(t *testing.T) {
 	defer runtime.Shutdown()
 	if _, err := runtime.SaveSettings(app.Settings{
 		UpdateSource:             "local",
-		GitHubOwner:              "chencn",
-		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 3,
 		MinimizeToTray:           true,
 		LogRetentionDays:         30,

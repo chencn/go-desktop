@@ -25,8 +25,6 @@ func TestSaveSettingsRollsBackWhenStartupIntegrationFails(t *testing.T) {
 	previous := runtimeService.SettingsSnapshot()
 	_, err := runtimeService.SaveSettings(appruntime.Settings{
 		UpdateSource:             "local",
-		GitHubOwner:              "example",
-		GitHubRepo:               "desktop",
 		UpdateCheckIntervalHours: 6,
 		MinimizeToTray:           false,
 		LogRetentionDays:         60,

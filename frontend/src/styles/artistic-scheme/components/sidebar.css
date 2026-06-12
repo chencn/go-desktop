@@ -46,7 +46,7 @@
 }
 
 :root[data-display-scheme="artistic"] .sidebar-brand:hover .brand-mark {
-  transform: rotate(8deg) scale(1.08);
+  transform: scale(1.08);
 }
 
 /* 默认风格下的品牌图标色彩 */

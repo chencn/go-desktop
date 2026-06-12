@@ -351,6 +351,30 @@ func TestStartupWindowLifecycleKeepsMainWindowHiddenUntilFrontendReady(t *testin
 	}
 }
 
+// TestMainWindowKeepsWindowsFramelessDecorations 验证主窗口保留 Windows 原生 DWM 外框、阴影和圆角。
+func TestMainWindowKeepsWindowsFramelessDecorations(t *testing.T) {
+	source := readRootFile(t, "main.go")
+
+	start := strings.Index(source, `Name:            "main"`)
+	end := strings.Index(source, `appRuntime.SetMainWindow(mainWindow)`)
+	if start < 0 || end < 0 || end <= start {
+		t.Fatal("main.go 缺少可检查的主窗口创建结构")
+	}
+	mainWindowBlock := source[start:end]
+	for _, required := range []string{
+		"Frameless:       true",
+		"DisableFramelessWindowDecorations: false",
+		"CustomTheme:                       mainWindowWindowsTheme()",
+		"BorderColour: application.NewRGBPtr(100, 116, 139)",
+		"BorderColour: application.NewRGBPtr(203, 213, 225)",
+		"Windows 原生 DWM 外框色",
+	} {
+		if !strings.Contains(mainWindowBlock+source, required) {
+			t.Fatalf("主窗口 Windows 原生边界合同缺少 %q", required)
+		}
+	}
+}
+
 // TestRuntimeShowMainWindowOwnsSplashHandoff 保护 splash 到主窗口的交接点集中在 Runtime.ShowMainWindow。
 func TestRuntimeShowMainWindowOwnsSplashHandoff(t *testing.T) {
 	mainSource := readRootFile(t, "main.go")

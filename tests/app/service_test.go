@@ -20,8 +20,6 @@ func TestSaveSettingsPersistsAndLoadsFromSQLiteConfig(t *testing.T) {
 
 	if _, err := runtimeService.SaveSettings(app.Settings{
 		UpdateSource:             "local",
-		GitHubOwner:              "example",
-		GitHubRepo:               "desktop",
 		GitHubProxyBase:          "https://proxy.example",
 		UpdateCheckIntervalHours: 6,
 		MinimizeToTray:           false,
@@ -39,9 +37,6 @@ func TestSaveSettingsPersistsAndLoadsFromSQLiteConfig(t *testing.T) {
 	settings := reloaded.SettingsSnapshot()
 	if settings.UpdateSource != "local" {
 		t.Fatalf("expected update source to persist, got %#v", settings)
-	}
-	if settings.GitHubOwner != "example" || settings.GitHubRepo != "desktop" {
-		t.Fatalf("expected github settings to persist, got %#v", settings)
 	}
 	if settings.GitHubProxyBase != "https://proxy.example" {
 		t.Fatalf("expected proxy to persist, got %#v", settings)
@@ -85,8 +80,6 @@ func TestSaveSettingsAllowsNeverCleanLogRetention(t *testing.T) {
 
 	if _, err := runtimeService.SaveSettings(app.Settings{
 		UpdateSource:             "ftp",
-		GitHubOwner:              "chencn",
-		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 12,
 		MinimizeToTray:           true,
 		LogRetentionDays:         -1,
@@ -108,8 +101,6 @@ func TestSaveSettingsNormalisesUnsupportedUpdateInterval(t *testing.T) {
 	defer runtimeService.Shutdown()
 
 	if _, err := runtimeService.SaveSettings(app.Settings{
-		GitHubOwner:              "chencn",
-		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 48,
 		MinimizeToTray:           true,
 		LogRetentionDays:         30,
@@ -189,7 +180,7 @@ func TestDisplayPreferencesNormaliseInvalidValues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("save display preferences: %v", err)
 	}
-	if saved.UIStyle != "vega" || saved.ThemeMode != "light" || saved.BaseColor != "stone" {
+	if saved.UIStyle != "vega" || saved.ThemeMode != "light" || saved.BaseColor != "neutral" {
 		t.Fatalf("expected invalid display values to fall back to defaults, got %#v", saved)
 	}
 	if saved.ThemeColor != "blue" || saved.AccentColor != "blue" || saved.MenuAccent != "bold" {
@@ -373,6 +364,9 @@ func TestDisplayPreferencesJSONDefaultsWhenDatabaseIsEmpty(t *testing.T) {
 	if preferences.Menu != "default" {
 		t.Fatalf("期望空数据库默认菜单值可被设置页直接展示，实际为 %#v", preferences)
 	}
+	if preferences.BaseColor != "neutral" || preferences.ChartColor != "apple-blue" || preferences.Radius != "medium" || preferences.CardBorder != "visible" {
+		t.Fatalf("期望空数据库默认值与外观设置页默认预设一致，实际为 %#v", preferences)
+	}
 }
 
 // TestDisplayPreferencesArtisticNormalisesValues 验证后端裁决 artistic 方案非法值，并把辅助色托管为主题色。
@@ -529,8 +523,6 @@ func TestRuntimeHideOnCloseHonoursSettingAndQuitState(t *testing.T) {
 	}
 
 	if _, err := runtimeService.SaveSettings(app.Settings{
-		GitHubOwner:              "chencn",
-		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 12,
 		MinimizeToTray:           false,
 		LogRetentionDays:         30,
@@ -542,8 +534,6 @@ func TestRuntimeHideOnCloseHonoursSettingAndQuitState(t *testing.T) {
 	}
 
 	if _, err := runtimeService.SaveSettings(app.Settings{
-		GitHubOwner:              "chencn",
-		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 12,
 		MinimizeToTray:           true,
 		LogRetentionDays:         30,
@@ -562,8 +552,6 @@ func TestSaveSettingsReturnsErrorWhenConfigStoreUnavailable(t *testing.T) {
 	defer runtimeService.Shutdown()
 
 	_, err := runtimeService.SaveSettings(app.Settings{
-		GitHubOwner:              "chencn",
-		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 3,
 		MinimizeToTray:           true,
 		LogRetentionDays:         30,

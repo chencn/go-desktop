@@ -424,9 +424,17 @@
   }
 
   .topbar {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
     align-items: center;
+    column-gap: 10px;
     row-gap: 12px;
+  }
+
+  .topbar-title {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    padding-right: var(--window-controls-width);
   }
 
   .topbar-utility {
@@ -434,12 +442,18 @@
   }
 
   .topbar-actions {
+    position: absolute;
+    top: 36px;
+    right: 0;
+    width: calc(var(--window-controls-width) / 3 * 2);
+    gap: 0;
     justify-content: flex-end;
   }
 
-  .window-controls {
-    grid-column: auto;
-    grid-row: auto;
+  .topbar-actions > button {
+    width: calc(var(--window-controls-width) / 3);
+    height: 36px;
+    border-radius: 0;
   }
 
   .compact-nav {
@@ -460,5 +474,10 @@
 
   .content-scroll {
     gap: 18px;
+  }
+
+  .content-scroll.is-logs-view {
+    align-content: start;
+    overflow: auto;
   }
 }

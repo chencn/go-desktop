@@ -1,41 +1,43 @@
 /* SettingsPage.css - 温暖落日毛玻璃风格设置页面专属样式 */
 
-.settings-grid-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.settings-section {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
   width: 100%;
-  margin: 0 auto;
 }
 
-.settings-main-card {
-  height: auto;
-  padding-top: 14px !important;
-  padding-bottom: 14px !important;
-  gap: 12px !important;
-  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 260ms ease, border-color 260ms ease !important;
-}
-
-.settings-main-card:hover {
-  transform: translateY(-4px) scale(1.008) !important;
-}
-
-.aesthetic-card-header {
+.aesthetic-section-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
 }
 
+.settings-section-heading h3 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: var(--fs-section);
+  line-height: 1.25;
+}
+
+.settings-section-heading p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: var(--fs-caption);
+  line-height: 1.45;
+}
+
 .aesthetic-reset-btn {
   flex-shrink: 0;
 }
 
-/* 统一的配置项流式网格，确保上下两个卡片内部列数一致，完美对齐 */
+/* 统一的配置项流式网格，确保上下两个分区内部列数一致，完美对齐 */
 .settings-control-list,
 .aesthetic-content-stack {
+  container: settings-fields / inline-size;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -81,6 +83,11 @@
 
 .settings-control-select {
   width: 100%;
+}
+
+.settings-control-input {
+  width: min(280px, 100%);
+  justify-self: end;
 }
 
 .settings-control-switch {
@@ -345,8 +352,29 @@
 
 /* 响应式断点 */
 @media (max-width: 768px) {
-  .settings-grid-layout {
-    gap: 20px;
+  .settings-section {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 1535px) {
+  .settings-control-list,
+  .aesthetic-content-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container settings-fields (max-width: 900px) {
+  .settings-row-item.is-select-row,
+  .settings-row-item.is-input-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .settings-control-select,
+  .settings-row-item.is-input-row .settings-control-input {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    width: 100%;
   }
 }
 
@@ -357,16 +385,12 @@
   }
 
   .settings-row-item {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 12px;
   }
 
-  .settings-row-item.is-select-row {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .settings-control-select {
-    grid-column: 1 / -1;
+  .settings-control-switch {
+    grid-column: 3;
   }
 
   .scheme-cards-row {
@@ -374,7 +398,7 @@
     gap: 8px;
   }
 
-  .aesthetic-card-header {
+  .aesthetic-section-heading {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;

@@ -48,8 +48,6 @@ func TestShouldStartHiddenRequiresAutoLaunchSettingAndFlag(t *testing.T) {
 	}
 
 	if _, err := runtimeService.SaveSettings(app.Settings{
-		GitHubOwner:              "chencn",
-		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 3,
 		MinimizeToTray:           true,
 		LogRetentionDays:         30,
@@ -77,8 +75,6 @@ func TestShouldHideDuringStartupLoadingIgnoresHiddenToTraySetting(t *testing.T) 
 	}
 
 	if _, err := runtimeService.SaveSettings(app.Settings{
-		GitHubOwner:              "chencn",
-		GitHubRepo:               "go-desktop",
 		UpdateCheckIntervalHours: 3,
 		MinimizeToTray:           true,
 		LogRetentionDays:         30,

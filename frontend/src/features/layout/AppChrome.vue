@@ -39,6 +39,23 @@ const activeTitle = computed(() => pageTitle(props.activeView))
 const activeSubtitle = computed(() => pageSubtitle(props.activeView))
 // updateTone 把后端更新状态压缩成图标状态类，避免模板散落状态机判断。
 const updateTone = computed(() => updateIconTone(appStore.updateStatus?.status))
+// H5/浏览器预览没有原生窗口运行时，窗口控制按钮只保留占位展示，不允许触发 Wails 调用。
+const isWindowControlsDisabled = computed(() => {
+  if (typeof window === 'undefined') return true
+  return !hasNativeWindowRuntime(window as WailsHostWindow)
+})
+
+type WailsHostWindow = typeof globalThis & {
+  chrome?: { webview?: { postMessage?: unknown } }
+  webkit?: { messageHandlers?: { external?: { postMessage?: unknown } } }
+  wails?: { invoke?: unknown }
+}
+
+function hasNativeWindowRuntime(win: WailsHostWindow) {
+  return typeof win.chrome?.webview?.postMessage === 'function'
+    || typeof win.webkit?.messageHandlers?.external?.postMessage === 'function'
+    || typeof win.wails?.invoke === 'function'
+}
 
 // toggleTheme 先乐观切换 DOM 主题，再调用 SaveDisplayPreferences；失败后恢复原主题。
 async function toggleTheme() {
@@ -63,6 +80,10 @@ function updateIconTone(status?: string) {
 }
 
 async function refreshWindowMaximised() {
+  if (isWindowControlsDisabled.value) {
+    isWindowMaximised.value = false
+    return
+  }
   try {
     isWindowMaximised.value = await Window.IsMaximised()
   } catch {
@@ -71,6 +92,7 @@ async function refreshWindowMaximised() {
 }
 
 async function runWindowCommand(command: () => Promise<void>) {
+  if (isWindowControlsDisabled.value) return
   try {
     await command()
     await refreshWindowMaximised()
@@ -172,6 +194,7 @@ onMounted(() => {
               <UiButton
                 aria-label="最小化"
                 class="window-control-button"
+                :disabled="isWindowControlsDisabled"
                 size="icon"
                 variant="ghost"
                 @click="minimiseWindow"
@@ -183,6 +206,7 @@ onMounted(() => {
               <UiButton
                 :aria-label="isWindowMaximised ? '还原窗口' : '最大化'"
                 class="window-control-button"
+                :disabled="isWindowControlsDisabled"
                 size="icon"
                 variant="ghost"
                 @click="toggleWindowMaximise"
@@ -194,6 +218,7 @@ onMounted(() => {
               <UiButton
                 aria-label="关闭"
                 class="window-control-button is-close"
+                :disabled="isWindowControlsDisabled"
                 size="icon"
                 variant="ghost"
                 @click="closeWindow"

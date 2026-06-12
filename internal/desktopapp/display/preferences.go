@@ -197,7 +197,7 @@ func defaultShadcnProfile() Profile {
 		IconTone:    "default",
 		Menu:        "default",
 		MenuAccent:  "subtle",
-		Radius:      "default",
+		Radius:      "medium",
 		Density:     "comfortable",
 		TextSize:    "normal",
 		CardBorder:  "visible",
@@ -208,17 +208,17 @@ func defaultShadcnProfile() Profile {
 func defaultArtisticProfile() Profile {
 	return Profile{
 		UIStyle:     "vega",
-		BaseColor:   "stone",
+		BaseColor:   "neutral",
 		ThemeColor:  "apple-blue",
 		AccentColor: "apple-blue",
-		ChartColor:  "emerald",
+		ChartColor:  "apple-blue",
 		IconTone:    "colorful",
 		Menu:        "default",
 		MenuAccent:  "bold",
-		Radius:      "large",
+		Radius:      "medium",
 		Density:     "comfortable",
 		TextSize:    "normal",
-		CardBorder:  "soft",
+		CardBorder:  "visible",
 	}
 }
 

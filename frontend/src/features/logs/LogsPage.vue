@@ -319,33 +319,35 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
 <template>
   <Teleport to="body" :disabled="!fullscreen">
     <div :class="cn('page-stack log-page', fullscreen && 'log-fullscreen', filtersOpen && 'has-open-filters')">
-      <UiCard>
-        <UiCardHeader class="split-header">
+      <header class="split-header log-page-header">
+        <div class="section-title-row">
+          <span class="data-icon icon-tone-indigo" aria-hidden="true"><FileText :size="17" /></span>
           <div>
-            <UiCardTitle>日志</UiCardTitle>
+            <h3>日志</h3>
           </div>
-          <div class="button-row">
-            <UiButton :aria-expanded="filtersOpen" variant="secondary" @click="filtersOpen = !filtersOpen">
-              <SlidersHorizontal class="icon-tone-indigo" :size="18" />
-              {{ filtersOpen ? '收起筛选' : '筛选' }}
-              <UiBadge v-if="activeFilterCount > 0" variant="outline">{{ activeFilterCount }}</UiBadge>
-            </UiButton>
-            <UiButton :class="cn(autoRefresh && 'is-active')" variant="secondary" @click="autoRefresh = !autoRefresh">
-              <TimerReset class="icon-tone-indigo" :size="18" />
-              {{ autoRefresh ? '停止自动' : '自动刷新' }}
-            </UiButton>
-            <UiButton variant="secondary" @click="refreshLogs(appStore.logPage)">
-              <RefreshCw class="icon-tone-green" :size="18" />
-              刷新
-            </UiButton>
-            <UiButton :aria-pressed="fullscreen" variant="secondary" @click="fullscreen = !fullscreen">
-              <Maximize2 class="icon-tone-gray" :size="18" />
-              {{ fullscreen ? '退出专注' : '专注模式' }}
-            </UiButton>
-          </div>
-        </UiCardHeader>
+        </div>
+        <div class="button-row">
+          <UiButton :aria-expanded="filtersOpen" variant="secondary" @click="filtersOpen = !filtersOpen">
+            <SlidersHorizontal class="icon-tone-indigo" :size="18" />
+            {{ filtersOpen ? '收起筛选' : '筛选' }}
+            <UiBadge v-if="activeFilterCount > 0" variant="outline">{{ activeFilterCount }}</UiBadge>
+          </UiButton>
+          <UiButton :class="cn(autoRefresh && 'is-active')" variant="secondary" @click="autoRefresh = !autoRefresh">
+            <TimerReset class="icon-tone-indigo" :size="18" />
+            {{ autoRefresh ? '停止自动' : '自动刷新' }}
+          </UiButton>
+          <UiButton variant="secondary" @click="refreshLogs(appStore.logPage)">
+            <RefreshCw class="icon-tone-green" :size="18" />
+            刷新
+          </UiButton>
+          <UiButton :aria-pressed="fullscreen" variant="secondary" @click="fullscreen = !fullscreen">
+            <Maximize2 class="icon-tone-gray" :size="18" />
+            {{ fullscreen ? '退出专注' : '专注模式' }}
+          </UiButton>
+        </div>
+      </header>
 
-        <UiCardContent class="log-page-main">
+      <div class="log-page-main">
           <section v-if="filtersOpen" class="log-filter-panel" aria-label="日志筛选">
             <div class="log-toolbar">
               <UiField class="log-file-field">
@@ -467,8 +469,7 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
               </div>
             </footer>
           </section>
-        </UiCardContent>
-      </UiCard>
+      </div>
 
       <UiAlertDialog
         :open="clearDialogOpen"

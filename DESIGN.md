@@ -85,6 +85,7 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 - 夜间切换和更新状态按钮固定在窗口控制按钮左侧，和最小化/最大化/关闭组成同一条右上控制带。
 - 顶栏标题区域是窗口拖拽热区，所有按钮、导航和弹窗触发区域必须显式保持 no-drag。
 - 自定义关闭按钮仍调用 Wails 窗口关闭链路，继续服从 `minimizeToTray` 的关闭到托盘规则；最小化按钮不进入托盘。
+- Windows 主窗口使用 Wails frameless 原生装饰，`DisableFramelessWindowDecorations` 必须保持 `false`，由 Go 层 `CustomTheme.WindowTheme.BorderColour` 提供系统窗口外框色；前端 CSS 只负责 WebView 内部界面，不能承担操作系统外框。
 
 ## 4. 设置模型
 
@@ -97,9 +98,7 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 | 字段 | Key | 默认值 | UI |
 | --- | --- | --- | --- |
 | `updateSource` | `update.source` | `github` | 更新源，下拉选择 `github / local` |
-| `githubOwner` | `github.owner` | 元数据 owner | 当前不在设置页展示 |
-| `githubRepo` | `github.repo` | 元数据 repo | 当前不在设置页展示 |
-| `githubProxyBase` | `github.proxy_base` | `https://gh-proxy.com` | 默认启用 GitHub API、Release 资产和 `.sha256` 下载代理，当前不在设置页展示 |
+| `githubProxyBase` | `github.proxy_base` | `https://gh-proxy.com` | GitHub 更新代理，仅在更新源为 `github` 时展示 |
 | `updateCheckIntervalHours` | `update.check_interval_hours` | `3` | 检查间隔，`1 / 3 / 6 / 12 小时` |
 | `minimizeToTray` | `window.minimize_to_tray` | `true` | 关闭到系统托盘 |
 | `logRetentionDays` | `log.retention_days` | `30` | `7 / 30 / 60 / 90 / 180 / 365 / 永不清理` |
@@ -113,6 +112,8 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 - 每一行只有一个可编辑控件。
 - `launchHiddenToTray` 仅在 `autoLaunch` 开启时可编辑。
 - `minimizeToTray` 只影响点击关闭按钮；点击最小化仍进入任务栏。
+- GitHub Release 的 owner/repo 来自项目元数据，不作为业务设置保存或修改。
+- `githubProxyBase` 只影响 GitHub Release API、安装资产和 `.sha256` 下载；`local` 更新源不使用该代理。
 - 写配置失败必须返回错误，前端展示保存失败。
 - 保存开机自启和桌面快捷方式时，同步 Windows 系统集成；系统集成失败要回滚内存和 SQLite 配置。
 
@@ -124,14 +125,14 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 | --- | --- | --- |
 | Display Scheme | `shadcn / artistic` | `data-display-scheme` |
 | Mode | `light / dark` | `.dark`、`data-theme="day|night"` |
-| Style | `reka / vega / nova / maia / lyra / mira / luma / sera` | `data-style` |
+| UI Style | `reka / vega / nova / maia / lyra / mira / luma / sera` | `data-style` |
 | Base Color | `neutral / stone / zinc / mauve / olive / mist / taupe` | `data-base-color` |
 | Theme Color | 品牌色集合 | `data-theme-color` |
 | Accent Color | 品牌色集合，设置页托管跟随 Theme Color | `data-accent-color` |
 | Chart Color | 18 色集合 | `data-chart-color` |
 | Icon Tone | `default / colorful` | `data-icon-tone` |
 | Menu | 持久化支持 `default / inverted / default-translucent / inverted-translucent`；设置页只暴露 `default / inverted` | `data-menu` |
-| Menu Accent | `subtle / bold` | `data-menu-accent` |
+| Menu Accent | `subtle / bold`，设置页显示为侧边导航强调 | `data-menu-accent` |
 | Radius | `default / none / small / medium / large` | `data-radius` + `--radius` |
 | Density | `compact / comfortable` | `data-density` |
 | Text Size | `small / normal / medium / large` | `data-text-size` |
@@ -144,6 +145,23 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 18 色 token 兼容集合：
 
 `neutral`、`stone`、`zinc`、`mauve`、`olive`、`mist`、`taupe`、`amber`、`apple-blue`、`blue`、`cyan`、`emerald`、`indigo`、`orange`、`pink`、`rose`、`sky`、`teal`。
+
+两套显示方案默认 profile：
+
+| 字段 | shadcn 默认 | artistic 默认 |
+| --- | --- | --- |
+| 界面风格 (uiStyle) | 极简 Vega (`vega`) | 极简 Vega (`vega`) |
+| 基础色调 (baseColor) | 灰阶 (`neutral`) | 灰阶 (`neutral`) |
+| 品牌主题色 (themeColor) | 灰阶 (`neutral`) | Apple 蓝 (`apple-blue`) |
+| 品牌辅助色 (accentColor) | 灰阶 (`neutral`) | Apple 蓝 (`apple-blue`) |
+| 图表颜色 (chartColor) | 灰阶 (`neutral`) | Apple 蓝 (`apple-blue`) |
+| 图标色调 (iconTone) | 默认颜色 (`default`) | 彩色图标 (`colorful`) |
+| 侧边导航风格 (menu) | 默认 (`default`) | 默认 (`default`) |
+| 侧边导航强调 (menuAccent) | 轻强调 (`subtle`) | 强强调 (`bold`) |
+| 圆角大小 (radius) | 中 (`medium`) | 中 (`medium`) |
+| 界面密度 (density) | 舒展 (`comfortable`) | 舒展 (`comfortable`) |
+| 字号 (textSize) | 正常 (`normal`) | 正常 (`normal`) |
+| 卡片边框 (cardBorder) | 清晰 (`visible`) | 清晰 (`visible`) |
 
 当前前端类型契约：
 
@@ -170,7 +188,7 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 - Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
 - 禁止远程字体加载，字体族固定系统字体。
 - Artistic 主题的外观范围包括按钮、输入、shadcn Select、原生 select 兜底、开关、卡片、表格、弹窗、Badge、菜单、顶栏、focus、hover、active 和暗色状态。
-- Artistic 主题默认主色为 Apple 蓝，辅以薄荷绿、晴空蓝和毛玻璃面板；具体变量以 `frontend/src/styles/artistic-scheme/common.css` 为准。
+- Artistic 主题默认主色和图表色为 Apple 蓝，基础色调为 Neutral，并叠加毛玻璃面板；具体变量以 `frontend/src/styles/artistic-scheme/common.css` 为准。
 
 ## 5. 主题和 CSS 归属规则
 

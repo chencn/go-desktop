@@ -150,10 +150,6 @@ export type LogLevel = 'debug' | 'info' | 'warning' | 'error'
 export type Settings = {
   /** 更新源 */
   updateSource: UpdateSource
-  /** GitHub 仓库所有者 */
-  githubOwner: string
-  /** GitHub 仓库名称 */
-  githubRepo: string
   /** GitHub API 代理地址（空字符串表示不使用代理） */
   githubProxyBase: string
   /** 自动检查更新间隔（小时） */
@@ -229,7 +225,7 @@ const defaultShadcnDisplayProfile: DisplayProfile = {
   iconTone: 'default',
   menu: 'default',
   menuAccent: 'subtle',
-  radius: 'default',
+  radius: 'medium',
   textSize: 'normal',
   themeColor: 'neutral',
   uiStyle: 'vega',
@@ -239,14 +235,14 @@ const defaultShadcnDisplayProfile: DisplayProfile = {
 
 const defaultArtisticDisplayProfile: DisplayProfile = {
   accentColor: 'apple-blue',
-  baseColor: 'stone',
-  cardBorder: 'soft',
-  chartColor: 'emerald',
+  baseColor: 'neutral',
+  cardBorder: 'visible',
+  chartColor: 'apple-blue',
   density: 'comfortable',
   iconTone: 'colorful',
   menu: 'default',
   menuAccent: 'bold',
-  radius: 'large',
+  radius: 'medium',
   textSize: 'normal',
   themeColor: 'apple-blue',
   uiStyle: 'vega',
@@ -470,6 +466,26 @@ function isExplicitPreview() {
   return import.meta.env.VITE_PREVIEW === 'true'
 }
 
+type WailsBrowserWindow = Window & typeof globalThis & {
+  chrome?: { webview?: { postMessage?: unknown } }
+  webkit?: { messageHandlers?: { external?: { postMessage?: unknown } } }
+  wails?: { invoke?: unknown }
+}
+
+function hasNativeWailsBridge(win: WailsBrowserWindow) {
+  return typeof win.chrome?.webview?.postMessage === 'function'
+    || typeof win.webkit?.messageHandlers?.external?.postMessage === 'function'
+    || typeof win.wails?.invoke === 'function'
+}
+
+function isLocalViteBrowserDev() {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return false
+  const win = window as WailsBrowserWindow
+  const { hostname, port, protocol } = win.location
+  const isLocalHost = ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(hostname)
+  return !hasNativeWailsBridge(win) && port !== '' && isLocalHost && ['http:', 'https:'].includes(protocol)
+}
+
 function isSettingsTraceEnabled() {
   return import.meta.env.VITE_SETTINGS_TRACE === 'true'
 }
@@ -488,14 +504,21 @@ function binding<K extends keyof ServiceBinding>(method: K): NonNullable<Service
 }
 
 function shouldUsePreviewFallback(error: unknown) {
-  return isExplicitPreview() && error instanceof WailsBindingUnavailableError
+  if (isExplicitPreview() && error instanceof WailsBindingUnavailableError) return true
+  return isLocalViteBrowserDev() && isWailsUnavailableError(error)
+}
+
+function isWailsUnavailableError(error: unknown) {
+  if (error instanceof WailsBindingUnavailableError) return true
+  if (!(error instanceof Error)) return false
+  return /Wails|runtime|runtimeCallWithID|desktop|browser|service|backend|not available|unavailable/i.test(`${error.message}\n${error.stack ?? ''}`)
 }
 
 // 显示偏好在 dev 浏览器预览中允许落到 localStorage，便于不连接 Wails 时调试主题。
 function shouldUseDisplayPreferencesPreviewStore(error: unknown) {
   if (shouldUsePreviewFallback(error)) return true
-  if (!import.meta.env.DEV || !(error instanceof Error)) return false
-  return /Wails|runtime|runtimeCallWithID|desktop|browser|service|backend|not available|unavailable/i.test(`${error.message}\n${error.stack ?? ''}`)
+  if (!import.meta.env.DEV) return false
+  return isWailsUnavailableError(error)
 }
 
 function traceFrontend(message: string, payload?: unknown) {
@@ -509,7 +532,7 @@ function traceFrontend(message: string, payload?: unknown) {
 
 /**
  * 预览模式降级处理
- * 只在 VITE_PREVIEW=true 且绑定不可用时返回 fallback；真实后端错误必须继续向上抛。
+ * 只在显式 preview 或本地浏览器 dev 且 Wails 不可用时返回 fallback；真实后端错误必须继续向上抛。
  *
  * @param factory - 生成 fallback 数据的工厂函数
  * @param error - 原始错误

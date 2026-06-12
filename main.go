@@ -36,6 +36,24 @@ var (
 	licensePublicKey = ""
 )
 
+// mainWindowWindowsTheme 定义 Windows 原生 DWM 外框色；这是操作系统窗口装饰，不受前端 CSS token 控制。
+func mainWindowWindowsTheme() application.ThemeSettings {
+	return application.ThemeSettings{
+		DarkModeActive: &application.WindowTheme{
+			BorderColour: application.NewRGBPtr(100, 116, 139),
+		},
+		DarkModeInactive: &application.WindowTheme{
+			BorderColour: application.NewRGBPtr(71, 85, 105),
+		},
+		LightModeActive: &application.WindowTheme{
+			BorderColour: application.NewRGBPtr(203, 213, 225),
+		},
+		LightModeInactive: &application.WindowTheme{
+			BorderColour: application.NewRGBPtr(226, 232, 240),
+		},
+	}
+}
+
 // main 是命令入口，负责解析启动上下文、装配依赖并启动核心流程。
 func main() {
 	crashLogPath := desktopapp.DefaultCrashLogPath(metadata.AppName)
@@ -193,7 +211,8 @@ func main() {
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
 		Windows: application.WindowsWindow{
-			DisableFramelessWindowDecorations: true,
+			DisableFramelessWindowDecorations: false,
+			CustomTheme:                       mainWindowWindowsTheme(),
 			HiddenOnTaskbar:                   startHidden,
 		},
 		BackgroundColour: application.NewRGB(246, 248, 252),

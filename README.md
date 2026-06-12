@@ -101,7 +101,7 @@ npm run build
 显示偏好由 `frontend/src/app/display.ts` 管理，包含：
 
 - 亮暗模式。
-- shadcn-vue create 相关轴：Style、Base Color、Theme Color、Chart Color、Radius、Menu、Menu Accent。
+- shadcn-vue create 相关轴：UI Style（设置页显示为界面风格）、Base Color、Theme Color、Chart Color、Radius、Menu、Menu Accent（设置页显示为侧边导航强调）。
 - 项目附加轴：Accent Color、Icon Tone、Text Size、Density、Card Border。
 
 显示偏好切换会立即写 DOM token，并异步保存到后端 SQLite KV。
@@ -115,9 +115,7 @@ npm run build
 | 字段 | 默认值 | 说明 |
 | --- | --- | --- |
 | `updateSource` | `github` | 更新源，支持 `github` 和 `local` |
-| `githubOwner` | 元数据 owner | GitHub Release owner |
-| `githubRepo` | 元数据 repo | GitHub Release repo |
-| `githubProxyBase` | `https://gh-proxy.com` | GitHub API、Release 资产和 `.sha256` 下载代理地址 |
+| `githubProxyBase` | `https://gh-proxy.com` | GitHub API、Release 资产和 `.sha256` 下载代理地址，仅 `github` 更新源使用 |
 | `updateCheckIntervalHours` | `3` | 自动检查间隔，允许 `1 / 3 / 6 / 12` |
 | `minimizeToTray` | `true` | 点击关闭按钮时隐藏到托盘 |
 | `logRetentionDays` | `30` | 每日文件日志保留周期，`-1` 表示永不清理 |
@@ -126,7 +124,7 @@ npm run build
 | `createDesktopShortcut` | `true` | 创建桌面快捷图标 |
 | `launchHiddenToTray` | `false` | 开机自启时隐藏到托盘 |
 
-保存设置时会先归一化，再写 SQLite KV；开机自启和桌面快捷方式还会同步 Windows 系统集成。系统集成失败时后端会回滚内存设置和 SQLite 配置。
+GitHub Release 的 owner/repo 来自项目元数据，不作为业务设置保存或修改。保存设置时会先归一化，再写 SQLite KV；开机自启和桌面快捷方式还会同步 Windows 系统集成。系统集成失败时后端会回滚内存设置和 SQLite 配置。
 
 ## 更新链路
 

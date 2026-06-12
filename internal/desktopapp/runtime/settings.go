@@ -28,10 +28,9 @@ func (api *API) GetSettings() (settings Settings, err error) {
 	}
 	api.runtime.RecordLogWithSeverity("settings-trace", "GetSettings：后端收到读取请求", "debug")
 	settings = api.runtime.SettingsSnapshot()
-	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("GetSettings：后端返回 source=%q owner=%q repo=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
+	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("GetSettings：后端返回 source=%q proxy=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
 		settings.UpdateSource,
-		settings.GitHubOwner,
-		settings.GitHubRepo,
+		settings.GitHubProxyBase,
 		settings.AutoLaunch,
 		settings.CreateDesktopShortcut,
 		settings.MinimizeToTray,
@@ -48,10 +47,9 @@ func (api *API) SaveSettings(settings Settings) (saved Settings, err error) {
 	if err := api.requireAuthorized(); err != nil {
 		return Settings{}, err
 	}
-	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("SaveSettings：后端收到保存请求 source=%q owner=%q repo=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
+	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("SaveSettings：后端收到保存请求 source=%q proxy=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
 		settings.UpdateSource,
-		settings.GitHubOwner,
-		settings.GitHubRepo,
+		settings.GitHubProxyBase,
 		settings.AutoLaunch,
 		settings.CreateDesktopShortcut,
 		settings.MinimizeToTray,
@@ -150,8 +148,6 @@ func (s *Runtime) SettingsSnapshot() Settings {
 func toDomainSettings(value Settings) appsettings.Settings {
 	return appsettings.Settings{
 		UpdateSource:             value.UpdateSource,
-		GitHubOwner:              value.GitHubOwner,
-		GitHubRepo:               value.GitHubRepo,
 		GitHubProxyBase:          value.GitHubProxyBase,
 		UpdateCheckIntervalHours: value.UpdateCheckIntervalHours,
 		MinimizeToTray:           value.MinimizeToTray,
@@ -167,8 +163,6 @@ func toDomainSettings(value Settings) appsettings.Settings {
 func fromDomainSettings(value appsettings.Settings) Settings {
 	return Settings{
 		UpdateSource:             value.UpdateSource,
-		GitHubOwner:              value.GitHubOwner,
-		GitHubRepo:               value.GitHubRepo,
 		GitHubProxyBase:          value.GitHubProxyBase,
 		UpdateCheckIntervalHours: value.UpdateCheckIntervalHours,
 		MinimizeToTray:           value.MinimizeToTray,

@@ -64,12 +64,12 @@ func (s *Runtime) updateChecker(settings Settings) *githubrelease.Checker {
 		})
 	}
 	checker := s.releaseChecker
-	if checker != nil && settings.GitHubOwner == metadata.GitHubOwner && settings.GitHubRepo == metadata.GitHubRepo && settings.GitHubProxyBase == "" {
+	if checker != nil && settings.GitHubProxyBase == "" {
 		return checker
 	}
 	return githubrelease.NewChecker(githubrelease.Config{
-		Owner:          settings.GitHubOwner,
-		Repo:           settings.GitHubRepo,
+		Owner:          metadata.GitHubOwner,
+		Repo:           metadata.GitHubRepo,
 		ProxyBase:      settings.GitHubProxyBase,
 		Source:         "github",
 		CurrentVersion: s.options.Version,

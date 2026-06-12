@@ -89,8 +89,6 @@ type LicenseStatus struct {
 // SaveSettings 会归一化这些值、持久化到 SQLite，并同步自启动/快捷方式等桌面副作用。
 type Settings struct {
 	UpdateSource             string `json:"updateSource"`             // UpdateSource 选择 github 或 local 更新源。
-	GitHubOwner              string `json:"githubOwner"`              // GitHubOwner 覆盖 Release 检查的 owner。
-	GitHubRepo               string `json:"githubRepo"`               // GitHubRepo 覆盖 Release 检查的仓库名。
 	GitHubProxyBase          string `json:"githubProxyBase"`          // GitHubProxyBase 是可选 GitHub API 代理。
 	UpdateCheckIntervalHours int    `json:"updateCheckIntervalHours"` // UpdateCheckIntervalHours 控制后台检查间隔。
 	MinimizeToTray           bool   `json:"minimizeToTray"`           // MinimizeToTray 把关闭窗口转为隐藏到托盘。
