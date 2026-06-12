@@ -263,24 +263,13 @@ go run ./scripts/sync_project_metadata.go -sync
 - 设置页颜色选择使用页面内平铺 swatch 按钮，持久化层仍保留完整颜色 token。
 - 简单下拉优先使用 shadcn `Select` primitive；只有必须保留浏览器原生行为时才用 `shared/ui/NativeSelect.vue` 兜底。
 
-## Windows 环境兜底
+## 接手开发注意事项
 
-部分 Windows 自动化或精简 shell 会缺少 `SystemDrive`、`ProgramData`、`SystemRoot` 等变量。Wails、Node、WebView 或 Windows 运行时如果拿到未展开的 `%SystemDrive%\ProgramData`，可能在当前工作目录下创建 `frontend/%SystemDrive%/ProgramData/...`。
-
-仓库在这些位置做兜底：
-
-- `scripts/envrun/main.go`
-- 根 `Taskfile.yml`
-- `build/Taskfile.yml`
-- `build/windows/Taskfile.yml`
-
-`frontend/%SystemDrive%/` 已在 `.gitignore` 中忽略；它是异常环境下的缓存副产物，不是源码。
-
-## 维护规则
-
-- 先读代码，先找根因。
-- 精确修改，避免无关重写。
-- 测试只放 `tests/` 独立模块。
-- 临时截图、调试日志和一次性输出只写 `.tmp/`。
-- UI 调试优先 Browser / Chrome 插件。
-- 未经明确确认，不做删除、覆盖、回滚、清理类危险操作。
+- Go 测试分两段：根模块运行 `go test ./...`，独立测试模块运行 `cd tests && go test ./...`。新增 Go 测试放在 `tests/` 模块，不放进生产包目录。
+- 前端日常入口优先走 Wails Taskfile；单独前端构建或测试时进入 `frontend/` 执行对应 npm script。
+- 根 `Taskfile.yml` 由 `scripts/sync_project_metadata.go` 生成。修改生成内容时先改同步脚本，再运行 `go run ./scripts/sync_project_metadata.go -sync`。
+- `project.metadata.json` 是产品元数据源。应用名、仓库、Windows 标识、安装路径、更新默认值等不要分散手改生成文件。
+- Wails 暴露边界在 `app/` 包。不要把前端绑定直接改到 `internal/desktopapp/runtime`，否则生成的 method ID 和 TypeScript bindings 可能失效。
+- UI 规则以 [DESIGN.md](DESIGN.md) 为准。项目交互策略放 `frontend/src/shared/ui/` 或 `frontend/src/features/**`，不要直接改 shadcn-vue primitive 目录承载业务逻辑。
+- Windows 下优先通过 `scripts/envrun` 或 Taskfile 启动 Wails、Go、npm 命令，避免精简 shell 缺少 `SystemDrive`、`ProgramData`、`SystemRoot` 等变量。`frontend/%SystemDrive%/` 是异常环境下的缓存副产物，说明见 [frontend/README.md](frontend/README.md)。
+- 临时截图、调试日志和一次性输出放 `.tmp/`；真实 `.env`、授权私钥和本地运行密钥不要提交。
