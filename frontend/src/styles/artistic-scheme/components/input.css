@@ -3,20 +3,14 @@
 :root[data-display-scheme="artistic"] [data-slot="input"] {
   height: var(--control-height, 36px) !important;
   min-height: var(--control-height, 36px) !important;
-  border: 1px solid var(--border) !important;
+  border: 1px solid var(--artistic-field-border) !important;
   border-radius: var(--radius) !important;
-  background: var(--color-white-alpha-500) !important;
+  background: var(--artistic-field-bg) !important;
   color: var(--foreground) !important;
-  padding: 4px 12px !important;
   box-shadow: inset 0 1px 2px var(--color-black-alpha-020) !important;
-  transition: border-color 220ms ease,
-              box-shadow 220ms ease,
-              background-color 220ms ease !important;
-}
-
-:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="input"] {
-  background: var(--color-white-alpha-040) !important;
-  border-color: var(--color-white-alpha-080) !important;
+  transition: border-color var(--duration-base) ease,
+              box-shadow var(--duration-base) ease,
+              background-color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="input"]:hover {
@@ -25,14 +19,10 @@
 
 :root[data-display-scheme="artistic"] [data-slot="input"]:focus-visible {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)),
+  box-shadow: var(--artistic-focus-ring),
               inset 0 1px 2px var(--color-black-alpha-020) !important;
-  background: var(--color-white-alpha-750) !important;
+  background: var(--artistic-field-bg-focus) !important;
   outline: 0 !important;
-}
-
-:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="input"]:focus-visible {
-  background: var(--color-value-rgba-24-18-14-0p8) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="input"]:disabled {

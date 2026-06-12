@@ -2,7 +2,7 @@
 
 :root[data-display-scheme="artistic"] [data-slot="label"] {
   font-size: var(--fs-caption) !important;
-  font-weight: 600 !important;
+  font-weight: var(--fw-semibold) !important;
   color: var(--foreground) !important;
   letter-spacing: 0.02em !important;
 }

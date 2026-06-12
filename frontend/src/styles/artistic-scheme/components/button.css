@@ -4,12 +4,12 @@
   height: var(--control-height, 36px);
   min-height: var(--control-height, 36px);
   border-radius: var(--radius);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0;
-  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
-              background-color 220ms ease,
-              box-shadow 220ms ease,
-              border-color 220ms ease !important;
+  transition: transform var(--duration-base) var(--ease-spring),
+              background-color var(--duration-base) ease,
+              box-shadow var(--duration-base) ease,
+              border-color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="button"]:not(:disabled):hover {
@@ -25,7 +25,7 @@
 :root[data-display-scheme="artistic"] [data-slot="button"][data-size="icon"] {
   width: var(--control-height, 36px);
   padding: 0;
-  border-radius: 999px; /* 圆形图标按钮更艺术 */
+  border-radius: var(--radius-full); /* 圆形图标按钮更艺术 */
 }
 
 /* 主操作按钮：落日暖红渐变，明亮充满朝气 */
@@ -45,21 +45,14 @@
 /* 次要/描边按钮：半透明白，橘色字 */
 :root[data-display-scheme="artistic"] [data-slot="button"][data-variant="outline"],
 :root[data-display-scheme="artistic"] [data-slot="button"][data-variant="secondary"] {
-  border: 1px solid var(--border) !important;
-  background: var(--color-white-alpha-650) !important;
-  color: var(--artistic-primary) !important;
-}
-
-:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="button"][data-variant="outline"],
-:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="button"][data-variant="secondary"] {
-  background: var(--color-white-alpha-050) !important;
-  border-color: var(--color-white-alpha-100) !important;
+  border: 1px solid var(--artistic-control-border) !important;
+  background: var(--artistic-button-soft-bg) !important;
   color: var(--artistic-primary) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="button"][data-variant="outline"]:hover,
 :root[data-display-scheme="artistic"] [data-slot="button"][data-variant="secondary"]:hover {
-  background: var(--color-white-alpha-850) !important;
+  background: var(--artistic-button-soft-bg-hover) !important;
   border-color: var(--artistic-primary) !important;
 }
 

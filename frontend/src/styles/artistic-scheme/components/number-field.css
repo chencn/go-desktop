@@ -7,7 +7,7 @@
 /* 里面的微型上下调节按钮 */
 :root[data-display-scheme="artistic"] [data-slot="number-field"] button {
   border-radius: 4px !important;
-  transition: background-color 200ms ease, color 200ms ease !important;
+  transition: background-color var(--duration-base) ease, color var(--duration-base) ease !important;
   color: var(--muted-foreground) !important;
 }
 

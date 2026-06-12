@@ -47,6 +47,35 @@
 
   /* 圆角基准；字号 token 跟随 styles.css 的 data-text-size 规则，方案层不再钉死。 */
   --radius: 1rem; /* 16px 圆角 */
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-full: 999px; /* 胶囊圆角 */
+
+  /* 字重档位：组件层只允许引用 --fw-*，不直接写数字字重。 */
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-heavy: 800;
+
+  /* 动效档位：cubic-bezier 弹簧缓动只在此处定义一次。 */
+  --duration-fast: 180ms;
+  --duration-base: 220ms;
+  --duration-slow: 300ms;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* 焦点环：替代组件内重复的 0 0 0 3px 主色 box-shadow。 */
+  --artistic-focus-ring: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent));
+
+  /* 表面语义 token：输入与控件底色随亮/暗模式切换，组件层只引 token，夜间适配收敛到本文件的夜间块。 */
+  --artistic-field-bg: var(--color-white-alpha-500);
+  --artistic-field-bg-hover: var(--color-white-alpha-750);
+  --artistic-field-bg-focus: var(--color-white-alpha-750);
+  --artistic-field-border: var(--border);
+  --artistic-control-bg: var(--color-white-alpha-450);
+  --artistic-control-bg-checked: var(--color-white-alpha-900);
+  --artistic-control-border: var(--border);
+  --artistic-button-soft-bg: var(--color-white-alpha-650);
+  --artistic-button-soft-bg-hover: var(--color-white-alpha-850);
 
   /* 中性阴影，保留层级但不产生橘色光晕 */
   --artistic-shadow: 0 12px 28px var(--color-value-rgba-15-23-42-0p06),
@@ -98,6 +127,17 @@
   --artistic-shadow-lg: 0 20px 40px -12px var(--color-black-alpha-800),
                         0 2px 8px var(--color-black-alpha-500);
   --artistic-glass-border: 1px solid var(--color-white-alpha-240);
+
+  /* 表面语义 token 的夜间值：组件层不再写逐条夜间覆盖 */
+  --artistic-field-bg: var(--color-white-alpha-040);
+  --artistic-field-bg-hover: var(--color-white-alpha-080);
+  --artistic-field-bg-focus: var(--color-value-rgba-13-16-26-0p9);
+  --artistic-field-border: var(--color-white-alpha-080);
+  --artistic-control-bg: var(--color-white-alpha-050);
+  --artistic-control-bg-checked: var(--color-value-rgba-13-16-26-0p9);
+  --artistic-control-border: var(--color-white-alpha-100);
+  --artistic-button-soft-bg: var(--color-white-alpha-050);
+  --artistic-button-soft-bg-hover: var(--color-white-alpha-100);
 }
 
 /* 清爽背景覆盖：去掉内容区多层彩色光斑，降低视觉噪声。 */
@@ -177,6 +217,11 @@
   background: color-mix(in srgb, var(--background) 16%, var(--color-white-alpha-920)) !important;
 }
 
+/* 夜间禁用白底混色，回落到标准夜间侧栏底色 */
+:root[data-theme="night"][data-display-scheme="artistic"][data-menu="default-translucent"] .app-sidebar {
+  background: var(--sidebar) !important;
+}
+
 :root[data-display-scheme="artistic"][data-menu="inverted"] .app-sidebar {
   --sidebar: var(--color-value-rgba-20-16-25-0p95);
   --sidebar-foreground: var(--color-white-alpha-850);
@@ -200,7 +245,7 @@
 }
 
 :root[data-display-scheme="artistic"] .brand-copy strong {
-  font-weight: 800;
+  font-weight: var(--fw-heavy);
   color: var(--foreground);
   background: none;
   -webkit-background-clip: initial;
@@ -216,8 +261,8 @@
   min-height: 40px;
   border-radius: var(--radius) !important;
   padding: 6px 12px;
-  font-weight: 600;
-  transition: all 220ms ease !important;
+  font-weight: var(--fw-semibold);
+  transition: all var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] .sidebar-item:hover {
@@ -243,7 +288,7 @@
   border-radius: 50%;
   background: var(--color-value-rgba-120-119-130-0p08);
   color: var(--foreground);
-  transition: all 220ms ease;
+  transition: all var(--duration-base) ease;
 }
 
 /* 顶栏磨砂效果 */
@@ -254,8 +299,14 @@
   box-shadow: 0 4px 18px -14px var(--color-value-rgba-15-23-42-0p14);
 }
 
+/* 夜间顶栏：与侧栏同基调的半透明深色磨砂，禁用亮色混色 */
+:root[data-theme="night"][data-display-scheme="artistic"] .topbar {
+  background: var(--color-value-rgba-10-12-19-0p55) !important;
+  box-shadow: none;
+}
+
 :root[data-display-scheme="artistic"] .topbar-title h1 {
-  font-weight: 800;
+  font-weight: var(--fw-heavy);
   letter-spacing: 0;
   color: var(--foreground);
   background: none;
@@ -265,8 +316,8 @@
 }
 
 :root[data-display-scheme="artistic"] .compact-nav-item {
-  font-weight: 600;
-  border-radius: 999px !important; /* 窄屏胶囊导航 */
+  font-weight: var(--fw-semibold);
+  border-radius: var(--radius-full) !important; /* 窄屏胶囊导航 */
 }
 
 :root[data-display-scheme="artistic"] .compact-nav-item.is-active {
@@ -290,7 +341,7 @@
 
 :root[data-display-scheme="artistic"] .row-copy strong,
 :root[data-display-scheme="artistic"] .aesthetic-field-title {
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: var(--foreground);
 }
 
@@ -373,21 +424,21 @@
   border: 1px solid var(--color-value-rgba-16-185-129-0p2) !important;
   background: var(--color-value-rgba-16-185-129-0p1) !important;
   color: var(--color-value-10b981) !important;
-  border-radius: 999px !important;
+  border-radius: var(--radius-full) !important;
 }
 
 :root[data-display-scheme="artistic"] .metric-delta-badge.is-neutral {
   border: 1px solid var(--color-value-rgba-245-158-11-0p2) !important;
   background: var(--color-value-rgba-245-158-11-0p1) !important;
   color: var(--color-value-f59e0b) !important;
-  border-radius: 999px !important;
+  border-radius: var(--radius-full) !important;
 }
 
 :root[data-display-scheme="artistic"] .metric-delta-badge.is-negative {
   border: 1px solid var(--color-value-rgba-239-68-68-0p2) !important;
   background: var(--color-value-rgba-239-68-68-0p1) !important;
   color: var(--color-value-ef4444) !important;
-  border-radius: 999px !important;
+  border-radius: var(--radius-full) !important;
 }
 
 /* 彩色图标 tone 处理 */
@@ -450,7 +501,7 @@
   background: var(--card) !important;
   backdrop-filter: blur(12px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
-  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease !important;
+  transition: transform var(--duration-base) ease, box-shadow var(--duration-base) ease, border-color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] .license-panel:hover {
@@ -461,7 +512,7 @@
 :root[data-display-scheme="artistic"] .license-icon {
   background: color-mix(in srgb, var(--artistic-primary) 12%, var(--color-transparent)) !important;
   color: var(--artistic-primary) !important;
-  border-radius: var(--radius-sm, calc(var(--radius) - 6px)) !important;
+  border-radius: var(--radius-sm) !important;
 }
 
 :root[data-display-scheme="artistic"] .license-heading h1 {
@@ -470,13 +521,13 @@
   -webkit-background-clip: initial !important;
   background-clip: initial !important;
   -webkit-text-fill-color: initial !important;
-  font-weight: 800;
+  font-weight: var(--fw-heavy);
 }
 
 :root[data-display-scheme="artistic"] .license-status {
   border-color: color-mix(in srgb, var(--artistic-primary) 20%, var(--border)) !important;
   background: color-mix(in srgb, var(--artistic-primary) 8%, var(--card)) !important;
-  border-radius: var(--radius-sm, calc(var(--radius) - 6px)) !important;
+  border-radius: var(--radius-sm) !important;
 }
 
 :root[data-display-scheme="artistic"] .license-status svg {
@@ -495,13 +546,13 @@
 
 :root[data-display-scheme="artistic"] .license-textarea {
   border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm, calc(var(--radius) - 6px)) !important;
+  border-radius: var(--radius-sm) !important;
   background: color-mix(in srgb, var(--card) 40%, var(--color-transparent)) !important;
 }
 
 :root[data-display-scheme="artistic"] .license-textarea:focus-visible {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
+  box-shadow: var(--artistic-focus-ring) !important;
 }
 
 /* 更新弹窗 artistic 项目级覆盖 */
@@ -511,7 +562,7 @@
   -webkit-background-clip: initial !important;
   background-clip: initial !important;
   -webkit-text-fill-color: initial !important;
-  font-weight: 800;
+  font-weight: var(--fw-heavy);
 }
 
 :root[data-display-scheme="artistic"] .dialog-header.is-no-update h2 {
@@ -520,5 +571,5 @@
   -webkit-background-clip: initial !important;
   background-clip: initial !important;
   -webkit-text-fill-color: initial !important;
-  font-weight: 800;
+  font-weight: var(--fw-heavy);
 }

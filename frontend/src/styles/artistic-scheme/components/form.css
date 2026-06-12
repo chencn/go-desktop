@@ -1,19 +1,14 @@
 /* Artistic Form: 覆盖 shadcn Form primitive */
 
-:root[data-display-scheme="artistic"] [data-slot="form-item"] {
-  margin-bottom: 16px !important;
-}
 
 :root[data-display-scheme="artistic"] [data-slot="form-description"] {
   font-size: var(--fs-caption) !important;
   color: var(--muted-foreground) !important;
-  margin-top: 6px !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="form-message"] {
   font-size: var(--fs-caption) !important;
   color: var(--artistic-error) !important;
-  font-weight: 600 !important;
-  margin-top: 6px !important;
+  font-weight: var(--fw-semibold) !important;
   display: block !important;
 }

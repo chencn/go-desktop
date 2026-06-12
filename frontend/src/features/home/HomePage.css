@@ -285,25 +285,6 @@
   color: var(--muted-foreground);
 }
 
-.business-stat-card:hover .metric-delta-badge.is-positive {
-  background: var(--icon-green);
-  color: var(--color-white-solid);
-  border-color: var(--icon-green);
-  box-shadow: 0 2px 8px color-mix(in oklch, var(--icon-green) 25%, var(--color-transparent));
-}
-
-.business-stat-card:hover .metric-delta-badge.is-negative {
-  background: var(--destructive);
-  color: var(--color-white-solid);
-  border-color: var(--destructive);
-  box-shadow: 0 2px 8px color-mix(in oklch, var(--destructive) 25%, var(--color-transparent));
-}
-
-.business-stat-card:hover .metric-delta-badge.is-neutral {
-  background: var(--muted-foreground);
-  color: var(--background);
-  border-color: var(--muted-foreground);
-}
 
 .dashboard-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));

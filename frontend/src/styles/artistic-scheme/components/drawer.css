@@ -6,14 +6,13 @@
   background: var(--popover) !important;
   backdrop-filter: blur(28px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
-  padding: 24px !important;
 }
 
 /* 顶部把手圆润美化 */
 :root[data-display-scheme="artistic"] [data-slot="drawer-content"] .mx-auto.h-2.w-20,
 :root[data-display-scheme="artistic"] [data-slot="drawer-content"] [class*="mx-auto"][class*="rounded-full"] {
   background-color: var(--border) !important;
-  transition: background-color 220ms ease !important;
+  transition: background-color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="drawer-content"]:hover .mx-auto.h-2.w-20 {
@@ -22,12 +21,11 @@
 
 :root[data-display-scheme="artistic"] [data-slot="drawer-title"] {
   font-size: var(--fs-title);
-  font-weight: 750;
+  font-weight: var(--fw-bold);
   color: var(--foreground);
 }
 
 :root[data-display-scheme="artistic"] [data-slot="drawer-description"] {
   font-size: var(--fs-caption);
   color: var(--muted-foreground);
-  margin-top: 6px;
 }

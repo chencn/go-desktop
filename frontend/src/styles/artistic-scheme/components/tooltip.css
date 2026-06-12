@@ -3,14 +3,13 @@
 :root[data-display-scheme="artistic"] [data-slot="tooltip-content"],
 :root[data-display-scheme="artistic"] .bg-foreground.text-background.z-50 {
   border: 1px solid var(--color-white-alpha-100) !important;
-  border-radius: calc(var(--radius) - 6px) !important;
+  border-radius: var(--radius-sm) !important;
   background: var(--popover) !important;
   backdrop-filter: blur(8px) !important;
   color: var(--popover-foreground) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
-  padding: 6px 10px !important;
   font-size: var(--fs-caption) !important;
-  font-weight: 500 !important;
+  font-weight: var(--fw-medium) !important;
   word-wrap: break-word;
 }
 

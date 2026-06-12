@@ -5,13 +5,12 @@
   border-radius: var(--radius) !important;
   background-color: var(--card) !important;
   color: var(--foreground) !important;
-  padding: 6px 12px !important;
   height: var(--control-height, 36px) !important;
-  transition: border-color 220ms ease, box-shadow 220ms ease !important;
+  transition: border-color var(--duration-base) ease, box-shadow var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="native-select"]:focus {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
+  box-shadow: var(--artistic-focus-ring) !important;
   outline: none !important;
 }

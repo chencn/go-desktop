@@ -11,11 +11,11 @@
   background-color: var(--card) !important;
   backdrop-filter: blur(16px) !important;
   color: var(--foreground) !important;
-  font-weight: 500 !important;
-  transition: border-color 220ms ease,
-              box-shadow 220ms ease,
-              background-color 220ms ease,
-              color 220ms ease !important;
+  font-weight: var(--fw-medium) !important;
+  transition: border-color var(--duration-base) ease,
+              box-shadow var(--duration-base) ease,
+              background-color var(--duration-base) ease,
+              color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] .ui-native-select {
@@ -35,7 +35,6 @@
 
 :root[data-display-scheme="artistic"] [data-slot="select-trigger"] {
   justify-content: space-between !important;
-  padding: 0 12px !important;
   text-align: start;
 }
 
@@ -49,13 +48,7 @@
 :root[data-display-scheme="artistic"] [data-slot="select-trigger"]:hover,
 :root[data-display-scheme="artistic"] .preference-color-trigger:hover {
   border-color: color-mix(in srgb, var(--artistic-primary) 50%, var(--border)) !important;
-  background-color: var(--color-white-alpha-750) !important;
-}
-
-:root[data-theme="night"][data-display-scheme="artistic"] .ui-native-select:hover,
-:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="select-trigger"]:hover,
-:root[data-theme="night"][data-display-scheme="artistic"] .preference-color-trigger:hover {
-  background-color: var(--color-white-alpha-080) !important;
+  background-color: var(--artistic-field-bg-hover) !important;
 }
 
 :root[data-display-scheme="artistic"] .ui-native-select:focus-visible,
@@ -64,17 +57,9 @@
 :root[data-display-scheme="artistic"] .preference-color-trigger:focus-visible,
 :root[data-display-scheme="artistic"] .preference-color-select.is-open .preference-color-trigger {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
-  background-color: var(--color-white-alpha-850) !important;
+  box-shadow: var(--artistic-focus-ring) !important;
+  background-color: var(--artistic-field-bg-focus) !important;
   outline: 0 !important;
-}
-
-:root[data-theme="night"][data-display-scheme="artistic"] .ui-native-select:focus-visible,
-:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="select-trigger"]:focus-visible,
-:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="select-trigger"][data-state="open"],
-:root[data-theme="night"][data-display-scheme="artistic"] .preference-color-trigger:focus-visible,
-:root[data-theme="night"][data-display-scheme="artistic"] .preference-color-select.is-open .preference-color-trigger {
-  background-color: var(--color-value-rgba-24-18-14-0p8) !important;
 }
 
 :root[data-display-scheme="artistic"] .ui-native-select:disabled,
@@ -94,15 +79,13 @@
   color: var(--popover-foreground) !important;
   backdrop-filter: blur(24px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
-  padding: 6px !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="select-item"] {
-  min-height: 32px;
-  border-radius: calc(var(--radius) - 4px) !important;
+  border-radius: var(--radius-md) !important;
   color: var(--foreground) !important;
-  font-weight: 500;
-  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease !important;
+  font-weight: var(--fw-medium);
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-fast) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="select-item"]:focus,
@@ -115,7 +98,7 @@
 :root[data-display-scheme="artistic"] [data-slot="select-item"][data-state="checked"] {
   background: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 18%, var(--popover)) !important;
   color: var(--runtime-accent-color, var(--artistic-primary)) !important;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 
 :root[data-display-scheme="artistic"] [data-slot="select-item"][data-state="checked"] svg {
@@ -133,10 +116,10 @@
 }
 
 :root[data-display-scheme="artistic"] .preference-color-option {
-  border-radius: calc(var(--radius) - 4px) !important;
+  border-radius: var(--radius-md) !important;
   color: var(--foreground) !important;
-  font-weight: 500;
-  transition: background-color 160ms ease, transform 160ms ease !important;
+  font-weight: var(--fw-medium);
+  transition: background-color var(--duration-fast) ease, transform var(--duration-fast) ease !important;
 }
 
 :root[data-display-scheme="artistic"] .preference-color-option:hover {
@@ -148,7 +131,7 @@
 :root[data-display-scheme="artistic"] .preference-color-option.is-selected {
   background: color-mix(in srgb, var(--runtime-accent-color, var(--artistic-primary)) 18%, var(--popover)) !important;
   color: var(--runtime-accent-color, var(--artistic-primary)) !important;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 
 :root[data-display-scheme="artistic"] .preference-swatch {

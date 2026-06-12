@@ -3,20 +3,18 @@
 :root[data-display-scheme="artistic"] [data-slot="chart-tooltip-content"],
 :root[data-display-scheme="artistic"] .recharts-default-tooltip {
   border: var(--artistic-glass-border) !important;
-  border-radius: calc(var(--radius) - 4px) !important;
+  border-radius: var(--radius-md) !important;
   background: var(--popover) !important;
   backdrop-filter: blur(16px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
-  padding: 8px 12px !important;
 }
 
 :root[data-display-scheme="artistic"] .recharts-tooltip-label {
-  font-weight: 700 !important;
+  font-weight: var(--fw-bold) !important;
   color: var(--foreground) !important;
-  margin-bottom: 4px !important;
 }
 
 :root[data-display-scheme="artistic"] .recharts-legend-item-text {
-  font-weight: 600 !important;
+  font-weight: var(--fw-semibold) !important;
   color: var(--foreground) !important;
 }

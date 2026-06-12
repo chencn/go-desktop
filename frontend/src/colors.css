@@ -225,6 +225,7 @@
   --color-value-rgba-15-23-42-0p08: rgba(15, 23, 42, 0.08);
   --color-value-rgba-15-23-42-0p12: rgba(15, 23, 42, 0.12);
   --color-value-rgba-15-23-42-0p14: rgba(15, 23, 42, 0.14);
+  --color-value-rgba-15-23-42-0p45: rgba(15, 23, 42, 0.45);
   --color-value-rgba-16-185-129-0p08: rgba(16, 185, 129, 0.08);
   --color-value-rgba-16-185-129-0p1: rgba(16, 185, 129, 0.1);
   --color-value-rgba-16-185-129-0p12: rgba(16, 185, 129, 0.12);
@@ -232,7 +233,6 @@
   --color-value-rgba-16-185-129-0p2: rgba(16, 185, 129, 0.2);
   --color-value-rgba-16-185-129-0p25: rgba(16, 185, 129, 0.25);
   --color-value-rgba-168-85-247-0p12: rgba(168, 85, 247, 0.12);
-  --color-value-rgba-18-14-10-0p45: rgba(18, 14, 10, 0.45);
   --color-value-rgba-18-22-33-0p92: rgba(18, 22, 33, 0.92);
   --color-value-rgba-20-16-25-0p95: rgba(20, 16, 25, 0.95);
   --color-value-rgba-236-72-153-0p12: rgba(236, 72, 153, 0.12);
@@ -241,7 +241,6 @@
   --color-value-rgba-239-68-68-0p12: rgba(239, 68, 68, 0.12);
   --color-value-rgba-239-68-68-0p15: rgba(239, 68, 68, 0.15);
   --color-value-rgba-239-68-68-0p2: rgba(239, 68, 68, 0.2);
-  --color-value-rgba-24-18-14-0p8: rgba(24, 18, 14, 0.8);
   --color-value-rgba-244-63-94-0p1: rgba(244, 63, 94, 0.1);
   --color-value-rgba-244-63-94-0p25: rgba(244, 63, 94, 0.25);
   --color-value-rgba-245-158-11-0p08: rgba(245, 158, 11, 0.08);

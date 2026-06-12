@@ -2,7 +2,7 @@
 
 :root[data-display-scheme="artistic"] [data-slot="stepper-trigger"] {
   border-radius: var(--radius) !important;
-  transition: transform 220ms ease, background-color 220ms ease !important;
+  transition: transform var(--duration-base) ease, background-color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="stepper-trigger"]:hover {

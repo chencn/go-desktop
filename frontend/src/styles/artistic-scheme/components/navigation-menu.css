@@ -2,13 +2,12 @@
 
 :root[data-display-scheme="artistic"] [data-slot="navigation-menu-list"] {
   display: flex !important;
-  gap: 6px !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="navigation-menu-trigger"] {
-  border-radius: calc(var(--radius) - 6px) !important;
-  font-weight: 600 !important;
-  transition: background-color 220ms ease, color 220ms ease, transform 220ms ease !important;
+  border-radius: var(--radius-sm) !important;
+  font-weight: var(--fw-semibold) !important;
+  transition: background-color var(--duration-base) ease, color var(--duration-base) ease, transform var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="navigation-menu-trigger"]:hover,
@@ -23,7 +22,6 @@
   background: var(--popover) !important;
   backdrop-filter: blur(20px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
-  padding: 16px !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="navigation-menu-viewport"] {

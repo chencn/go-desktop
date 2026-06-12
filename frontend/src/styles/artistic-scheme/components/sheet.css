@@ -6,30 +6,25 @@
   background: var(--popover) !important;
   backdrop-filter: blur(28px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
-  padding: 24px !important;
 }
 
-:root[data-display-scheme="artistic"] [data-slot="sheet-header"] {
-  margin-bottom: 20px !important;
-}
 
 :root[data-display-scheme="artistic"] [data-slot="sheet-title"] {
   font-size: var(--fs-title);
-  font-weight: 750;
+  font-weight: var(--fw-bold);
   color: var(--foreground);
 }
 
 :root[data-display-scheme="artistic"] [data-slot="sheet-description"] {
   font-size: var(--fs-caption);
   color: var(--muted-foreground);
-  margin-top: 6px;
 }
 
 /* 关闭按钮圆角化与微动效 */
 :root[data-display-scheme="artistic"] [data-slot="sheet-content"] button[aria-label="Close"],
 :root[data-display-scheme="artistic"] [data-slot="sheet-content"] .absolute.right-4.top-4 {
-  border-radius: 999px !important;
-  transition: transform 220ms ease, background-color 220ms ease, color 220ms ease !important;
+  border-radius: var(--radius-full) !important;
+  transition: transform var(--duration-base) ease, background-color var(--duration-base) ease, color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="sheet-content"] button[aria-label="Close"]:hover,

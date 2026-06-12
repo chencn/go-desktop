@@ -1,12 +1,12 @@
 /* Artistic Pagination: 覆盖 shadcn Pagination primitive */
 
 :root[data-display-scheme="artistic"] [data-slot="pagination-link"] {
-  border-radius: calc(var(--radius) - 4px) !important;
-  font-weight: 600 !important;
-  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
-              background-color 220ms ease,
-              color 220ms ease,
-              box-shadow 220ms ease !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: var(--fw-semibold) !important;
+  transition: transform var(--duration-base) var(--ease-spring),
+              background-color var(--duration-base) ease,
+              color var(--duration-base) ease,
+              box-shadow var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="pagination-link"]:hover {

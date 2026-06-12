@@ -1,22 +1,12 @@
 /* Artistic Radio Group: 覆盖 shadcn RadioGroup primitive，提供精美圆形切换舱 */
 
-:root[data-display-scheme="artistic"] [data-slot="radio-group"] {
-  display: flex !important;
-  gap: 12px !important;
-}
-
 :root[data-display-scheme="artistic"] [data-slot="radio-group-item"] {
-  border: 1px solid var(--border) !important;
-  background: var(--color-white-alpha-450) !important;
-  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
-              background-color 200ms ease,
-              border-color 200ms ease,
-              box-shadow 200ms ease !important;
-}
-
-:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="radio-group-item"] {
-  background: var(--color-white-alpha-050) !important;
-  border-color: var(--color-white-alpha-100) !important;
+  border: 1px solid var(--artistic-control-border) !important;
+  background: var(--artistic-control-bg) !important;
+  transition: transform var(--duration-base) var(--ease-spring),
+              background-color var(--duration-base) ease,
+              border-color var(--duration-base) ease,
+              box-shadow var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="radio-group-item"]:hover:not(:disabled) {
@@ -26,19 +16,15 @@
 
 :root[data-display-scheme="artistic"] [data-slot="radio-group-item"]:focus-visible {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
+  box-shadow: var(--artistic-focus-ring) !important;
   outline: none !important;
 }
 
 /* 选中状态下：边框与内部小圆点皆为暖橘色 */
 :root[data-display-scheme="artistic"] [data-slot="radio-group-item"][data-state="checked"] {
   border-color: var(--artistic-primary) !important;
-  background: var(--color-white-alpha-900) !important;
+  background: var(--artistic-control-bg-checked) !important;
   box-shadow: 0 2px 6px -1px color-mix(in srgb, var(--artistic-primary) 25%, var(--color-transparent)) !important;
-}
-
-:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="radio-group-item"][data-state="checked"] {
-  background: var(--color-value-rgba-13-16-26-0p9) !important;
 }
 
 /* 选中时的内嵌填充圆点 */

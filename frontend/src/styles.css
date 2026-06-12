@@ -772,3 +772,24 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* 首页业务统计卡片 hover 时的徽标变色效果（默认 shadcn 主题） */
+:root:not([data-display-scheme="artistic"]) .business-stat-card:hover .metric-delta-badge.is-positive {
+  background: var(--icon-green) !important;
+  color: var(--color-white-solid) !important;
+  border-color: var(--icon-green) !important;
+  box-shadow: 0 2px 8px color-mix(in oklch, var(--icon-green) 25%, var(--color-transparent)) !important;
+}
+
+:root:not([data-display-scheme="artistic"]) .business-stat-card:hover .metric-delta-badge.is-negative {
+  background: var(--destructive) !important;
+  color: var(--color-white-solid) !important;
+  border-color: var(--destructive) !important;
+  box-shadow: 0 2px 8px color-mix(in oklch, var(--destructive) 25%, var(--color-transparent)) !important;
+}
+
+:root:not([data-display-scheme="artistic"]) .business-stat-card:hover .metric-delta-badge.is-neutral {
+  background: var(--muted-foreground) !important;
+  color: var(--background) !important;
+  border-color: var(--muted-foreground) !important;
+}

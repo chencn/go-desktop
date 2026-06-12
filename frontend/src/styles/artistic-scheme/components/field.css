@@ -11,6 +11,6 @@
   align-items: center;
   color: var(--foreground);
   font-size: var(--fs-body);
-  font-weight: 700; /* 更具个性的加粗 */
+  font-weight: var(--fw-bold); /* 更具个性的加粗 */
   letter-spacing: 0;
 }

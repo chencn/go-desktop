@@ -7,14 +7,14 @@
   backdrop-filter: blur(20px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
   color: var(--foreground) !important;
-  font-weight: 500 !important;
+  font-weight: var(--fw-medium) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-sonner-toast] [data-close-button] {
-  border-radius: 99px !important;
+  border-radius: var(--radius-full) !important;
   border-color: var(--border) !important;
   background-color: var(--card) !important;
-  transition: background-color 220ms ease, color 220ms ease, transform 220ms ease !important;
+  transition: background-color var(--duration-base) ease, color var(--duration-base) ease, transform var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-sonner-toast] [data-close-button]:hover {

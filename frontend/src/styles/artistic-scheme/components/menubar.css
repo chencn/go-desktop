@@ -5,16 +5,13 @@
   border-radius: var(--radius) !important;
   background: var(--card) !important;
   backdrop-filter: blur(20px) !important;
-  padding: 4px 6px !important;
   display: flex !important;
-  gap: 4px !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="menubar-trigger"] {
-  border-radius: calc(var(--radius) - 6px) !important;
-  padding: 6px 12px !important;
-  font-weight: 600 !important;
-  transition: background-color 200ms ease, color 200ms ease !important;
+  border-radius: var(--radius-sm) !important;
+  font-weight: var(--fw-semibold) !important;
+  transition: background-color var(--duration-base) ease, color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="menubar-trigger"][data-state="open"],
@@ -29,17 +26,14 @@
   background: var(--popover) !important;
   backdrop-filter: blur(20px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
-  padding: 6px !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="menubar-item"] {
-  border-radius: calc(var(--radius) - 6px) !important;
-  font-weight: 500 !important;
-  margin: 2px 0 !important;
-  padding: 6px 10px !important;
-  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
-              background-color 200ms ease,
-              color 200ms ease !important;
+  border-radius: var(--radius-sm) !important;
+  font-weight: var(--fw-medium) !important;
+  transition: transform var(--duration-base) var(--ease-spring),
+              background-color var(--duration-base) ease,
+              color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="menubar-item"]:not([data-disabled]):focus {
@@ -54,5 +48,4 @@
 
 :root[data-display-scheme="artistic"] [data-slot="menubar-separator"] {
   background-color: var(--border) !important;
-  margin: 6px 0 !important;
 }

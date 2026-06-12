@@ -1,7 +1,7 @@
 /* Artistic Dialog: 覆盖 shadcn Dialog primitive，引入深邃模糊的蒙层与弹性弹窗 */
 
 :root[data-display-scheme="artistic"] [data-slot="dialog-overlay"] {
-  background: var(--color-value-rgba-18-14-10-0p45) !important;
+  background: var(--color-value-rgba-15-23-42-0p45) !important;
   backdrop-filter: blur(8px) !important;
 }
 
@@ -12,8 +12,7 @@
   backdrop-filter: blur(28px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
   color: var(--foreground) !important;
-  padding: 24px !important;
-  animation: artistic-dialog-show 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: artistic-dialog-show var(--duration-slow) var(--ease-spring);
 }
 
 :root[data-display-scheme="artistic"] [data-slot="dialog-content"]:not(.ui-dialog-content-top-right) {
@@ -25,7 +24,7 @@
 
 :root[data-display-scheme="artistic"] [data-slot="dialog-title"] {
   font-size: var(--fs-title);
-  font-weight: 800;
+  font-weight: var(--fw-heavy);
   letter-spacing: 0;
   color: var(--foreground);
 }
@@ -38,10 +37,10 @@
 :root[data-display-scheme="artistic"] [data-slot="dialog-close"] {
   top: 16px;
   right: 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--artistic-primary) 8%, var(--color-transparent));
   color: var(--artistic-primary);
-  transition: all 220ms ease;
+  transition: all var(--duration-base) ease;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="dialog-close"]:hover {

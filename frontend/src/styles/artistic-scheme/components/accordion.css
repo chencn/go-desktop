@@ -2,7 +2,7 @@
 
 :root[data-display-scheme="artistic"] [data-slot="accordion-item"] {
   border-bottom: 1px solid var(--border) !important;
-  transition: border-color 220ms ease !important;
+  transition: border-color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="accordion-item"]:hover {
@@ -10,10 +10,9 @@
 }
 
 :root[data-display-scheme="artistic"] [data-slot="accordion-trigger"] {
-  font-weight: 600 !important;
+  font-weight: var(--fw-semibold) !important;
   color: var(--foreground) !important;
-  padding: 16px 0 !important;
-  transition: color 220ms ease, transform 220ms ease !important;
+  transition: color var(--duration-base) ease, transform var(--duration-base) ease !important;
 }
 
 /* 悬停与展开时：文字改用落日暖橘，微上移 */
@@ -28,7 +27,7 @@
 
 /* 折叠小箭头的旋转缓动 */
 :root[data-display-scheme="artistic"] [data-slot="accordion-trigger"] svg {
-  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), color 220ms ease !important;
+  transition: transform var(--duration-slow) var(--ease-spring), color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="accordion-trigger"][data-state="open"] svg {
@@ -38,6 +37,5 @@
 :root[data-display-scheme="artistic"] [data-slot="accordion-content"] {
   font-size: var(--fs-body) !important;
   color: var(--foreground) !important;
-  padding-bottom: 16px !important;
   opacity: 0.95 !important;
 }

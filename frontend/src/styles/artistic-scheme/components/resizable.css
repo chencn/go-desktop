@@ -2,8 +2,7 @@
 
 :root[data-display-scheme="artistic"] [data-slot="resizable-handle"] {
   background-color: var(--border) !important;
-  transition: background-color 220ms ease !important;
-  width: 4px !important;
+  transition: background-color var(--duration-base) ease !important;
   position: relative !important;
 }
 

@@ -8,7 +8,7 @@
 :root[data-display-scheme="artistic"] [data-slot="avatar-fallback"] {
   background: color-mix(in srgb, var(--artistic-primary) 12%, var(--color-white-solid)) !important;
   color: var(--artistic-primary) !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-bold) !important;
 }
 
 :root[data-theme="night"][data-display-scheme="artistic"] [data-slot="avatar-fallback"] {

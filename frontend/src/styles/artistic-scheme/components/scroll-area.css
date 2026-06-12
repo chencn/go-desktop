@@ -1,14 +1,13 @@
 /* Artistic Scroll Area: 覆盖 shadcn ScrollArea primitive */
 
 :root[data-display-scheme="artistic"] [data-slot="scroll-area-scrollbar"] {
-  padding: 2px !important;
-  transition: background-color 220ms ease !important;
+  transition: background-color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="scroll-area-scrollbar-thumb"] {
   background-color: var(--border) !important;
-  border-radius: 99px !important;
-  transition: background-color 220ms ease, width 220ms ease !important;
+  border-radius: var(--radius-full) !important;
+  transition: background-color var(--duration-base) ease, width var(--duration-base) ease !important;
 }
 
 /* 悬停时：滑块变宽，并且变颜色为半透明暖橘 */

@@ -1,8 +1,8 @@
 /* Artistic Breadcrumb: 覆盖 shadcn Breadcrumb primitive */
 
 :root[data-display-scheme="artistic"] [data-slot="breadcrumb-link"] {
-  transition: color 200ms ease, transform 200ms ease !important;
-  font-weight: 500 !important;
+  transition: color var(--duration-base) ease, transform var(--duration-base) ease !important;
+  font-weight: var(--fw-medium) !important;
   display: inline-block !important;
 }
 
@@ -12,7 +12,7 @@
 }
 
 :root[data-display-scheme="artistic"] [data-slot="breadcrumb-page"] {
-  font-weight: 600 !important;
+  font-weight: var(--fw-semibold) !important;
   color: var(--foreground) !important;
 }
 

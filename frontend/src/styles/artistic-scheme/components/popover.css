@@ -6,7 +6,6 @@
   background: var(--popover) !important;
   backdrop-filter: blur(20px) !important;
   box-shadow: var(--artistic-shadow-lg) !important;
-  padding: 16px !important;
 }
 
 /* 覆盖 Popover 尖角箭头 */

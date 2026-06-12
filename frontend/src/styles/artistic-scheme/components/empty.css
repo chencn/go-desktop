@@ -1,13 +1,12 @@
 /* Artistic Empty: 覆盖 shadcn Empty primitive */
 
 :root[data-display-scheme="artistic"] [data-slot="empty"] {
-  padding: 40px 24px !important;
   text-align: center !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="empty-icon"] {
   color: var(--border) !important;
-  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), color 220ms ease !important;
+  transition: transform var(--duration-slow) var(--ease-spring), color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="empty"]:hover [data-slot="empty-icon"] {
@@ -17,13 +16,11 @@
 
 :root[data-display-scheme="artistic"] [data-slot="empty-title"] {
   font-size: var(--fs-section) !important;
-  font-weight: 700 !important;
+  font-weight: var(--fw-bold) !important;
   color: var(--foreground) !important;
-  margin-top: 12px !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="empty-description"] {
   font-size: var(--fs-caption) !important;
   color: var(--muted-foreground) !important;
-  margin-top: 6px !important;
 }

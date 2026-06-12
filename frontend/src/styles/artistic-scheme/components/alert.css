@@ -5,15 +5,13 @@
   border-radius: var(--radius) !important;
   background: var(--card) !important;
   backdrop-filter: blur(14px) !important;
-  padding: 14px 16px !important;
   box-shadow: var(--artistic-shadow) !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="alert-title"] {
-  font-weight: 700 !important;
+  font-weight: var(--fw-bold) !important;
   color: var(--foreground) !important;
   font-size: var(--fs-body) !important;
-  margin-bottom: 4px !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="alert-description"] {

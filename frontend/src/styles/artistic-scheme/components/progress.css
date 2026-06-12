@@ -1,9 +1,8 @@
 /* Artistic Progress: 覆盖 shadcn Progress primitive */
 
 :root[data-display-scheme="artistic"] [data-slot="progress"] {
-  height: 6px !important;
   background: color-mix(in srgb, var(--artistic-primary) 10%, var(--color-transparent)) !important;
-  border-radius: 999px !important;
+  border-radius: var(--radius-full) !important;
   overflow: hidden;
 }
 
@@ -12,7 +11,7 @@
 }
 
 :root[data-display-scheme="artistic"] [data-slot="progress-indicator"] {
-  border-radius: 999px !important;
+  border-radius: var(--radius-full) !important;
   background: var(--artistic-primary) !important;
   box-shadow: 0 0 8px color-mix(in srgb, var(--artistic-primary) 50%, var(--color-transparent)) !important;
 }

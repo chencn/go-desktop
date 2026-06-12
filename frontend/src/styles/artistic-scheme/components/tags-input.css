@@ -1,21 +1,15 @@
 /* Artistic Tags Input: 覆盖 shadcn TagsInput primitive */
 
 :root[data-display-scheme="artistic"] [data-slot="tags-input"] {
-  border: 1px solid var(--border) !important;
+  border: 1px solid var(--artistic-field-border) !important;
   border-radius: var(--radius) !important;
-  background: var(--color-white-alpha-500) !important;
-  padding: 6px 12px !important;
-  transition: border-color 220ms ease, box-shadow 220ms ease !important;
-}
-
-:root[data-theme="night"][data-display-scheme="artistic"] [data-slot="tags-input"] {
-  background: var(--color-white-alpha-040) !important;
-  border-color: var(--color-white-alpha-080) !important;
+  background: var(--artistic-field-bg) !important;
+  transition: border-color var(--duration-base) ease, box-shadow var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="tags-input"]:has(input:focus-visible) {
   border-color: var(--artistic-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent)) !important;
+  box-shadow: var(--artistic-focus-ring) !important;
 }
 
 /* 内部 Tag 标签小芯片 */
@@ -23,18 +17,16 @@
   background-color: color-mix(in srgb, var(--artistic-primary) 10%, var(--card)) !important;
   color: var(--artistic-primary) !important;
   border: 1px solid color-mix(in srgb, var(--artistic-primary) 20%, var(--border)) !important;
-  border-radius: calc(var(--radius) - 6px) !important;
-  padding: 2px 8px !important;
-  font-weight: 600 !important;
+  border-radius: var(--radius-sm) !important;
+  font-weight: var(--fw-semibold) !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
 }
 
 /* Tag 的清除按钮 */
 :root[data-display-scheme="artistic"] [data-slot="tags-input-item-delete"] {
-  border-radius: 999px !important;
-  transition: background-color 200ms ease, color 200ms ease !important;
+  border-radius: var(--radius-full) !important;
+  transition: background-color var(--duration-base) ease, color var(--duration-base) ease !important;
 }
 
 :root[data-display-scheme="artistic"] [data-slot="tags-input-item-delete"]:hover {

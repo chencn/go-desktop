@@ -1,11 +1,10 @@
 /* Artistic Badge: 覆盖 shadcn Badge primitive，提供明亮圆润的彩色胶囊标签 */
 
 :root[data-display-scheme="artistic"] [data-slot="badge"] {
-  border-radius: 999px !important;
-  font-weight: 700 !important;
-  font-size: 11px !important;
+  border-radius: var(--radius-full) !important;
+  font-weight: var(--fw-bold) !important;
+  font-size: calc(var(--fs-caption) - 1px) !important;
   letter-spacing: 0;
-  padding: 2px 10px !important;
   border: 1px solid color-mix(in srgb, var(--artistic-primary) 25%, var(--color-transparent)) !important;
   background: color-mix(in srgb, var(--artistic-primary) 12%, var(--color-transparent)) !important;
   color: var(--artistic-primary) !important;
@@ -37,4 +36,26 @@
   border-color: color-mix(in oklch, var(--log-level-color) 28%, var(--border)) !important;
   background: color-mix(in oklch, var(--log-level-color) 9%, var(--color-transparent)) !important;
   color: var(--log-level-color) !important;
+}
+
+/* 首页业务统计卡片 hover 时的徽标变色效果（艺术主题） */
+:root[data-display-scheme="artistic"] .business-stat-card:hover .metric-delta-badge.is-positive {
+  background: var(--icon-green) !important;
+  color: var(--color-white-solid) !important;
+  border-color: var(--icon-green) !important;
+  box-shadow: 0 2px 8px color-mix(in oklch, var(--icon-green) 25%, var(--color-transparent)) !important;
+}
+
+:root[data-display-scheme="artistic"] .business-stat-card:hover .metric-delta-badge.is-negative {
+  background: var(--destructive) !important;
+  color: var(--color-white-solid) !important;
+  border-color: var(--destructive) !important;
+  box-shadow: 0 2px 8px color-mix(in oklch, var(--destructive) 25%, var(--color-transparent)) !important;
+}
+
+:root[data-display-scheme="artistic"] .business-stat-card:hover .metric-delta-badge.is-neutral {
+  background: var(--color-value-f59e0b) !important;
+  color: var(--color-white-solid) !important;
+  border-color: var(--color-value-f59e0b) !important;
+  box-shadow: 0 2px 8px color-mix(in oklch, var(--color-value-f59e0b) 25%, var(--color-transparent)) !important;
 }

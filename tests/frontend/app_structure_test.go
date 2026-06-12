@@ -43,6 +43,10 @@ var rawNamedColorPattern = regexp.MustCompile(`(?i)(^|[^a-z0-9_-])(transparent|w
 var colorTokenDeclarationPattern = regexp.MustCompile(`(?m)^\s*(--color-[a-z0-9-]+):\s*([^;]+);`)
 var colorTokenNameShapePattern = regexp.MustCompile(`^--color-(transparent|(display|black|white|value)-[a-z0-9-]+)$`)
 var monochromeAlphaTokenNamePattern = regexp.MustCompile(`^--color-(black|white)-alpha-([0-9]{3})$`)
+var artisticComponentHardcodedFontWeightPattern = regexp.MustCompile(`font-weight:\s*(?:500|600|700|750|800)\b`)
+var artisticComponentHardcodedRadiusPattern = regexp.MustCompile(`border-radius:\s*(?:999px|calc\(var\(--radius\)\s*-\s*(?:4|6)px\)|var\(--radius-sm,\s*calc\(var\(--radius\)\s*-\s*6px\)\))`)
+var artisticComponentDurationLiteralPattern = regexp.MustCompile(`\b(?:160|180|200|220|260|280|300)ms\b`)
+var artisticComponentSpringLiteralPattern = regexp.MustCompile(`cubic-bezier\(0\.34,\s*1\.56,\s*0\.64,\s*1\)`)
 var rgbaColorValuePattern = regexp.MustCompile(`^rgba\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9.]+)\s*\)$`)
 
 // TestAppRootStaysAsCompositionRoot 验证 App.vue 只装配全局状态、门禁和页面出口，不回流具体业务流程。
@@ -1880,7 +1884,7 @@ func TestArtisticSchemeKeepsSwitchAsTrack(t *testing.T) {
 		`:root[data-display-scheme="artistic"] [data-slot="switch"]`,
 		`min-width:`,
 		`height:`,
-		`border-radius: 999px`,
+		`border-radius: var(--radius-full)`,
 		`:root[data-display-scheme="artistic"] [data-slot="switch-thumb"]`,
 		`inset-inline-start:`,
 		`translate: none !important`,
@@ -1976,7 +1980,7 @@ func TestArtisticSchemeComponentDetailsMatchThemeTokens(t *testing.T) {
 	}
 
 	for _, required := range []string{
-		`border-radius: 999px`,
+		`border-radius: var(--radius-full)`,
 		`color-mix`,
 	} {
 		if !strings.Contains(badgeStyles, required) {
@@ -2004,6 +2008,117 @@ func TestArtisticSchemeComponentDetailsMatchThemeTokens(t *testing.T) {
 		}
 	}
 
+}
+
+// TestArtisticSchemeComponentsUseCommonShapeMotionAndSurfaceTokens 验证组件层不再散落艺术主题的形状、字重、动效、焦点环和表面色硬编码。
+func TestArtisticSchemeComponentsUseCommonShapeMotionAndSurfaceTokens(t *testing.T) {
+	commonStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "common.css")
+	componentStylesByFile := readArtisticComponentStylesByFile(t)
+
+	for _, required := range []string{
+		`--radius-sm: calc(var(--radius) - 6px);`,
+		`--radius-md: calc(var(--radius) - 4px);`,
+		`--radius-full: 999px;`,
+		`--fw-medium: 500;`,
+		`--fw-semibold: 600;`,
+		`--fw-bold: 700;`,
+		`--fw-heavy: 800;`,
+		`--duration-fast: 180ms;`,
+		`--duration-base: 220ms;`,
+		`--duration-slow: 300ms;`,
+		`--ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);`,
+		`--artistic-focus-ring: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent));`,
+		`--artistic-field-bg: var(--color-white-alpha-500);`,
+		`--artistic-field-bg-hover: var(--color-white-alpha-750);`,
+		`--artistic-field-bg-focus: var(--color-white-alpha-750);`,
+		`--artistic-field-border: var(--border);`,
+		`--artistic-control-bg: var(--color-white-alpha-450);`,
+		`--artistic-control-bg-checked: var(--color-white-alpha-900);`,
+		`--artistic-control-border: var(--border);`,
+		`--artistic-button-soft-bg: var(--color-white-alpha-650);`,
+		`--artistic-button-soft-bg-hover: var(--color-white-alpha-850);`,
+		`--artistic-field-bg: var(--color-white-alpha-040);`,
+		`--artistic-field-bg-hover: var(--color-white-alpha-080);`,
+		`--artistic-field-bg-focus: var(--color-value-rgba-13-16-26-0p9);`,
+		`--artistic-field-border: var(--color-white-alpha-080);`,
+		`--artistic-control-bg: var(--color-white-alpha-050);`,
+		`--artistic-control-bg-checked: var(--color-value-rgba-13-16-26-0p9);`,
+		`--artistic-control-border: var(--color-white-alpha-100);`,
+		`--artistic-button-soft-bg: var(--color-white-alpha-050);`,
+		`--artistic-button-soft-bg-hover: var(--color-white-alpha-100);`,
+	} {
+		if !strings.Contains(commonStyles, required) {
+			t.Fatalf("common.css should own artistic shared token %q", required)
+		}
+	}
+
+	for rel, source := range componentStylesByFile {
+		if match := artisticComponentHardcodedFontWeightPattern.FindString(source); match != "" {
+			t.Fatalf("%s should use --fw-* tokens instead of hard-coded font weight %q", rel, match)
+		}
+		if match := artisticComponentHardcodedRadiusPattern.FindString(source); match != "" {
+			t.Fatalf("%s should use --radius-* tokens instead of hard-coded radius %q", rel, match)
+		}
+		if match := artisticComponentDurationLiteralPattern.FindString(source); match != "" {
+			t.Fatalf("%s should use --duration-* tokens instead of hard-coded duration %q", rel, match)
+		}
+		if match := artisticComponentSpringLiteralPattern.FindString(source); match != "" {
+			t.Fatalf("%s should use --ease-spring instead of hard-coded spring easing %q", rel, match)
+		}
+		if strings.Contains(source, `0 0 0 3px color-mix(in srgb, var(--artistic-primary)`) {
+			t.Fatalf("%s should use --artistic-focus-ring instead of repeating the focus ring literal", rel)
+		}
+	}
+
+	for rel, requiredSnippets := range map[string][]string{
+		"frontend/src/styles/artistic-scheme/components/button.css": {
+			`font-weight: var(--fw-semibold);`,
+			`transition: transform var(--duration-base) var(--ease-spring),`,
+			`border-radius: var(--radius-full);`,
+			`border: 1px solid var(--artistic-control-border) !important;`,
+			`background: var(--artistic-button-soft-bg) !important;`,
+			`background: var(--artistic-button-soft-bg-hover) !important;`,
+		},
+		"frontend/src/styles/artistic-scheme/components/checkbox.css": {
+			`border: 1px solid var(--artistic-control-border) !important;`,
+			`background: var(--artistic-control-bg) !important;`,
+			`box-shadow: var(--artistic-focus-ring) !important;`,
+		},
+		"frontend/src/styles/artistic-scheme/components/input.css": {
+			`border: 1px solid var(--artistic-field-border) !important;`,
+			`background: var(--artistic-field-bg) !important;`,
+			`box-shadow: var(--artistic-focus-ring),`,
+			`background: var(--artistic-field-bg-focus) !important;`,
+		},
+		"frontend/src/styles/artistic-scheme/components/radio-group.css": {
+			`border: 1px solid var(--artistic-control-border) !important;`,
+			`background: var(--artistic-control-bg) !important;`,
+			`box-shadow: var(--artistic-focus-ring) !important;`,
+			`background: var(--artistic-control-bg-checked) !important;`,
+		},
+		"frontend/src/styles/artistic-scheme/components/select.css": {
+			`font-weight: var(--fw-medium) !important;`,
+			`background-color: var(--artistic-field-bg-hover) !important;`,
+			`box-shadow: var(--artistic-focus-ring) !important;`,
+			`background-color: var(--artistic-field-bg-focus) !important;`,
+			`border-radius: var(--radius-md) !important;`,
+		},
+		"frontend/src/styles/artistic-scheme/components/switch.css": {
+			`border-radius: var(--radius-full) !important;`,
+			`transition: background-color var(--duration-slow) var(--ease-spring),`,
+			`box-shadow: var(--artistic-focus-ring) !important;`,
+		},
+	} {
+		source, ok := componentStylesByFile[rel]
+		if !ok {
+			t.Fatalf("artistic component CSS missing %s", rel)
+		}
+		for _, required := range requiredSnippets {
+			if !strings.Contains(source, required) {
+				t.Fatalf("%s should consume artistic shared token %q", rel, required)
+			}
+		}
+	}
 }
 
 // TestArtisticSchemeStylesShadcnSelect 验证设置页下拉使用 shadcn Select，选中项颜色由主题 CSS 覆盖。
@@ -2066,7 +2181,7 @@ func TestArtisticSchemeStylesNativeSelectOnly(t *testing.T) {
 		`box-shadow: var(--artistic-shadow-lg)`,
 		`background: color-mix(in srgb, var(--runtime-accent-color`,
 		`color: var(--runtime-accent-color`,
-		`font-weight: 500`,
+		`font-weight: var(--fw-medium)`,
 		`padding: 0 32px 0 12px !important`,
 		`background-image: url("data:image/svg+xml`,
 		`:root[data-display-scheme="artistic"] .preference-color-menu`,
@@ -2474,6 +2589,25 @@ func normaliseAlphaValue(value string) string {
 		return value
 	}
 	return strconv.FormatFloat(alpha, 'f', -1, 64)
+}
+
+func readArtisticComponentStylesByFile(t *testing.T) map[string]string {
+	t.Helper()
+	componentDir := rootPath(filepath.Join("frontend", "src", "styles", "artistic-scheme", "components"))
+	entries, err := os.ReadDir(componentDir)
+	if err != nil {
+		t.Fatalf("read artistic component CSS directory: %v", err)
+	}
+
+	files := make(map[string]string)
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".css") {
+			continue
+		}
+		rel := filepath.ToSlash(filepath.Join("frontend", "src", "styles", "artistic-scheme", "components", entry.Name()))
+		files[rel] = readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", entry.Name())
+	}
+	return files
 }
 
 // readArtisticSchemeStyles 汇总 artistic 方案目录下的 common 和组件覆盖 CSS，供结构测试检查集中归属。
