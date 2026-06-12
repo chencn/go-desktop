@@ -2412,7 +2412,7 @@ func readRootFile(t *testing.T, parts ...string) string {
 	if err != nil {
 		t.Fatalf("read %s: %v", filepath.Join(parts...), err)
 	}
-	return string(data)
+	return strings.ReplaceAll(string(data), "\r\n", "\n")
 }
 
 func mustRelRoot(t *testing.T, path string) string {
