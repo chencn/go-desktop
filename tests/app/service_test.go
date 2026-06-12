@@ -23,6 +23,7 @@ func TestSaveSettingsPersistsAndLoadsFromSQLiteConfig(t *testing.T) {
 		GitHubProxyBase:          "https://proxy.example",
 		UpdateCheckIntervalHours: 6,
 		MinimizeToTray:           false,
+		AlwaysOnTop:              true,
 		LogRetentionDays:         14,
 		LogLevel:                 "debug",
 		AutoLaunch:               true,
@@ -50,6 +51,9 @@ func TestSaveSettingsPersistsAndLoadsFromSQLiteConfig(t *testing.T) {
 	if settings.MinimizeToTray {
 		t.Fatalf("expected minimizeToTray=false to persist, got %#v", settings)
 	}
+	if !settings.AlwaysOnTop {
+		t.Fatalf("expected alwaysOnTop=true to persist, got %#v", settings)
+	}
 	if !settings.AutoLaunch || settings.CreateDesktopShortcut || !settings.LaunchHiddenToTray {
 		t.Fatalf("expected startup settings to persist, got %#v", settings)
 	}
@@ -66,6 +70,9 @@ func TestLoadSettingsWritesSQLiteDefaults(t *testing.T) {
 	}
 	if !settings.MinimizeToTray {
 		t.Fatalf("expected default minimizeToTray=true, got %#v", settings)
+	}
+	if settings.AlwaysOnTop {
+		t.Fatalf("expected default alwaysOnTop=false, got %#v", settings)
 	}
 	if settings.AutoLaunch || !settings.CreateDesktopShortcut || settings.LaunchHiddenToTray {
 		t.Fatalf("expected startup defaults auto=false shortcut=true hidden=false, got %#v", settings)

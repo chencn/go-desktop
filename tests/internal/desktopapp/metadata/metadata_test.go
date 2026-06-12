@@ -34,6 +34,9 @@ func TestMetadataDefinesStableProductDefaults(t *testing.T) {
 	if !metadata.DefaultMinimizeToTray {
 		t.Fatal("minimize-to-tray should default to true")
 	}
+	if metadata.DefaultAlwaysOnTop {
+		t.Fatal("always-on-top should default to false")
+	}
 	if metadata.DefaultLogRetentionDays != 30 {
 		t.Fatalf("unexpected log retention default: %d", metadata.DefaultLogRetentionDays)
 	}

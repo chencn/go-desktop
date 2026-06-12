@@ -92,6 +92,7 @@ type Settings struct {
 	GitHubProxyBase          string `json:"githubProxyBase"`          // GitHubProxyBase 是可选 GitHub API 代理。
 	UpdateCheckIntervalHours int    `json:"updateCheckIntervalHours"` // UpdateCheckIntervalHours 控制后台检查间隔。
 	MinimizeToTray           bool   `json:"minimizeToTray"`           // MinimizeToTray 把关闭窗口转为隐藏到托盘。
+	AlwaysOnTop              bool   `json:"alwaysOnTop"`              // AlwaysOnTop 控制窗口显示时是否保持置顶。
 	LogRetentionDays         int    `json:"logRetentionDays"`         // LogRetentionDays 控制每日日志清理策略。
 	LogLevel                 string `json:"logLevel"`                 // LogLevel 是持久化日志的最低级别。
 	AutoLaunch               bool   `json:"autoLaunch"`               // AutoLaunch 注册平台开机自启入口。

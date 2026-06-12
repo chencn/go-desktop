@@ -685,6 +685,7 @@ func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T
 		"setIconTone",
 		"updateCheckIntervalHours",
 		"minimizeToTray",
+		"alwaysOnTop",
 		"logRetentionDays",
 		"logLevel",
 		"日志级别",
@@ -767,6 +768,8 @@ func TestGeneratedBindingsExposeSettingsLogLevelAndDebugStats(t *testing.T) {
 		`export class DisplayProfiles`,
 		`"logLevel": string;`,
 		`this["logLevel"] = "";`,
+		`"alwaysOnTop": boolean;`,
+		`this["alwaysOnTop"] = false;`,
 		`"debug": number;`,
 		`this["debug"] = 0;`,
 	} {
@@ -821,6 +824,7 @@ func TestSettingsPageOnlyContainsEditableSettings(t *testing.T) {
 	for _, required := range []string{
 		"检查间隔",
 		"关闭到系统托盘",
+		"窗口置顶",
 		"开机自启",
 		"创建桌面快捷图标",
 		"开机自启时隐藏到托盘",
@@ -834,6 +838,8 @@ func TestSettingsPageOnlyContainsEditableSettings(t *testing.T) {
 		`v-if="draft.updateSource === 'github'"`,
 		`class="settings-row-item is-input-row"`,
 		`persistSettingsPatch({ githubProxyBase: String($event) })`,
+		`:checked="draft.alwaysOnTop"`,
+		`persistSettingsPatch({ alwaysOnTop: $event })`,
 	} {
 		if !strings.Contains(settingsPage, required) {
 			t.Fatalf("settings page should keep editable setting %q", required)
@@ -867,11 +873,13 @@ func TestSettingsPageOnlyContainsEditableSettings(t *testing.T) {
 	}
 
 	closeIndex := strings.Index(settingsPage, "<strong>关闭到系统托盘</strong>")
+	alwaysOnTopIndex := strings.Index(settingsPage, "<strong>窗口置顶</strong>")
 	autoLaunchIndex := strings.Index(settingsPage, "<strong>开机自启</strong>")
 	intervalIndex := strings.Index(settingsPage, "<strong>自动更新检查间隔</strong>")
 	retentionIndex := strings.Index(settingsPage, "<strong>日志保留周期</strong>")
-	if closeIndex < 0 || autoLaunchIndex < 0 || intervalIndex < 0 || retentionIndex < 0 || !(closeIndex < autoLaunchIndex && autoLaunchIndex < intervalIndex && intervalIndex < retentionIndex) {
-		t.Fatalf("business settings should order window/startup behavior before time-based selects: close=%d auto=%d interval=%d retention=%d", closeIndex, autoLaunchIndex, intervalIndex, retentionIndex)
+	if closeIndex < 0 || alwaysOnTopIndex < 0 || autoLaunchIndex < 0 || intervalIndex < 0 || retentionIndex < 0 ||
+		!(closeIndex < alwaysOnTopIndex && alwaysOnTopIndex < autoLaunchIndex && autoLaunchIndex < intervalIndex && intervalIndex < retentionIndex) {
+		t.Fatalf("business settings should order window/startup behavior before time-based selects: close=%d top=%d auto=%d interval=%d retention=%d", closeIndex, alwaysOnTopIndex, autoLaunchIndex, intervalIndex, retentionIndex)
 	}
 
 	for _, forbidden := range []string{

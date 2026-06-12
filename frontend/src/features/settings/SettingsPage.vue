@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Archive, CalendarClock, CloudDownload, EyeOff, ListFilter, MonitorUp, Palette, PanelBottomClose, Rocket, RotateCcw, Sun, Moon, Wrench } from '@lucide/vue'
+import { Archive, CalendarClock, CloudDownload, EyeOff, ListFilter, MonitorUp, Palette, PanelBottomClose, Pin, Rocket, RotateCcw, Sun, Moon, Wrench } from '@lucide/vue'
 import { exportDisplayPreferences, useDisplayPreferences, type AccentColor, type BaseColor, type CardBorder, type ChartColor, type Density, type DisplayScheme, type IconTone, type Menu as MenuPreference, type MenuAccent, type Radius, type TextSize, type ThemeColor, type ThemeMode, type UIStyle } from '@/app/display'
 import { useAppStore } from '@/stores/app'
 import { defaultRuntimeSettings, type LogLevel, type Settings, type UpdateSource } from '@/api/wails'
@@ -198,6 +198,7 @@ function normaliseSettingsDraft(settings: Settings): Settings {
     githubProxyBase: settings.githubProxyBase.trim(),
     updateCheckIntervalHours: normaliseUpdateCheckIntervalHours(settings.updateCheckIntervalHours),
     minimizeToTray: Boolean(settings.minimizeToTray),
+    alwaysOnTop: Boolean(settings.alwaysOnTop),
     logRetentionDays: Number(settings.logRetentionDays) === -1 ? -1 : Math.max(1, Number(settings.logRetentionDays) || defaultRuntimeSettings.logRetentionDays),
     logLevel: normaliseLogLevel(settings.logLevel),
     autoLaunch: Boolean(settings.autoLaunch),
@@ -385,6 +386,15 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
               <small>点击关闭按钮时隐藏窗口至后台，点击最小化仍进入任务栏。</small>
             </div>
             <UiSwitch class="settings-control-switch" :checked="draft.minimizeToTray" :disabled="!settingsReady" aria-label="关闭到系统托盘" @update:checked="persistSettingsPatch({ minimizeToTray: $event })" />
+          </div>
+
+          <div class="settings-row-item">
+            <span class="data-icon icon-tone-blue" aria-hidden="true"><Pin :size="17" /></span>
+            <div class="row-copy">
+              <strong>窗口置顶</strong>
+              <small>窗口显示时保持在其他窗口上方，隐藏到托盘和自启隐藏策略保持独立。</small>
+            </div>
+            <UiSwitch class="settings-control-switch" :checked="draft.alwaysOnTop" :disabled="!settingsReady" aria-label="窗口置顶" @update:checked="persistSettingsPatch({ alwaysOnTop: $event })" />
           </div>
 
           <div class="settings-row-item">

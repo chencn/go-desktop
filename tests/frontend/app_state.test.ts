@@ -8,6 +8,7 @@ vi.mock('../../frontend/src/api/wails', () => {
     githubProxyBase: '',
     updateCheckIntervalHours: 6,
     minimizeToTray: true,
+    alwaysOnTop: false,
     logRetentionDays: 30,
     logLevel: 'info',
     autoLaunch: false,

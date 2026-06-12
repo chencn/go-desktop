@@ -16,7 +16,7 @@ jobs:
     env:
       GO_VERSION: "1.25.x"
       NODE_VERSION: "22"
-      WAILS_VERSION: "v3.0.0-alpha.97"
+      WAILS_VERSION: "v3.0.0-alpha.99"
       APP_NAME: go-desktop
       ARCH: amd64
       GO_DESKTOP_LICENSE_MODE: required

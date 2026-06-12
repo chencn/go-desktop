@@ -295,6 +295,10 @@ type Settings struct {
 	// false: 点击关闭时直接关闭窗口
 	MinimizeToTray bool `json:"minimizeToTray"`
 
+	// AlwaysOnTop 窗口显示时保持在其他窗口上方
+	// 不影响关闭到托盘或自启隐藏策略
+	AlwaysOnTop bool `json:"alwaysOnTop"`
+
 	// LogRetentionDays 日志保留天数
 	// -1 表示永久保留
 	// 0 使用默认值（通常 30 天）

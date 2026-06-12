@@ -29,11 +29,12 @@ func (api *API) ShowMainWindow() (err error) {
 
 // ShowMainWindow 显示主窗口。
 // 如果存在启动加载窗口（splash），会在显示主窗口后自动关闭它。
-// Windows 平台会短暂置顶再取消，避免从托盘或第二实例唤起时窗口停在其他窗口后面。
+// Windows 平台默认短暂置顶再取消；用户开启窗口置顶时会保持置顶。
 func (s *Runtime) ShowMainWindow() {
 	s.lock.Lock()
 	window := s.mainWindow
 	splash := s.splashWindow
+	alwaysOnTop := s.settings.AlwaysOnTop
 	s.splashWindow = nil
 	s.lock.Unlock()
 	if window == nil {
@@ -54,21 +55,34 @@ func (s *Runtime) ShowMainWindow() {
 		window.SetAlwaysOnTop(true)
 		window.Focus()
 		s.RecordLog("window", "窗口已显示")
-		go func() {
-			defer func() {
-				if recovered := recover(); recovered != nil {
-					s.RecordLogWithSeverity("panic", "恢复窗口置顶状态异常", "error")
+		if !alwaysOnTop {
+			go func() {
+				defer func() {
+					if recovered := recover(); recovered != nil {
+						s.RecordLogWithSeverity("panic", "恢复窗口置顶状态异常", "error")
+					}
+				}()
+				time.Sleep(150 * time.Millisecond)
+				if window != nil {
+					window.SetAlwaysOnTop(false)
 				}
 			}()
-			time.Sleep(150 * time.Millisecond)
-			if window != nil {
-				window.SetAlwaysOnTop(false)
-			}
-		}()
+		}
 		return
 	}
+	window.SetAlwaysOnTop(alwaysOnTop)
 	window.Focus()
 	s.RecordLog("window", "窗口已显示")
+}
+
+func (s *Runtime) applyMainWindowAlwaysOnTop(alwaysOnTop bool) {
+	s.lock.RLock()
+	window := s.mainWindow
+	s.lock.RUnlock()
+	if window == nil {
+		return
+	}
+	window.SetAlwaysOnTop(alwaysOnTop)
 }
 
 // QuitApp API 方法，退出应用。

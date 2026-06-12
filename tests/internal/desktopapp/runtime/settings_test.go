@@ -27,6 +27,7 @@ func TestSaveSettingsRollsBackWhenStartupIntegrationFails(t *testing.T) {
 		UpdateSource:             "local",
 		UpdateCheckIntervalHours: 6,
 		MinimizeToTray:           false,
+		AlwaysOnTop:              !previous.AlwaysOnTop,
 		LogRetentionDays:         60,
 		LogLevel:                 "debug",
 		AutoLaunch:               !previous.AutoLaunch,

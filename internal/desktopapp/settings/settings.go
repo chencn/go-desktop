@@ -13,6 +13,7 @@ const (
 	KeyGitHubProxyBase          = "github.proxy_base"
 	KeyUpdateCheckIntervalHours = "update.check_interval_hours"
 	KeyWindowMinimizeToTray     = "window.minimize_to_tray"
+	KeyWindowAlwaysOnTop        = "window.always_on_top"
 	KeyLogRetentionDays         = "log.retention_days"
 	KeyLogLevel                 = "log.level"
 	KeyStartupAutoLaunch        = "startup.auto_launch"
@@ -28,6 +29,7 @@ type Settings struct {
 	GitHubProxyBase          string
 	UpdateCheckIntervalHours int
 	MinimizeToTray           bool
+	AlwaysOnTop              bool
 	LogRetentionDays         int
 	LogLevel                 string
 	AutoLaunch               bool
@@ -42,6 +44,7 @@ func Default() Settings {
 		GitHubProxyBase:          metadata.DefaultGitHubProxyBase,
 		UpdateCheckIntervalHours: metadata.DefaultUpdateCheckIntervalHours,
 		MinimizeToTray:           metadata.DefaultMinimizeToTray,
+		AlwaysOnTop:              metadata.DefaultAlwaysOnTop,
 		LogRetentionDays:         metadata.DefaultLogRetentionDays,
 		LogLevel:                 defaultLogLevel,
 		AutoLaunch:               metadata.DefaultAutoLaunch,
@@ -102,6 +105,7 @@ func FromConfigItems(items map[string]configstore.ConfigItem, base Settings) Set
 	base.GitHubProxyBase = configString(items, KeyGitHubProxyBase, base.GitHubProxyBase)
 	base.UpdateCheckIntervalHours = configInt(items, KeyUpdateCheckIntervalHours, base.UpdateCheckIntervalHours)
 	base.MinimizeToTray = configBool(items, KeyWindowMinimizeToTray, base.MinimizeToTray)
+	base.AlwaysOnTop = configBool(items, KeyWindowAlwaysOnTop, base.AlwaysOnTop)
 	base.LogRetentionDays = configInt(items, KeyLogRetentionDays, base.LogRetentionDays)
 	base.LogLevel = configString(items, KeyLogLevel, base.LogLevel)
 	base.AutoLaunch = configBool(items, KeyStartupAutoLaunch, base.AutoLaunch)
@@ -118,6 +122,7 @@ func Values(value Settings) map[string]string {
 		KeyGitHubProxyBase:          value.GitHubProxyBase,
 		KeyUpdateCheckIntervalHours: strconv.Itoa(value.UpdateCheckIntervalHours),
 		KeyWindowMinimizeToTray:     strconv.FormatBool(value.MinimizeToTray),
+		KeyWindowAlwaysOnTop:        strconv.FormatBool(value.AlwaysOnTop),
 		KeyLogRetentionDays:         strconv.Itoa(value.LogRetentionDays),
 		KeyLogLevel:                 value.LogLevel,
 		KeyStartupAutoLaunch:        strconv.FormatBool(value.AutoLaunch),
@@ -134,6 +139,7 @@ func Definitions() []configstore.ConfigItem {
 		{Key: KeyGitHubProxyBase, Category: "github", Title: "GitHub API 代理", Description: "为空时直接使用 GitHub 官方 API。", ValueType: "string", DefaultValue: defaults.GitHubProxyBase, Value: defaults.GitHubProxyBase, SortOrder: 30},
 		{Key: KeyUpdateCheckIntervalHours, Category: "update", Title: "检查间隔", Description: "自动检查 GitHub Release 的时间间隔。", ValueType: "int", DefaultValue: strconv.Itoa(defaults.UpdateCheckIntervalHours), Value: strconv.Itoa(defaults.UpdateCheckIntervalHours), SortOrder: 100},
 		{Key: KeyWindowMinimizeToTray, Category: "window", Title: "关闭到系统托盘", Description: "点击关闭按钮时隐藏窗口到系统托盘。", ValueType: "bool", DefaultValue: strconv.FormatBool(defaults.MinimizeToTray), Value: strconv.FormatBool(defaults.MinimizeToTray), SortOrder: 200},
+		{Key: KeyWindowAlwaysOnTop, Category: "window", Title: "窗口置顶", Description: "窗口显示时保持在其他窗口上方。", ValueType: "bool", DefaultValue: strconv.FormatBool(defaults.AlwaysOnTop), Value: strconv.FormatBool(defaults.AlwaysOnTop), SortOrder: 210},
 		{Key: KeyLogRetentionDays, Category: "log", Title: "日志保留周期", Description: "每日文件日志自动清理周期，-1 表示永不清理。", ValueType: "int", DefaultValue: strconv.Itoa(defaults.LogRetentionDays), Value: strconv.Itoa(defaults.LogRetentionDays), SortOrder: 300},
 		{Key: KeyLogLevel, Category: "log", Title: "日志级别", Description: "控制运行日志最小记录级别；debug 用于定位问题，error 和 panic 始终记录。", ValueType: "string", DefaultValue: defaults.LogLevel, Value: defaults.LogLevel, SortOrder: 310},
 		{Key: KeyStartupAutoLaunch, Category: "startup", Title: "开机自启", Description: "登录系统后自动启动应用。", ValueType: "bool", DefaultValue: strconv.FormatBool(defaults.AutoLaunch), Value: strconv.FormatBool(defaults.AutoLaunch), SortOrder: 400},

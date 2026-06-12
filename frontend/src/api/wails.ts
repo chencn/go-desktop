@@ -156,6 +156,8 @@ export type Settings = {
   updateCheckIntervalHours: number
   /** 是否关闭到系统托盘 */
   minimizeToTray: boolean
+  /** 窗口显示时是否置顶 */
+  alwaysOnTop: boolean
   /** 日志保留天数（-1 表示永久保留） */
   logRetentionDays: number
   /** 最小记录日志级别 */

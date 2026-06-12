@@ -29,6 +29,7 @@ type projectMetadataFixture struct {
 		GitHubProxyBase          string `json:"githubProxyBase"`
 		UpdateCheckIntervalHours int    `json:"updateCheckIntervalHours"`
 		MinimizeToTray           bool   `json:"minimizeToTray"`
+		AlwaysOnTop              bool   `json:"alwaysOnTop"`
 		LogRetentionDays         int    `json:"logRetentionDays"`
 		AutoLaunch               bool   `json:"autoLaunch"`
 		CreateDesktopShortcut    bool   `json:"createDesktopShortcut"`
@@ -85,6 +86,7 @@ func TestSyncProjectMetadataPrintsCurrentDefaults(t *testing.T) {
 		"companyName":                    "chencn",
 		"settings.updateInterval":        "3",
 		"settings.minimizeToTray":        "true",
+		"settings.alwaysOnTop":           "false",
 		"settings.autoLaunch":            "false",
 		"settings.createDesktopShortcut": "true",
 		"settings.launchHiddenToTray":    "false",
@@ -129,10 +131,12 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 			`"singleInstanceId": "com.github.chencn.go-desktop"`,
 			`"productIdentifier": "com.github.chencn.godesktop"`,
 			`"updateCheckIntervalHours": 3`,
+			`"alwaysOnTop": false`,
 			`"autoLaunch": false`,
 			`"createDesktopShortcut": true`,
 			`"launchHiddenToTray": false`,
 			`minimizeToTray: projectMetadata.settingsDefaults.minimizeToTray`,
+			`alwaysOnTop: projectMetadata.settingsDefaults.alwaysOnTop`,
 			`autoLaunch: projectMetadata.settingsDefaults.autoLaunch`,
 			`createDesktopShortcut: projectMetadata.settingsDefaults.createDesktopShortcut`,
 			`launchHiddenToTray: projectMetadata.settingsDefaults.launchHiddenToTray`,
@@ -182,6 +186,7 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 		{"DefaultGitHubProxyBase", `"https://gh-proxy.com"`},
 		{"DefaultUpdateCheckIntervalHours", "3"},
 		{"DefaultMinimizeToTray", "true"},
+		{"DefaultAlwaysOnTop", "false"},
 		{"DefaultAutoLaunch", "false"},
 		{"DefaultCreateDesktopShortcut", "true"},
 		{"DefaultLaunchHiddenToTray", "false"},
@@ -204,6 +209,7 @@ func TestGeneratedProjectMetadataFilesUseCurrentDefaults(t *testing.T) {
 	if meta.SettingsDefaults.GitHubProxyBase != "https://gh-proxy.com" ||
 		meta.SettingsDefaults.UpdateCheckIntervalHours != 3 ||
 		!meta.SettingsDefaults.MinimizeToTray ||
+		meta.SettingsDefaults.AlwaysOnTop ||
 		meta.SettingsDefaults.LogRetentionDays != 30 ||
 		meta.SettingsDefaults.AutoLaunch ||
 		!meta.SettingsDefaults.CreateDesktopShortcut ||

@@ -43,6 +43,7 @@ const (
 	DefaultGitHubProxyBase          = "https://gh-proxy.com"
 	DefaultUpdateCheckIntervalHours = 3
 	DefaultMinimizeToTray           = true
+	DefaultAlwaysOnTop              = false
 	DefaultLogRetentionDays         = 30
 	DefaultAutoLaunch               = false
 	DefaultCreateDesktopShortcut    = true

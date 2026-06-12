@@ -23,6 +23,7 @@
     "githubProxyBase": "https://gh-proxy.com",
     "updateCheckIntervalHours": 3,
     "minimizeToTray": true,
+    "alwaysOnTop": false,
     "logRetentionDays": 30,
     "autoLaunch": false,
     "createDesktopShortcut": true,

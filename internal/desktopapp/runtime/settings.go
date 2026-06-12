@@ -28,12 +28,13 @@ func (api *API) GetSettings() (settings Settings, err error) {
 	}
 	api.runtime.RecordLogWithSeverity("settings-trace", "GetSettings：后端收到读取请求", "debug")
 	settings = api.runtime.SettingsSnapshot()
-	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("GetSettings：后端返回 source=%q proxy=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
+	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("GetSettings：后端返回 source=%q proxy=%q autoLaunch=%t shortcut=%t tray=%t top=%t interval=%d retention=%d logLevel=%q",
 		settings.UpdateSource,
 		settings.GitHubProxyBase,
 		settings.AutoLaunch,
 		settings.CreateDesktopShortcut,
 		settings.MinimizeToTray,
+		settings.AlwaysOnTop,
 		settings.UpdateCheckIntervalHours,
 		settings.LogRetentionDays,
 		settings.LogLevel,
@@ -47,12 +48,13 @@ func (api *API) SaveSettings(settings Settings) (saved Settings, err error) {
 	if err := api.requireAuthorized(); err != nil {
 		return Settings{}, err
 	}
-	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("SaveSettings：后端收到保存请求 source=%q proxy=%q autoLaunch=%t shortcut=%t tray=%t interval=%d retention=%d logLevel=%q",
+	api.runtime.RecordLogWithSeverity("settings-trace", fmt.Sprintf("SaveSettings：后端收到保存请求 source=%q proxy=%q autoLaunch=%t shortcut=%t tray=%t top=%t interval=%d retention=%d logLevel=%q",
 		settings.UpdateSource,
 		settings.GitHubProxyBase,
 		settings.AutoLaunch,
 		settings.CreateDesktopShortcut,
 		settings.MinimizeToTray,
+		settings.AlwaysOnTop,
 		settings.UpdateCheckIntervalHours,
 		settings.LogRetentionDays,
 		settings.LogLevel,
@@ -81,6 +83,9 @@ func (s *Runtime) SaveSettings(settings Settings) (Settings, error) {
 	if s.logLevel != nil {
 		s.logLevel.Set(SlogLevelFromLogLevel(settings.LogLevel))
 	}
+	if previousSettings.AlwaysOnTop != settings.AlwaysOnTop {
+		s.applyMainWindowAlwaysOnTop(settings.AlwaysOnTop)
+	}
 
 	if err := s.applyChangedStartupIntegrations(previousSettings, settings); err != nil {
 		rollbackErr := s.rollbackSettingsAfterIntegrationFailure(previousSettings)
@@ -106,6 +111,7 @@ func (s *Runtime) rollbackSettingsAfterIntegrationFailure(previous Settings) err
 	if s.logLevel != nil {
 		s.logLevel.Set(SlogLevelFromLogLevel(previous.LogLevel))
 	}
+	s.applyMainWindowAlwaysOnTop(previous.AlwaysOnTop)
 	s.RecordLogWithSeverity("settings", "保存设置失败：已回滚内存设置和 SQLite 配置", "warning")
 	return rollbackErr
 }
@@ -151,6 +157,7 @@ func toDomainSettings(value Settings) appsettings.Settings {
 		GitHubProxyBase:          value.GitHubProxyBase,
 		UpdateCheckIntervalHours: value.UpdateCheckIntervalHours,
 		MinimizeToTray:           value.MinimizeToTray,
+		AlwaysOnTop:              value.AlwaysOnTop,
 		LogRetentionDays:         value.LogRetentionDays,
 		LogLevel:                 value.LogLevel,
 		AutoLaunch:               value.AutoLaunch,
@@ -166,6 +173,7 @@ func fromDomainSettings(value appsettings.Settings) Settings {
 		GitHubProxyBase:          value.GitHubProxyBase,
 		UpdateCheckIntervalHours: value.UpdateCheckIntervalHours,
 		MinimizeToTray:           value.MinimizeToTray,
+		AlwaysOnTop:              value.AlwaysOnTop,
 		LogRetentionDays:         value.LogRetentionDays,
 		LogLevel:                 value.LogLevel,
 		AutoLaunch:               value.AutoLaunch,

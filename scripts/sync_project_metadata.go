@@ -62,6 +62,7 @@ type settingsMeta struct {
 	GitHubProxyBase          string `json:"githubProxyBase"`
 	UpdateCheckIntervalHours int    `json:"updateCheckIntervalHours"`
 	MinimizeToTray           bool   `json:"minimizeToTray"`
+	AlwaysOnTop              bool   `json:"alwaysOnTop"`
 	LogRetentionDays         int    `json:"logRetentionDays"`
 	AutoLaunch               bool   `json:"autoLaunch"`
 	CreateDesktopShortcut    bool   `json:"createDesktopShortcut"`
@@ -205,6 +206,9 @@ func validate(meta metadata) {
 	if !meta.SettingsDefaults.MinimizeToTray {
 		exitf("project.metadata.json 的 settingsDefaults.minimizeToTray 当前必须为 true，避免缺字段时静默关闭托盘策略")
 	}
+	if meta.SettingsDefaults.AlwaysOnTop {
+		exitf("project.metadata.json 的 settingsDefaults.alwaysOnTop 必须默认为 false")
+	}
 	if meta.SettingsDefaults.LogRetentionDays == 0 || meta.SettingsDefaults.LogRetentionDays < -1 {
 		exitf("project.metadata.json 的 settingsDefaults.logRetentionDays 必须为 -1 或大于 0")
 	}
@@ -241,6 +245,7 @@ func printValue(meta metadata, key string) {
 		"settings.githubProxyBase":       meta.SettingsDefaults.GitHubProxyBase,
 		"settings.updateInterval":        fmt.Sprintf("%d", meta.SettingsDefaults.UpdateCheckIntervalHours),
 		"settings.minimizeToTray":        fmt.Sprintf("%t", meta.SettingsDefaults.MinimizeToTray),
+		"settings.alwaysOnTop":           fmt.Sprintf("%t", meta.SettingsDefaults.AlwaysOnTop),
 		"settings.logRetentionDays":      fmt.Sprintf("%d", meta.SettingsDefaults.LogRetentionDays),
 		"settings.autoLaunch":            fmt.Sprintf("%t", meta.SettingsDefaults.AutoLaunch),
 		"settings.createDesktopShortcut": fmt.Sprintf("%t", meta.SettingsDefaults.CreateDesktopShortcut),
@@ -417,6 +422,7 @@ const (
 	DefaultGitHubProxyBase          = %s
 	DefaultUpdateCheckIntervalHours = %d
 	DefaultMinimizeToTray           = %t
+	DefaultAlwaysOnTop              = %t
 	DefaultLogRetentionDays         = %d
 	DefaultAutoLaunch               = %t
 	DefaultCreateDesktopShortcut    = %t
@@ -473,6 +479,7 @@ func WindowsSetupAssetNameWithoutV(version string) string {
 		goString(meta.SettingsDefaults.GitHubProxyBase),
 		meta.SettingsDefaults.UpdateCheckIntervalHours,
 		meta.SettingsDefaults.MinimizeToTray,
+		meta.SettingsDefaults.AlwaysOnTop,
 		meta.SettingsDefaults.LogRetentionDays,
 		meta.SettingsDefaults.AutoLaunch,
 		meta.SettingsDefaults.CreateDesktopShortcut,
@@ -501,6 +508,7 @@ export const defaultSettings = {
   githubProxyBase: projectMetadata.settingsDefaults.githubProxyBase,
   updateCheckIntervalHours: projectMetadata.settingsDefaults.updateCheckIntervalHours,
   minimizeToTray: projectMetadata.settingsDefaults.minimizeToTray,
+  alwaysOnTop: projectMetadata.settingsDefaults.alwaysOnTop,
   logRetentionDays: projectMetadata.settingsDefaults.logRetentionDays,
   autoLaunch: projectMetadata.settingsDefaults.autoLaunch,
   createDesktopShortcut: projectMetadata.settingsDefaults.createDesktopShortcut,

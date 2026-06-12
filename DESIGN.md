@@ -101,6 +101,7 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 | `githubProxyBase` | `github.proxy_base` | `https://gh-proxy.com` | GitHub 更新代理，仅在更新源为 `github` 时展示 |
 | `updateCheckIntervalHours` | `update.check_interval_hours` | `3` | 检查间隔，`1 / 3 / 6 / 12 小时` |
 | `minimizeToTray` | `window.minimize_to_tray` | `true` | 关闭到系统托盘 |
+| `alwaysOnTop` | `window.always_on_top` | `false` | 窗口显示时置顶 |
 | `logRetentionDays` | `log.retention_days` | `30` | `7 / 30 / 60 / 90 / 180 / 365 / 永不清理` |
 | `logLevel` | `log.level` | `info` | `debug / info / warning / error` |
 | `autoLaunch` | `startup.auto_launch` | `false` | 开机自启 |
@@ -112,6 +113,7 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 - 每一行只有一个可编辑控件。
 - `launchHiddenToTray` 仅在 `autoLaunch` 开启时可编辑。
 - `minimizeToTray` 只影响点击关闭按钮；点击最小化仍进入任务栏。
+- `alwaysOnTop` 只影响窗口显示态；隐藏到托盘和自启隐藏策略保持独立。
 - GitHub Release 的 owner/repo 来自项目元数据，不作为业务设置保存或修改。
 - `githubProxyBase` 只影响 GitHub Release API、安装资产和 `.sha256` 下载；`local` 更新源不使用该代理。
 - 写配置失败必须返回错误，前端展示保存失败。

@@ -411,9 +411,11 @@ func TestRuntimeShowMainWindowOwnsSplashHandoff(t *testing.T) {
 	for _, required := range []string{
 		"s.lock.Lock()",
 		"splash := s.splashWindow",
+		"alwaysOnTop := s.settings.AlwaysOnTop",
 		"s.splashWindow = nil",
 		"window.Show()",
 		"splash.Close()",
+		"window.SetAlwaysOnTop(alwaysOnTop)",
 	} {
 		if !strings.Contains(methodBody, required) {
 			t.Fatalf("Runtime.ShowMainWindow 必须原子接管 splash 交接：缺少 %q", required)
