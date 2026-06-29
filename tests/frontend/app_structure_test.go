@@ -1469,8 +1469,12 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		"<Teleport to=\"body\"",
 		":disabled=\"!fullscreen\"",
 		`cn('page-stack log-page'`,
-		`<header class="split-header log-page-header">`,
-		`<div class="log-page-main">`,
+		`<section class="log-command-card" aria-label="日志筛选工具条">`,
+		`class="log-command-toolbar"`,
+		`class="log-command-tabs"`,
+		`class="log-command-tab"`,
+		`class="log-command-search"`,
+		`applySeverityFilter('error')`,
 		"filtersOpen = ref(false)",
 		"fullscreen = ref(false)",
 		"aria-expanded",
@@ -1481,6 +1485,9 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		"classList.toggle('is-log-fullscreen', enabled)",
 		"classList.remove('is-log-fullscreen')",
 		"log-filter-panel",
+		"log-collapsed-filter",
+		"log-mobile-list",
+		"log-mobile-card",
 		"log-message-cell",
 		"log-col-message",
 		"UiAlertDialog",
@@ -1505,12 +1512,21 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 
 	for _, required := range []string{
 		".log-page",
-		".log-page-main",
+		".log-command-card",
+		".log-command-toolbar",
+		".log-command-tabs",
+		".log-command-tab",
+		".log-command-search",
 		".log-filter-panel",
-		".log-stats-strip",
+		".log-collapsed-filter",
+		".log-collapsed-toolbar",
 		".log-stream-panel",
+		".log-mobile-list",
+		".log-mobile-card",
+		".log-mobile-card__meta",
+		".log-table-shell",
 		`.log-table[data-slot="table"]`,
-		`.log-stream-panel [data-slot="table-container"]`,
+		`.log-stream-panel .log-table-shell [data-slot="table-container"]`,
 		`.log-table [data-slot="table-head"]`,
 		`.log-table [data-slot="table-cell"]`,
 		".log-message-cell",
@@ -1518,9 +1534,9 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		":global(:root.is-log-fullscreen .app-shell)",
 		":global(:root.is-log-fullscreen) .log-fullscreen",
 		".page-stack.log-fullscreen",
-		".log-fullscreen .log-page-header",
-		".log-fullscreen .log-page-main",
-		".log-fullscreen.has-open-filters .log-page-main",
+		".log-fullscreen .log-command-card",
+		".log-fullscreen .log-collapsed-filter",
+		".log-fullscreen.has-open-filters",
 		`.log-fullscreen .log-stream-panel [data-slot="table-container"]`,
 		`.content-scroll.is-logs-view {
     align-content: start;
@@ -1558,10 +1574,28 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		`align-self: start;`,
 		`height: min(44vh, 360px);`,
 		`overflow-x: auto !important;`,
-		`min-width: 560px;`,
+		`min-width: 760px;`,
 	} {
 		if !strings.Contains(mobileLogStyles, required) {
 			t.Fatalf("logs page mobile layout should define %q", required)
+		}
+	}
+	mobileCardStart := strings.Index(logStyles, "@media (max-width: 760px)")
+	if mobileCardStart < 0 {
+		t.Fatal("logs page should switch to mobile cards at the questionnaire-list breakpoint")
+	}
+	mobileCardStyles := logStyles[mobileCardStart:]
+	for _, required := range []string{
+		`.log-table-shell {
+    display: none;
+  }`,
+		`.log-mobile-list {
+    display: grid;`,
+		`padding: 0;`,
+		`.log-pagination-card .button-row [data-slot="button"]`,
+	} {
+		if !strings.Contains(mobileCardStyles, required) {
+			t.Fatalf("logs page mobile-card layout should define %q", required)
 		}
 	}
 
@@ -1571,6 +1605,12 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		"log-workbench-main",
 		"log-side-panel",
 		"log-stat-list",
+		"log-page-header",
+		"log-page-main",
+		"log-stats-strip",
+		"log-stat-item",
+		"log-stream-header",
+		"filterSummary",
 	} {
 		if strings.Contains(logsPage, forbidden) || strings.Contains(logStyles, forbidden) {
 			t.Fatalf("logs page should not carry stale workbench/sidebar styling %q", forbidden)
@@ -1598,6 +1638,7 @@ func TestLogsPageKeepsCloudInspiredPaginationAndTableDetails(t *testing.T) {
 		"calculateLogPageSize",
 		"ResizeObserver",
 		"logTableRef",
+		"logListRef",
 		"logPaginationRef",
 		"totalPages",
 		"displayedLogPage",
@@ -1605,8 +1646,15 @@ func TestLogsPageKeepsCloudInspiredPaginationAndTableDetails(t *testing.T) {
 		"watch(logPageSize",
 		"logLayoutReady ? `共 ${appStore.logTotal} 条，每页 ${displayedPageSize} 条，当前第 ${displayedLogPage} / ${totalPages} 页` : ''",
 		`ref="logTableRef"`,
+		`ref="logListRef"`,
 		`ref="logPaginationRef"`,
 		`class="log-footer log-pagination-card"`,
+		`class="log-mobile-card"`,
+		`class="log-mobile-card__message"`,
+		`class="log-time-cell"`,
+		`class="log-scope-cell"`,
+		`class="log-level-cell"`,
+		`if (!isDesktop) return 12`,
 		`<UiTableRow v-if="displayedLogs.length === 0" class="log-empty-row">`,
 		`<UiTableCell colspan="4" class="log-empty-cell">{{ logLayoutReady ? '暂无匹配日志' : '' }}</UiTableCell>`,
 		`class="log-level-badge"`,
@@ -1621,6 +1669,12 @@ func TestLogsPageKeepsCloudInspiredPaginationAndTableDetails(t *testing.T) {
 		".log-table-shell",
 		".log-pagination-card",
 		".log-pagination-summary",
+		".log-mobile-list",
+		".log-mobile-card",
+		".log-mobile-card__message",
+		".log-time-cell",
+		".log-scope-cell",
+		".log-level-cell",
 		".log-empty-cell",
 		".log-level-badge",
 		".log-level-badge.is-error",
@@ -1632,12 +1686,37 @@ func TestLogsPageKeepsCloudInspiredPaginationAndTableDetails(t *testing.T) {
 			t.Fatalf("logs page styles should keep cloud-inspired pagination/table detail %q", required)
 		}
 	}
+	for _, required := range []string{
+		`min-width: 760px;`,
+		`border-collapse: collapse !important;`,
+		`.log-table [data-slot="table-row"]`,
+		`.log-table [data-slot="table-header"]`,
+		`.log-table [data-slot="table-body"] [data-slot="table-row"]:hover`,
+		`background: color-mix(in srgb, var(--background) 80%, var(--card)) !important;`,
+		`color: var(--muted-foreground) !important;`,
+		`font-size: var(--fs-caption) !important;`,
+		`font-weight: 600 !important;`,
+		`letter-spacing: 0 !important;`,
+		`text-transform: none !important;`,
+		`padding: 12px 10px;`,
+		`line-height: 1.45;`,
+		`vertical-align: middle;`,
+	} {
+		if !strings.Contains(logStyles, required) {
+			t.Fatalf("logs page table should mirror questionnaire table density/header detail %q", required)
+		}
+	}
 
 	for _, forbidden := range []string{
 		"const logPageSize = 50",
 		`<div v-if="appStore.logs.length === 0" class="empty-state">`,
+		"log-stream-header",
+		"filterSummary",
+		"background: var(--secondary)",
+		"secondary-foreground",
+		"text-transform: uppercase",
 	} {
-		if strings.Contains(logsPage, forbidden) {
+		if strings.Contains(logsPage, forbidden) || strings.Contains(logStyles, forbidden) {
 			t.Fatalf("logs page should not keep stale pagination/table detail %q", forbidden)
 		}
 	}
@@ -1660,9 +1739,12 @@ func TestLogsPageKeepsFileSelectorInsideFilterPanel(t *testing.T) {
 	for _, required := range []string{
 		".log-toolbar",
 		".log-file-field",
-		"grid-template-columns: minmax(220px, 1.35fr) minmax(140px, 0.85fr) minmax(120px, 0.75fr) minmax(240px, 1.4fr)",
+		".log-collapsed-filter",
+		".log-collapsed-toolbar",
+		".log-command-search",
+		"flex: 1 1 260px",
 		"@container (max-width: 820px)",
-		"grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)",
+		"flex-basis: 100%",
 		"@container (max-width: 560px)",
 	} {
 		if !strings.Contains(logStyles, required) {
