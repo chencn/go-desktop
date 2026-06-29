@@ -679,6 +679,16 @@ body,
 #app {
   min-height: 100vh;
   margin: 0;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  background: var(--background);
+}
+
+html {
+  overflow: hidden;
 }
 
 body {

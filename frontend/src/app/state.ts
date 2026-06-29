@@ -140,6 +140,10 @@ export function defaultStartupApiStatuses(): StartupApiStatusMap {
   }
 }
 
+export function isDisplayPreferencesReadyForShell(status: StartupApiStatus) {
+  return status.state === 'ok' || status.state === 'error'
+}
+
 function defaultStartupApiStatus(): StartupApiStatus {
   return { state: 'idle', message: '', updatedAt: '' }
 }

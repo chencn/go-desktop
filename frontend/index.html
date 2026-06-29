@@ -14,21 +14,21 @@
         --boot-primary: #1890ff;
       }
 
-      @media (prefers-color-scheme: dark) {
-        :root {
-          color-scheme: dark;
-          --boot-background: oklch(0.145 0 0);
-          --boot-foreground: oklch(0.985 0 0);
-          --boot-muted-foreground: oklch(0.708 0 0);
-          --boot-primary: #1890ff;
-        }
-      }
-
       html,
       body,
       #app {
         min-height: 100vh;
         margin: 0;
+        width: 100%;
+        min-width: 0;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+        background: var(--boot-background);
+      }
+
+      html {
+        overflow: hidden;
       }
 
       body {
@@ -38,6 +38,28 @@
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
+      }
+
+      /* Vue 挂载会短暂接管并清空 #app，独立满屏底板避免 WebView 最外层露出默认黑底。 */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        display: block;
+        background: var(--boot-background);
+        pointer-events: none;
+      }
+
+      #app,
+      .app-shell {
+        min-height: 100vh;
+        width: 100%;
+        min-width: 0;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+        background: var(--boot-background);
       }
 
       .boot-loading {

@@ -1,62 +1,68 @@
-/* Artistic 方案入口：集中导入官方 token、变量与 shadcn primitive 覆盖层。 */
+/* Artistic 方案入口：只 active import 当前业务实际使用的覆盖层，避免未使用主题 CSS 进入编译产物。 */
 @import "./artistic-scheme/common.css";
-@import "./artistic-scheme/components/accordion.css";
-@import "./artistic-scheme/components/alert.css";
 @import "./artistic-scheme/components/alert-dialog.css";
-@import "./artistic-scheme/components/aspect-ratio.css";
-@import "./artistic-scheme/components/avatar.css";
 @import "./artistic-scheme/components/badge.css";
-@import "./artistic-scheme/components/breadcrumb.css";
 @import "./artistic-scheme/components/button.css";
-@import "./artistic-scheme/components/button-group.css";
-@import "./artistic-scheme/components/calendar.css";
 @import "./artistic-scheme/components/card.css";
-@import "./artistic-scheme/components/carousel.css";
-@import "./artistic-scheme/components/chart.css";
-@import "./artistic-scheme/components/checkbox.css";
-@import "./artistic-scheme/components/collapsible.css";
-@import "./artistic-scheme/components/combobox.css";
-@import "./artistic-scheme/components/command.css";
-@import "./artistic-scheme/components/context-menu.css";
 @import "./artistic-scheme/components/dialog.css";
-@import "./artistic-scheme/components/drawer.css";
-@import "./artistic-scheme/components/dropdown-menu.css";
-@import "./artistic-scheme/components/empty.css";
 @import "./artistic-scheme/components/field.css";
-@import "./artistic-scheme/components/form.css";
-@import "./artistic-scheme/components/hover-card.css";
 @import "./artistic-scheme/components/input.css";
-@import "./artistic-scheme/components/input-group.css";
-@import "./artistic-scheme/components/input-otp.css";
-@import "./artistic-scheme/components/item.css";
-@import "./artistic-scheme/components/kbd.css";
-@import "./artistic-scheme/components/label.css";
-@import "./artistic-scheme/components/menubar.css";
-@import "./artistic-scheme/components/native-select.css";
-@import "./artistic-scheme/components/navigation-menu.css";
-@import "./artistic-scheme/components/number-field.css";
-@import "./artistic-scheme/components/pagination.css";
-@import "./artistic-scheme/components/pin-input.css";
-@import "./artistic-scheme/components/popover.css";
 @import "./artistic-scheme/components/progress.css";
-@import "./artistic-scheme/components/radio-group.css";
-@import "./artistic-scheme/components/range-calendar.css";
-@import "./artistic-scheme/components/resizable.css";
-@import "./artistic-scheme/components/scroll-area.css";
 @import "./artistic-scheme/components/select.css";
-@import "./artistic-scheme/components/separator.css";
-@import "./artistic-scheme/components/sheet.css";
-@import "./artistic-scheme/components/sidebar.css";
-@import "./artistic-scheme/components/skeleton.css";
-@import "./artistic-scheme/components/slider.css";
-@import "./artistic-scheme/components/sonner.css";
-@import "./artistic-scheme/components/spinner.css";
-@import "./artistic-scheme/components/stepper.css";
 @import "./artistic-scheme/components/switch.css";
 @import "./artistic-scheme/components/table.css";
-@import "./artistic-scheme/components/tabs.css";
-@import "./artistic-scheme/components/tags-input.css";
-@import "./artistic-scheme/components/textarea.css";
-@import "./artistic-scheme/components/toggle.css";
-@import "./artistic-scheme/components/toggle-group.css";
 @import "./artistic-scheme/components/tooltip.css";
+
+/*
+ * 未启用组件主题 CSS 留档：
+ * 下列 import 不参与编译；保留路径是为了后续新增 primitive 时能直接取消注释。
+ * 取消注释前必须确认对应组件已被 shared/ui/plugin.ts、业务页面或 wrapper 实际引用。
+ */
+/* @import "./artistic-scheme/components/accordion.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/alert.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/aspect-ratio.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/avatar.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/breadcrumb.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/button-group.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/calendar.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/carousel.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/chart.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/checkbox.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/collapsible.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/combobox.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/command.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/context-menu.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/drawer.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/dropdown-menu.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/empty.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/form.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/hover-card.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/input-group.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/input-otp.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/item.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/kbd.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/label.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/menubar.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/native-select.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/navigation-menu.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/number-field.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/pagination.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/pin-input.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/popover.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/radio-group.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/range-calendar.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/resizable.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/scroll-area.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/separator.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/sheet.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/sidebar.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/skeleton.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/slider.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/sonner.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/spinner.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/stepper.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/tabs.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/tags-input.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/textarea.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/toggle.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */
+/* @import "./artistic-scheme/components/toggle-group.css"; -- 未启用：当前业务未引用该 primitive，避免打包未使用主题。 */

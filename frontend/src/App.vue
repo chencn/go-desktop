@@ -6,6 +6,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { viewComponents } from '@/app/routes'
+import { isDisplayPreferencesReadyForShell } from '@/app/state'
 import { useAppStore } from './stores/app'
 import AppChrome from './features/layout/AppChrome.vue'
 import LicensePage from './features/license/LicensePage.vue'
@@ -16,6 +17,10 @@ const appStore = useAppStore()
 const activeView = ref<ViewKey>('home')
 // activeViewComponent 从集中路由表取组件，让 App.vue 不再维护页面 import/switch。
 const activeViewComponent = computed(() => viewComponents[activeView.value])
+const mainShellReady = computed(() => {
+  if (!appStore.licenseStatus || (appStore.licenseStatus.required && !appStore.licenseStatus.authorized)) return false
+  return isDisplayPreferencesReadyForShell(appStore.startupApiStatuses.displayPreferences)
+})
 
 // navigate 只更新本地视图状态；页面数据仍由 store 初始化和各页面自己的后端调用维护。
 function navigate(view: ViewKey) {
@@ -36,7 +41,7 @@ onUnmounted(() => {
 
 <template>
   <LicensePage v-if="appStore.licenseStatus?.required && !appStore.licenseStatus?.authorized" />
-  <AppChrome v-else-if="appStore.licenseStatus" :active-view="activeView" @navigate="navigate">
+  <AppChrome v-else-if="mainShellReady" :active-view="activeView" @navigate="navigate">
     <component :is="activeViewComponent" />
   </AppChrome>
 </template>

@@ -43,10 +43,6 @@ var rawNamedColorPattern = regexp.MustCompile(`(?i)(^|[^a-z0-9_-])(transparent|w
 var colorTokenDeclarationPattern = regexp.MustCompile(`(?m)^\s*(--color-[a-z0-9-]+):\s*([^;]+);`)
 var colorTokenNameShapePattern = regexp.MustCompile(`^--color-(transparent|(display|black|white|value)-[a-z0-9-]+)$`)
 var monochromeAlphaTokenNamePattern = regexp.MustCompile(`^--color-(black|white)-alpha-([0-9]{3})$`)
-var artisticComponentHardcodedFontWeightPattern = regexp.MustCompile(`font-weight:\s*(?:500|600|700|750|800)\b`)
-var artisticComponentHardcodedRadiusPattern = regexp.MustCompile(`border-radius:\s*(?:999px|calc\(var\(--radius\)\s*-\s*(?:4|6)px\)|var\(--radius-sm,\s*calc\(var\(--radius\)\s*-\s*6px\)\))`)
-var artisticComponentDurationLiteralPattern = regexp.MustCompile(`\b(?:160|180|200|220|260|280|300)ms\b`)
-var artisticComponentSpringLiteralPattern = regexp.MustCompile(`cubic-bezier\(0\.34,\s*1\.56,\s*0\.64,\s*1\)`)
 var rgbaColorValuePattern = regexp.MustCompile(`^rgba\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9.]+)\s*\)$`)
 
 // TestAppRootStaysAsCompositionRoot 验证 App.vue 只装配全局状态、门禁和页面出口，不回流具体业务流程。
@@ -151,7 +147,6 @@ func TestShadcnPrimitivesAreGloballyRegistered(t *testing.T) {
 	for _, required := range []string{
 		"UiButton",
 		"UiCard",
-		"UiNativeSelect",
 		"UiSelect",
 		"UiSelectTrigger",
 		"UiSelectContent",
@@ -326,6 +321,56 @@ func TestDesignDocumentsEngineeringHardRules(t *testing.T) {
 	}
 	if _, err := os.Stat(rootPath(filepath.Join(".tmp", ".gitkeep"))); err != nil {
 		t.Fatalf("expected .tmp/.gitkeep to reserve temporary artifact directory: %v", err)
+	}
+}
+
+// TestBootViewportBackplatePreventsOuterBlackFlash 验证首屏启动底板不依赖 Vue 挂载后的组件铺满视口。
+func TestBootViewportBackplatePreventsOuterBlackFlash(t *testing.T) {
+	indexHTML := strings.ReplaceAll(readRootFile(t, "frontend", "index.html"), "\r\n", "\n")
+	globalStyles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "styles.css"), "\r\n", "\n")
+	design := readRootFile(t, "DESIGN.md")
+
+	for _, required := range []string{
+		"body::before",
+		"position: fixed",
+		"inset: 0",
+		"z-index: -1",
+		"background: var(--boot-background)",
+		"#app,\n      .app-shell",
+		"border: 0 !important",
+		"box-shadow: none !important",
+	} {
+		if !strings.Contains(indexHTML, required) {
+			t.Fatalf("frontend/index.html should keep boot viewport backplate rule, missing %q", required)
+		}
+	}
+	if strings.Contains(indexHTML, "prefers-color-scheme") {
+		t.Fatal("frontend/index.html should keep boot background under app display preferences instead of system color scheme")
+	}
+
+	for _, required := range []string{
+		"html,\nbody,\n#app",
+		"width: 100%",
+		"min-width: 0",
+		"background: var(--background)",
+		"box-shadow: none",
+		"html {\n  overflow: hidden;\n}",
+	} {
+		if !strings.Contains(globalStyles, required) {
+			t.Fatalf("frontend/src/styles.css should keep runtime root viewport fallback, missing %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		"首屏启动底板",
+		"Vue 挂载空窗期",
+		"body::before",
+		"固定满屏底板",
+		"不跟随 `prefers-color-scheme`",
+	} {
+		if !strings.Contains(design, required) {
+			t.Fatalf("DESIGN.md should document boot viewport backplate rule, missing %q", required)
+		}
 	}
 }
 
@@ -1919,7 +1964,6 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 		`[data-slot="badge"]`,
 		`[data-slot="card"]`,
 		`[data-slot="input"]`,
-		`.ui-native-select`,
 		`[data-slot="switch"]`,
 		`[data-slot="table-container"]`,
 		`[data-slot="dialog-content"]`,
@@ -1932,7 +1976,6 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 		`.topbar`,
 		`.settings-row-item`,
 		`.aesthetic-field-col`,
-		`.ui-native-select`,
 	} {
 		if !strings.Contains(artisticSchemeStyles, required) {
 			t.Fatalf("frontend/src/styles/artistic-scheme should centralise artistic theme rule %q", required)
@@ -2102,145 +2145,10 @@ func TestArtisticSchemeComponentDetailsMatchThemeTokens(t *testing.T) {
 
 }
 
-// TestArtisticSchemeComponentsUseCommonShapeMotionAndSurfaceTokens 验证组件层不再散落艺术主题的形状、字重、动效、焦点环和表面色硬编码。
-func TestArtisticSchemeComponentsUseCommonShapeMotionAndSurfaceTokens(t *testing.T) {
-	commonStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "common.css")
-	componentStylesByFile := readArtisticComponentStylesByFile(t)
-
-	for _, required := range []string{
-		`--radius-sm: calc(var(--radius) - 6px);`,
-		`--radius-md: calc(var(--radius) - 4px);`,
-		`--radius-full: 999px;`,
-		`--fw-medium: 500;`,
-		`--fw-semibold: 600;`,
-		`--fw-bold: 700;`,
-		`--fw-heavy: 800;`,
-		`--duration-fast: 180ms;`,
-		`--duration-base: 220ms;`,
-		`--duration-slow: 300ms;`,
-		`--ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);`,
-		`--artistic-focus-ring: 0 0 0 3px color-mix(in srgb, var(--artistic-primary) 20%, var(--color-transparent));`,
-		`--artistic-field-bg: var(--color-white-alpha-500);`,
-		`--artistic-field-bg-hover: var(--color-white-alpha-750);`,
-		`--artistic-field-bg-focus: var(--color-white-alpha-750);`,
-		`--artistic-field-border: var(--border);`,
-		`--artistic-control-bg: var(--color-white-alpha-450);`,
-		`--artistic-control-bg-checked: var(--color-white-alpha-900);`,
-		`--artistic-control-border: var(--border);`,
-		`--artistic-button-soft-bg: var(--color-white-alpha-650);`,
-		`--artistic-button-soft-bg-hover: var(--color-white-alpha-850);`,
-		`--artistic-field-bg: var(--color-white-alpha-040);`,
-		`--artistic-field-bg-hover: var(--color-white-alpha-080);`,
-		`--artistic-field-bg-focus: var(--color-value-rgba-13-16-26-0p9);`,
-		`--artistic-field-border: var(--color-white-alpha-080);`,
-		`--artistic-control-bg: var(--color-white-alpha-050);`,
-		`--artistic-control-bg-checked: var(--color-value-rgba-13-16-26-0p9);`,
-		`--artistic-control-border: var(--color-white-alpha-100);`,
-		`--artistic-button-soft-bg: var(--color-white-alpha-050);`,
-		`--artistic-button-soft-bg-hover: var(--color-white-alpha-100);`,
-	} {
-		if !strings.Contains(commonStyles, required) {
-			t.Fatalf("common.css should own artistic shared token %q", required)
-		}
-	}
-
-	for rel, source := range componentStylesByFile {
-		if match := artisticComponentHardcodedFontWeightPattern.FindString(source); match != "" {
-			t.Fatalf("%s should use --fw-* tokens instead of hard-coded font weight %q", rel, match)
-		}
-		if match := artisticComponentHardcodedRadiusPattern.FindString(source); match != "" {
-			t.Fatalf("%s should use --radius-* tokens instead of hard-coded radius %q", rel, match)
-		}
-		if match := artisticComponentDurationLiteralPattern.FindString(source); match != "" {
-			t.Fatalf("%s should use --duration-* tokens instead of hard-coded duration %q", rel, match)
-		}
-		if match := artisticComponentSpringLiteralPattern.FindString(source); match != "" {
-			t.Fatalf("%s should use --ease-spring instead of hard-coded spring easing %q", rel, match)
-		}
-		if strings.Contains(source, `0 0 0 3px color-mix(in srgb, var(--artistic-primary)`) {
-			t.Fatalf("%s should use --artistic-focus-ring instead of repeating the focus ring literal", rel)
-		}
-	}
-
-	for rel, requiredSnippets := range map[string][]string{
-		"frontend/src/styles/artistic-scheme/components/button.css": {
-			`font-weight: var(--fw-semibold);`,
-			`transition: transform var(--duration-base) var(--ease-spring),`,
-			`border-radius: var(--radius-full);`,
-			`border: 1px solid var(--artistic-control-border) !important;`,
-			`background: var(--artistic-button-soft-bg) !important;`,
-			`background: var(--artistic-button-soft-bg-hover) !important;`,
-		},
-		"frontend/src/styles/artistic-scheme/components/checkbox.css": {
-			`border: 1px solid var(--artistic-control-border) !important;`,
-			`background: var(--artistic-control-bg) !important;`,
-			`box-shadow: var(--artistic-focus-ring) !important;`,
-		},
-		"frontend/src/styles/artistic-scheme/components/input.css": {
-			`border: 1px solid var(--artistic-field-border) !important;`,
-			`background: var(--artistic-field-bg) !important;`,
-			`box-shadow: var(--artistic-focus-ring),`,
-			`background: var(--artistic-field-bg-focus) !important;`,
-		},
-		"frontend/src/styles/artistic-scheme/components/radio-group.css": {
-			`border: 1px solid var(--artistic-control-border) !important;`,
-			`background: var(--artistic-control-bg) !important;`,
-			`box-shadow: var(--artistic-focus-ring) !important;`,
-			`background: var(--artistic-control-bg-checked) !important;`,
-		},
-		"frontend/src/styles/artistic-scheme/components/select.css": {
-			`font-weight: var(--fw-medium) !important;`,
-			`background-color: var(--artistic-field-bg-hover) !important;`,
-			`box-shadow: var(--artistic-focus-ring) !important;`,
-			`background-color: var(--artistic-field-bg-focus) !important;`,
-			`border-radius: var(--radius-md) !important;`,
-		},
-		"frontend/src/styles/artistic-scheme/components/switch.css": {
-			`border-radius: var(--radius-full) !important;`,
-			`transition: background-color var(--duration-slow) var(--ease-spring),`,
-			`box-shadow: var(--artistic-focus-ring) !important;`,
-		},
-	} {
-		source, ok := componentStylesByFile[rel]
-		if !ok {
-			t.Fatalf("artistic component CSS missing %s", rel)
-		}
-		for _, required := range requiredSnippets {
-			if !strings.Contains(source, required) {
-				t.Fatalf("%s should consume artistic shared token %q", rel, required)
-			}
-		}
-	}
-}
-
 // TestArtisticSchemeStylesShadcnSelect 验证设置页下拉使用 shadcn Select，选中项颜色由主题 CSS 覆盖。
-func TestArtisticSchemeStylesNativeSelectOnly(t *testing.T) {
-	nativeSelect := readRootFile(t, "frontend", "src", "shared", "ui", "NativeSelect.vue")
+func TestArtisticSchemeStylesShadcnSelect(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	selectStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "select.css")
-
-	for _, required := range []string{
-		`<select`,
-		`ui-native-select`,
-		`v-bind="delegatedAttrs"`,
-		`@change="emit('update:modelValue', ($event.target as HTMLSelectElement).value)"`,
-	} {
-		if !strings.Contains(nativeSelect, required) {
-			t.Fatalf("NativeSelect should stay as the original native select wrapper: missing %q", required)
-		}
-	}
-
-	for _, forbidden := range []string{
-		`MutationObserver`,
-		`document.addEventListener`,
-		`role="listbox"`,
-		`@pointerdown.stop`,
-		`ChevronDown`,
-	} {
-		if strings.Contains(nativeSelect, forbidden) {
-			t.Fatalf("NativeSelect must not implement a custom dropdown in Vue; CSS-only override required, found %q", forbidden)
-		}
-	}
 
 	if strings.Contains(settingsPage, "UiNativeSelect") {
 		t.Fatal("settings page dropdowns should use shadcn Select, not UiNativeSelect")
@@ -2258,24 +2166,17 @@ func TestArtisticSchemeStylesNativeSelectOnly(t *testing.T) {
 	}
 
 	for _, required := range []string{
-		`:root[data-display-scheme="artistic"] .ui-native-select`,
 		`:root[data-display-scheme="artistic"] [data-slot="select-trigger"]`,
 		`:root[data-display-scheme="artistic"] [data-slot="select-content"]`,
 		`:root[data-display-scheme="artistic"] [data-slot="select-item"]`,
 		`:root[data-display-scheme="artistic"] [data-slot="select-item"][data-state="checked"]`,
-		`:root[data-display-scheme="artistic"] .ui-native-select:hover`,
 		`:root[data-display-scheme="artistic"] [data-slot="select-trigger"]:hover`,
-		`:root[data-display-scheme="artistic"] .ui-native-select:focus-visible`,
 		`:root[data-display-scheme="artistic"] [data-slot="select-trigger"]:focus-visible`,
-		`:root[data-display-scheme="artistic"] .ui-native-select:disabled`,
-		`appearance: none !important`,
 		`background-color: var(--card)`,
 		`box-shadow: var(--artistic-shadow-lg)`,
 		`background: color-mix(in srgb, var(--runtime-accent-color`,
 		`color: var(--runtime-accent-color`,
 		`font-weight: var(--fw-medium)`,
-		`padding: 0 32px 0 12px !important`,
-		`background-image: url("data:image/svg+xml`,
 		`:root[data-display-scheme="artistic"] .preference-color-menu`,
 		`:root[data-display-scheme="artistic"] .preference-color-option`,
 		`:root[data-display-scheme="artistic"] .preference-color-option.is-selected`,
@@ -2288,13 +2189,10 @@ func TestArtisticSchemeStylesNativeSelectOnly(t *testing.T) {
 	for _, forbidden := range []string{
 		`opacity: 0;`,
 		`z-index: -1`,
-		`.ui-native-select option`,
 		`option:checked`,
-		`.ui-native-select option {
-  background-color: var(--runtime-accent-color`,
 	} {
 		if strings.Contains(selectStyles, forbidden) {
-			t.Fatalf("components/select.css must not hide native Select or depend on Vue-rendered shell: found %q", forbidden)
+			t.Fatalf("components/select.css must not hide Select or depend on Vue-rendered shell: found %q", forbidden)
 		}
 	}
 

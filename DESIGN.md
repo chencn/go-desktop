@@ -192,6 +192,17 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 - Artistic 主题的外观范围包括按钮、输入、shadcn Select、原生 select 兜底、开关、卡片、表格、弹窗、Badge、菜单、顶栏、focus、hover、active 和暗色状态。
 - Artistic 主题默认主色和图表色为 Apple 蓝，基础色调为 Neutral，并叠加毛玻璃面板；具体变量以 `frontend/src/styles/artistic-scheme/common.css` 为准。
 
+### 4.3 首屏启动底板
+
+刷新或冷启动时，Vue 挂载会接管并短暂替换 `#app` 内的静态 loading；在路由门禁、显示偏好、页面 chunk 和 `AppChrome` 完成渲染前，会出现极短的 Vue 挂载空窗期。这个阶段的黑边不是 shadcn Card、表格、侧栏或内部组件边框，而是 WebView 最外层露出了默认背景。
+
+规则：
+
+- `frontend/index.html` 必须内联 `body::before`，用 `position: fixed`、`inset: 0` 和 `background: var(--boot-background)` 作为独立于 Vue 生命周期的固定满屏底板。
+- `html`、`body`、`#app` 和首屏 `.app-shell` 必须在内联启动 CSS 中提前声明 `width: 100%`、`min-width: 0`、`background: var(--boot-background)`，并清掉边框、轮廓和阴影。
+- `frontend/src/styles.css` 必须在运行期继续给 `html`、`body`、`#app` 声明根级背景、尺寸和外层兜底，不能只依赖页面组件铺满视口。
+- 启动底色不跟随 `prefers-color-scheme`，因为项目显示偏好由持久化配置接管；在配置加载前先使用日间默认底板，避免系统暗色导致刷新瞬间黑底。
+
 ## 5. 主题和 CSS 归属规则
 
 `frontend/src/styles.css` 只放 Tailwind import、主题 token、全局 reset、focus 和根级媒体变量，只允许承载：

@@ -67,6 +67,7 @@ import {
   type AppAction,
   appReducer,
   initialAppState,
+  isDisplayPreferencesReadyForShell,
   statusFromCheckResult,
   toMessage,
 } from '../../frontend/src/app/state'
@@ -172,6 +173,13 @@ describe('app state reducer', () => {
 
     expect(next.currentLogQuery).toEqual(query)
     expect(initialAppState.currentLogQuery.scope).toBe('all')
+  })
+
+  it('waits for display preferences before allowing the main shell to render', () => {
+    expect(isDisplayPreferencesReadyForShell({ state: 'idle', message: '', updatedAt: '' })).toBe(false)
+    expect(isDisplayPreferencesReadyForShell({ state: 'loading', message: 'GetDisplayPreferences读取中', updatedAt: '' })).toBe(false)
+    expect(isDisplayPreferencesReadyForShell({ state: 'ok', message: 'GetDisplayPreferences已返回', updatedAt: '' })).toBe(true)
+    expect(isDisplayPreferencesReadyForShell({ state: 'error', message: '读取失败，已使用默认显示偏好', updatedAt: '' })).toBe(true)
   })
 })
 
