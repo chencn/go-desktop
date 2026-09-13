@@ -321,6 +321,9 @@ tasks:
       LOCALAPPDATA: '{{if eq OS "windows"}}{{env "LOCALAPPDATA" | default (printf "%%s\\AppData\\Local" (env "USERPROFILE"))}}{{end}}'
       APPDATA: '{{if eq OS "windows"}}{{env "APPDATA" | default (printf "%%s\\AppData\\Roaming" (env "USERPROFILE"))}}{{end}}'
       GOCACHE: '{{if eq OS "windows"}}{{env "GOCACHE" | default (printf "%%s\\AppData\\Local\\go-build" (env "USERPROFILE"))}}{{end}}'
+      # 固定工具链必须与 go.mod 的 go 指令一致：低于它 go 会直接拒绝构建，
+      # 高于它则 wails3 绑定生成器内部的 go list 会报版本错配警告。
+      GOTOOLCHAIN: 'go1.26.5'
     cmds:
       - go run ./scripts/envrun wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
@@ -357,7 +360,8 @@ tasks:
 `, yamlString(meta.AppName))
 }
 
-// renderFrontendIndex 渲染前端 HTML 入口的标题和 Wails 绑定缺失兜底提示。
+// renderFrontendIndex 渲染前端 HTML 入口的标题、启动首屏底板和 Wails 绑定缺失兜底提示。
+// 首屏样式必须内联在此模板中，否则 Vue 挂载前的 WebView 会短暂露出默认黑底。
 func renderFrontendIndex(meta metadata) string {
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="zh-CN">
@@ -366,9 +370,158 @@ func renderFrontendIndex(meta metadata) string {
     <link rel="icon" type="image/svg+xml" href="/wails.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>%s</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --boot-background: oklch(0.985 0 0);
+        --boot-foreground: oklch(0.145 0 0);
+        --boot-muted-foreground: oklch(0.48 0 0);
+        --boot-primary: #1890ff;
+      }
+
+      html,
+      body,
+      #app {
+        min-height: 100vh;
+        margin: 0;
+        width: 100%%;
+        min-width: 0;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+        background: var(--boot-background);
+      }
+
+      html {
+        overflow: hidden;
+      }
+
+      body {
+        overflow: hidden;
+        background: var(--boot-background);
+        color: var(--boot-foreground);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      /* Vue 挂载会短暂接管并清空 #app，独立满屏底板避免 WebView 最外层露出默认黑底。 */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        display: block;
+        background: var(--boot-background);
+        pointer-events: none;
+      }
+
+      #app,
+      .app-shell {
+        min-height: 100vh;
+        width: 100%%;
+        min-width: 0;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+        background: var(--boot-background);
+      }
+
+      .boot-loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--boot-background);
+      }
+
+      .ant-spin {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        color: var(--boot-primary);
+        text-align: center;
+      }
+
+      .ant-spin-dot {
+        position: relative;
+        display: inline-block;
+        width: 32px;
+        height: 32px;
+        animation: ant-spin-rotate 1.2s linear infinite;
+      }
+
+      .ant-spin-dot-item {
+        position: absolute;
+        display: block;
+        width: 14px;
+        height: 14px;
+        border-radius: 100%%;
+        background-color: currentColor;
+        opacity: 0.3;
+        animation: ant-spin-move 1s linear infinite alternate;
+      }
+
+      .ant-spin-dot-item:nth-child(1) {
+        top: 0;
+        left: 0;
+      }
+
+      .ant-spin-dot-item:nth-child(2) {
+        top: 0;
+        right: 0;
+        animation-delay: 0.4s;
+      }
+
+      .ant-spin-dot-item:nth-child(3) {
+        right: 0;
+        bottom: 0;
+        animation-delay: 0.8s;
+      }
+
+      .ant-spin-dot-item:nth-child(4) {
+        bottom: 0;
+        left: 0;
+        animation-delay: 1.2s;
+      }
+
+      .ant-spin-text {
+        color: var(--boot-muted-foreground);
+        font-size: 14px;
+        line-height: 1.5715;
+        letter-spacing: 0;
+      }
+
+      @keyframes ant-spin-rotate {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes ant-spin-move {
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div class="boot-loading" role="status" aria-live="polite">
+        <div class="ant-spin ant-spin-lg" aria-label="正在加载">
+          <span class="ant-spin-dot" aria-hidden="true">
+            <i class="ant-spin-dot-item"></i>
+            <i class="ant-spin-dot-item"></i>
+            <i class="ant-spin-dot-item"></i>
+            <i class="ant-spin-dot-item"></i>
+          </span>
+          <span class="ant-spin-text">正在加载</span>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
@@ -2297,7 +2450,7 @@ jobs:
     runs-on: windows-latest
 
     env:
-      GO_VERSION: "1.25.x"
+      GO_VERSION: "1.26.x"
       NODE_VERSION: "22"
       WAILS_VERSION: %s
       APP_NAME: %s

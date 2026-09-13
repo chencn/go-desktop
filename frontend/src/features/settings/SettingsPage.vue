@@ -24,14 +24,14 @@ const settingsSaveDelayMs = 180
 let saveRevision = 0
 // saveQueue 串行化 SaveSettings，避免快速点击导致后端写入乱序。
 let saveQueue = Promise.resolve()
-// saveTimer 保存业务设置防抖计时器。
-let saveTimer: ReturnType<typeof window.setTimeout> | undefined
+// saveTimer 保存业务设置防抖计时器；浏览器 window.setTimeout 返回 number。
+let saveTimer: number | undefined
 // displaySaveRevision 标记最新显示偏好保存请求，配合队列丢弃过期写入。
 let displaySaveRevision = 0
 // displaySaveQueue 串行化 SaveDisplayPreferences，保证落库顺序和 UI 最终状态一致。
 let displaySaveQueue = Promise.resolve()
-// displaySaveTimer 保存显示偏好防抖计时器。
-let displaySaveTimer: ReturnType<typeof window.setTimeout> | undefined
+// displaySaveTimer 保存显示偏好防抖计时器；浏览器 window.setTimeout 返回 number。
+let displaySaveTimer: number | undefined
 // resetDisplayDialogOpen 控制恢复当前显示方案默认值的二次确认弹窗。
 const resetDisplayDialogOpen = ref(false)
 

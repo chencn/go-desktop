@@ -53,6 +53,9 @@ tasks:
       LOCALAPPDATA: '{{if eq OS "windows"}}{{env "LOCALAPPDATA" | default (printf "%s\\AppData\\Local" (env "USERPROFILE"))}}{{end}}'
       APPDATA: '{{if eq OS "windows"}}{{env "APPDATA" | default (printf "%s\\AppData\\Roaming" (env "USERPROFILE"))}}{{end}}'
       GOCACHE: '{{if eq OS "windows"}}{{env "GOCACHE" | default (printf "%s\\AppData\\Local\\go-build" (env "USERPROFILE"))}}{{end}}'
+      # 固定工具链必须与 go.mod 的 go 指令一致：低于它 go 会直接拒绝构建，
+      # 高于它则 wails3 绑定生成器内部的 go list 会报版本错配警告。
+      GOTOOLCHAIN: 'go1.26.5'
     cmds:
       - go run ./scripts/envrun wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
