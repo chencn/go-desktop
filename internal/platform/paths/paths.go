@@ -94,8 +94,3 @@ func DefaultCrashStatePath(appName string) string {
 func DefaultCrashDir(appName string) string {
 	return DefaultLogDirPath(appName)
 }
-
-// nowRFC3339 返回当前 UTC 时间的 RFC3339 字符串。
-func nowRFC3339() string {
-	return time.Now().UTC().Format(time.RFC3339)
-}

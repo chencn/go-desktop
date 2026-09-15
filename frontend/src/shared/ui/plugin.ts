@@ -13,6 +13,7 @@ import Field from './Field.vue'
 import Label from './Label.vue'
 import NativeSelect from './NativeSelect.vue'
 import ProgressCompat from './Progress.vue'
+import StatCard from './StatCard.vue'
 import SwitchCompat from './Switch.vue'
 import TooltipCompat from './Tooltip.vue'
 
@@ -38,6 +39,7 @@ const components: Record<string, Component> = {
   UiSelectTrigger: SelectTrigger,
   UiSelectValue: SelectValue,
   UiProgress: ProgressCompat,
+  UiStatCard: StatCard,
   UiSwitch: SwitchCompat,
   UiTable: Table,
   UiTableBody: TableBody,

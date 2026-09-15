@@ -378,6 +378,7 @@ func TestMainWindowKeepsWindowsFramelessDecorations(t *testing.T) {
 // TestRuntimeShowMainWindowOwnsSplashHandoff 保护 splash 到主窗口的交接点集中在 Runtime.ShowMainWindow。
 func TestRuntimeShowMainWindowOwnsSplashHandoff(t *testing.T) {
 	mainSource := readRootFile(t, "main.go")
+	runtimeSource := readRootFile(t, "internal", "desktopapp", "runtime", "runtime.go")
 	serviceSource := readRootFile(t, "internal", "desktopapp", "runtime", "service.go")
 	windowSource := readRootFile(t, "internal", "desktopapp", "runtime", "window.go")
 
@@ -390,8 +391,11 @@ func TestRuntimeShowMainWindowOwnsSplashHandoff(t *testing.T) {
 		t.Fatal("appRuntime.SetSplashWindow 必须在 appRuntime.SetMainWindow 之后调用")
 	}
 
+	// 字段声明留在 runtime.go（状态容器），注入方法留在 service.go（装配层）。
+	if !strings.Contains(runtimeSource, "splashWindow *application.WebviewWindow") {
+		t.Fatal("Runtime 必须保存 splashWindow 引用：runtime.go 缺少字段声明")
+	}
 	for _, required := range []string{
-		"splashWindow *application.WebviewWindow",
 		"func (s *Runtime) SetSplashWindow(window *application.WebviewWindow)",
 		"s.splashWindow = window",
 	} {
@@ -434,6 +438,9 @@ func TestRuntimeDoesNotUseSQLiteForLogsOrUpdateBusinessData(t *testing.T) {
 	runtimeSources := strings.Join([]string{
 		readRootFile(t, "internal", "desktopapp", "runtime", "logs.go"),
 		readRootFile(t, "internal", "desktopapp", "runtime", "logging.go"),
+		readRootFile(t, "internal", "desktopapp", "runtime", "log_memory.go"),
+		readRootFile(t, "internal", "desktopapp", "runtime", "log_query.go"),
+		readRootFile(t, "internal", "desktopapp", "runtime", "types.go"),
 		readRootFile(t, "internal", "desktopapp", "runtime", "process_logging.go"),
 		readRootFile(t, "internal", "desktopapp", "runtime", "storage.go"),
 		readRootFile(t, "internal", "desktopapp", "runtime", "update.go"),

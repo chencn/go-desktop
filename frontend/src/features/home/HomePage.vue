@@ -9,6 +9,8 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  CircleCheck,
+  Clock,
   Database,
   Globe2,
   MonitorCheck,
@@ -32,14 +34,25 @@ type ServiceCard = {
   icon: Component
 }
 
+// DemoStat 描述业务统计卡；tone 驱动徽标，iconTone 驱动图标容器。
+type DemoStat = {
+  label: string
+  value: string
+  delta: string
+  tone: 'positive' | 'neutral' | 'negative'
+  iconTone: ServiceTone
+  icon: Component
+}
+
 // networkOnline 只读取浏览器在线状态；它不代表 GitHub Release 或本地更新源一定可达。
 const networkOnline = ref<boolean | null>(typeof navigator === 'undefined' ? null : navigator.onLine)
 
-const demoStats = [
-  { label: '今日处理量', value: '128', delta: '+12.4%', tone: 'positive' },
-  { label: '成功率', value: '98.7%', delta: '+1.8%', tone: 'positive' },
-  { label: '待处理', value: '23', delta: '-6', tone: 'neutral' },
-  { label: '异常记录', value: '3', delta: '+1', tone: 'negative' },
+// demoStats 的 tone 只驱动徽标配色；iconTone 是卡片图标容器的语义色，两者互不干扰。
+const demoStats: DemoStat[] = [
+  { label: '今日处理量', value: '128', delta: '+12.4%', tone: 'positive', iconTone: 'icon-tone-indigo', icon: BarChart3 },
+  { label: '成功率', value: '98.7%', delta: '+1.8%', tone: 'positive', iconTone: 'icon-tone-green', icon: CircleCheck },
+  { label: '待处理', value: '23', delta: '-6', tone: 'neutral', iconTone: 'icon-tone-purple', icon: Clock },
+  { label: '异常记录', value: '3', delta: '+1', tone: 'negative', iconTone: 'icon-tone-orange', icon: AlertTriangle },
 ]
 
 const trendPoints = [
@@ -263,25 +276,16 @@ function networkStatus(): ServiceCard {
       </div>
 
       <div class="software-status-grid">
-        <UiCard v-for="item in serviceCards" :key="item.title" :class="`software-status-card is-${item.status}`">
-          <UiCardHeader class="software-status-card-header">
-            <div class="software-status-main">
-              <span :class="`software-status-icon ${item.tone}`" aria-hidden="true">
-                <component :is="item.icon" :size="19" />
-              </span>
-              <div>
-                <div class="software-status-title-row">
-                  <UiCardTitle>{{ item.title }}</UiCardTitle>
-                  <span :class="`status-inline is-${item.status}`">
-                    <span class="status-inline-dot" aria-hidden="true" />
-                    {{ item.label }}
-                  </span>
-                </div>
-                <UiCardDescription class="software-status-meta">{{ item.meta }}</UiCardDescription>
-              </div>
-            </div>
-          </UiCardHeader>
-        </UiCard>
+        <UiStatCard
+          v-for="item in serviceCards"
+          :key="item.title"
+          :label="item.title"
+          :icon="item.icon"
+          :tone="item.tone"
+          :status="item.status"
+          :status-label="item.label"
+          :hint="item.meta"
+        />
       </div>
     </section>
 
@@ -297,17 +301,18 @@ function networkStatus(): ServiceCard {
       </div>
 
       <div class="business-stats-grid">
-        <UiCard v-for="stat in demoStats" :key="stat.label" :class="`business-stat-card is-${stat.tone}`">
-          <UiCardHeader class="business-stat-header">
-            <UiCardDescription>{{ stat.label }}</UiCardDescription>
-            <UiCardAction>
-              <UiBadge :class="`metric-delta-badge is-${stat.tone}`" variant="outline">{{ stat.delta }}</UiBadge>
-            </UiCardAction>
-          </UiCardHeader>
-          <UiCardContent class="business-stat-content">
-            <UiCardTitle>{{ stat.value }}</UiCardTitle>
-          </UiCardContent>
-        </UiCard>
+        <UiStatCard
+          v-for="stat in demoStats"
+          :key="stat.label"
+          :label="stat.label"
+          :value="stat.value"
+          :icon="stat.icon"
+          :tone="stat.iconTone"
+        >
+          <template #action>
+            <UiBadge :class="`metric-delta-badge is-${stat.tone}`" variant="outline">{{ stat.delta }}</UiBadge>
+          </template>
+        </UiStatCard>
       </div>
     </section>
 

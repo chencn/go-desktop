@@ -403,8 +403,7 @@
 }
 
 /* 首页概览卡片 */
-:root[data-display-scheme="artistic"] .software-status-card,
-:root[data-display-scheme="artistic"] .business-stat-card,
+:root[data-display-scheme="artistic"] .app-stat-card,
 :root[data-display-scheme="artistic"] .chart-panel,
 :root[data-display-scheme="artistic"] .log-stream-panel {
   border: var(--artistic-glass-border) !important;
@@ -414,7 +413,7 @@
   box-shadow: var(--artistic-shadow) !important;
 }
 
-:root[data-display-scheme="artistic"] .software-status-icon {
+:root[data-display-scheme="artistic"] .stat-card-icon {
   border-radius: 50% !important;
   background: var(--color-value-rgba-120-119-130-0p08);
 }
@@ -442,43 +441,43 @@
 }
 
 /* 彩色图标 tone 处理 */
-:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-orange {
+:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon, .stat-card-icon).icon-tone-orange {
   background: color-mix(in srgb, var(--icon-orange) 12%, var(--color-transparent)) !important;
   color: var(--icon-orange) !important;
 }
-:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-cyan {
+:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon, .stat-card-icon).icon-tone-cyan {
   background: var(--color-value-rgba-6-182-212-0p12) !important;
   color: var(--color-value-06b6d4) !important;
 }
-:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-green {
+:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon, .stat-card-icon).icon-tone-green {
   background: var(--color-value-rgba-16-185-129-0p12) !important;
   color: var(--color-value-10b981) !important;
 }
-:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-amber {
+:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon, .stat-card-icon).icon-tone-amber {
   background: var(--color-value-rgba-245-158-11-0p12) !important;
   color: var(--color-value-f59e0b) !important;
 }
-:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-blue {
+:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon, .stat-card-icon).icon-tone-blue {
   background: var(--color-value-rgba-59-130-246-0p12) !important;
   color: var(--color-value-3b82f6) !important;
 }
-:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-red {
+:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon, .stat-card-icon).icon-tone-red {
   background: var(--color-value-rgba-239-68-68-0p12) !important;
   color: var(--color-value-ef4444) !important;
 }
-:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-gray {
+:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon, .stat-card-icon).icon-tone-gray {
   background: var(--color-value-rgba-100-116-139-0p12) !important;
   color: var(--color-value-64748b) !important;
 }
-:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-indigo {
+:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon, .stat-card-icon).icon-tone-indigo {
   background: var(--color-value-rgba-79-70-229-0p12) !important;
   color: var(--color-value-4f46e5) !important;
 }
-:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-purple {
+:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon, .stat-card-icon).icon-tone-purple {
   background: var(--color-value-rgba-168-85-247-0p12) !important;
   color: var(--color-value-a855f7) !important;
 }
-:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-pink {
+:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon, .stat-card-icon).icon-tone-pink {
   background: var(--color-value-rgba-236-72-153-0p12) !important;
   color: var(--color-value-ec4899) !important;
 }

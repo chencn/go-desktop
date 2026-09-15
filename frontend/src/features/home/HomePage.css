@@ -1,5 +1,7 @@
-.section-title-with-status,
-.software-status-title-row {
+/* 首页布局：统计板块统一用 UiStatCard，4 卡常驻 4 列，字号只引用 --fs-* token。 */
+
+/* 板块标题右侧的汇总状态药丸（如"运行正常"）；卡片内部状态点由 UiStatCard 自己渲染。 */
+.section-title-with-status {
   display: flex;
   min-width: 0;
   align-items: center;
@@ -46,8 +48,39 @@
   }
 }
 
-.software-status-grid,
-.business-stats-grid,
+.monitor-heading {
+  margin-bottom: 12px;
+}
+
+.monitor-heading h3 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: var(--fs-section);
+  line-height: 1.25;
+}
+
+.monitor-heading p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: var(--fs-caption);
+}
+
+/* 软件运行状况（4张卡）：常驻 4 列，保证空间充裕 */
+.software-status-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* 业务统计（4张卡）：同样常驻 4 列 */
+.business-stats-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .dashboard-grid,
 .log-summary-grid {
   display: grid;
@@ -87,180 +120,6 @@
   font-size: var(--fs-caption);
 }
 
-.software-status-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.software-status-card {
-  gap: 0 !important;
-  min-height: 104px;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  background: color-mix(in oklch, var(--card) 70%, var(--color-transparent)) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in oklch, var(--border) 60%, var(--color-transparent)) !important;
-  transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1), background-color 220ms ease !important;
-}
-
-.software-status-card [data-slot="card-header"] {
-  border-bottom: 0 !important;
-  padding: 16px 20px !important;
-}
-
-.software-status-card:hover {
-  transform: translateY(-3px) scale(1.005);
-  border-color: color-mix(in oklch, var(--primary) 22%, var(--border)) !important;
-  box-shadow: 0 12px 30px -8px color-mix(in oklch, var(--primary) 14%, var(--color-black-alpha-080)) !important;
-  background: color-mix(in oklch, var(--background) 4%, var(--card)) !important;
-}
-
-.software-status-card [data-slot="card-title"] {
-  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform-origin: left center;
-}
-
-.software-status-card:hover [data-slot="card-title"] {
-  transform: scale(1.04);
-}
-
-.software-status-card-header {
-  min-width: 0;
-  align-items: center;
-  gap: 0;
-  padding: 16px;
-}
-
-.software-status-main {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 12px;
-}
-
-.software-status-icon {
-  display: inline-flex;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--secondary);
-  color: var(--foreground);
-  transition: transform 220ms ease, background-color 220ms ease, color 220ms ease;
-}
-
-.software-status-icon svg {
-  transition: transform 220ms ease;
-}
-
-.software-status-card:hover .software-status-icon svg {
-  transform: scale(1.1);
-}
-
-.software-status-main div {
-  display: grid;
-  min-width: 0;
-  gap: 4px;
-}
-
-.software-status-meta {
-  overflow: hidden;
-  color: var(--muted-foreground);
-  font-size: var(--fs-caption);
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.software-status-title-row [data-slot="card-title"] {
-  overflow: hidden;
-  color: var(--foreground);
-  font-size: var(--fs-section);
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.monitor-heading {
-  margin-bottom: 12px;
-}
-
-.monitor-heading h3 {
-  margin: 0;
-  color: var(--foreground);
-  font-size: var(--fs-section);
-  line-height: 1.25;
-}
-
-.monitor-heading p {
-  margin: 0;
-  color: var(--muted-foreground);
-  font-size: var(--fs-caption);
-}
-
-.business-stats-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.business-stat-card {
-  gap: 0 !important;
-  min-height: 104px;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  background: color-mix(in oklch, var(--card) 70%, var(--color-transparent)) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in oklch, var(--border) 60%, var(--color-transparent)) !important;
-  transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1), background-color 220ms ease !important;
-}
-
-.business-stat-card [data-slot="card-header"] {
-  border-bottom: 0 !important;
-  padding: 16px 20px 8px !important;
-}
-
-.business-stat-card:hover {
-  transform: translateY(-3px) scale(1.005);
-  border-color: color-mix(in oklch, var(--primary) 22%, var(--border)) !important;
-  box-shadow: 0 12px 30px -8px color-mix(in oklch, var(--primary) 14%, var(--color-black-alpha-080)) !important;
-  background: color-mix(in oklch, var(--background) 4%, var(--card)) !important;
-}
-
-.business-stat-card [data-slot="card-title"] {
-  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform-origin: left center;
-}
-
-.business-stat-card:hover [data-slot="card-title"] {
-  transform: scale(1.04);
-}
-
-.business-stat-header {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 12px;
-  padding: 16px 16px 8px;
-}
-
-.business-stat-header [data-slot="card-description"] {
-  overflow: hidden;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.business-stat-content {
-  padding: 0 16px 16px;
-}
-
-.business-stat-content [data-slot="card-title"] {
-  overflow: hidden;
-  font-size: calc(var(--fs-title) + 2px);
-  line-height: 1.15;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .metric-delta-badge {
   font-weight: 650;
   backdrop-filter: blur(4px);
@@ -285,21 +144,21 @@
   color: var(--muted-foreground);
 }
 
-.business-stat-card:hover .metric-delta-badge.is-positive {
+.app-stat-card:hover .metric-delta-badge.is-positive {
   border-color: var(--icon-green) !important;
   background: var(--icon-green) !important;
   color: var(--color-white-solid) !important;
   box-shadow: 0 2px 8px color-mix(in oklch, var(--icon-green) 25%, var(--color-transparent)) !important;
 }
 
-.business-stat-card:hover .metric-delta-badge.is-negative {
+.app-stat-card:hover .metric-delta-badge.is-negative {
   border-color: var(--destructive) !important;
   background: var(--destructive) !important;
   color: var(--color-white-solid) !important;
   box-shadow: 0 2px 8px color-mix(in oklch, var(--destructive) 25%, var(--color-transparent)) !important;
 }
 
-.business-stat-card:hover .metric-delta-badge.is-neutral {
+.app-stat-card:hover .metric-delta-badge.is-neutral {
   border-color: var(--muted-foreground) !important;
   background: var(--muted-foreground) !important;
   color: var(--background) !important;
@@ -503,7 +362,8 @@
   color: var(--destructive);
 }
 
-@media (max-width: 1260px) {
+/* 4 卡板块在 <= 1200px 降为 2 列（两行 4 个） */
+@media (max-width: 1200px) {
   .dashboard-grid {
     grid-template-columns: minmax(0, 1fr);
   }

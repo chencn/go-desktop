@@ -20,7 +20,6 @@ func TestInternalUsesLayeredTwoLevelLayout(t *testing.T) {
 			"checksum": true,
 			"neterr":   true,
 			"semver":   true,
-			"timefmt":  true,
 		},
 		"platform": {
 			"installer": true,

@@ -39,21 +39,21 @@
 }
 
 /* 首页业务统计卡片 hover 时的徽标变色效果（艺术主题） */
-:root[data-display-scheme="artistic"] .business-stat-card:hover .metric-delta-badge.is-positive {
+:root[data-display-scheme="artistic"] .app-stat-card:hover .metric-delta-badge.is-positive {
   background: var(--icon-green) !important;
   color: var(--color-white-solid) !important;
   border-color: var(--icon-green) !important;
   box-shadow: 0 2px 8px color-mix(in oklch, var(--icon-green) 25%, var(--color-transparent)) !important;
 }
 
-:root[data-display-scheme="artistic"] .business-stat-card:hover .metric-delta-badge.is-negative {
+:root[data-display-scheme="artistic"] .app-stat-card:hover .metric-delta-badge.is-negative {
   background: var(--destructive) !important;
   color: var(--color-white-solid) !important;
   border-color: var(--destructive) !important;
   box-shadow: 0 2px 8px color-mix(in oklch, var(--destructive) 25%, var(--color-transparent)) !important;
 }
 
-:root[data-display-scheme="artistic"] .business-stat-card:hover .metric-delta-badge.is-neutral {
+:root[data-display-scheme="artistic"] .app-stat-card:hover .metric-delta-badge.is-neutral {
   background: var(--color-value-f59e0b) !important;
   color: var(--color-white-solid) !important;
   border-color: var(--color-value-f59e0b) !important;
