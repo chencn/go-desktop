@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/chencn/go-desktop/internal/desktopapp/crash"
 )
@@ -39,8 +40,21 @@ func (s *Runtime) RecordPreviousCrash(state CrashState, ok bool, crashLogPath st
 		state.PID, state.Phase, state.StartedAt, state.UpdatedAt, crashLogPath)
 	s.RecordLogWithSeverity("crash", message, "error")
 	for _, line := range crash.PreviousLogTail(crashLogPath, previousCrashTailLines, state.UpdatedAt) {
-		s.RecordLogWithSeverity("crash", "上次 crash.log："+line, "error")
+		s.RecordLogWithSeverity("crash", "上次 crash.log："+line, crashTailSeverity(line))
 	}
+}
+
+// crashTailSeverity 判定导入的 crash.log 行级别。
+// crash.log 同时记录正常启动阶段面包屑（"进程启动"、"启动阶段：xxx"）和真正的崩溃线索，
+// 只有后者才该标红；一律标 error 会让日志页每次启动都被历史面包屑刷屏。
+func crashTailSeverity(line string) string {
+	lower := strings.ToLower(line)
+	for _, marker := range []string{"panic", "fatal error", "runtime error", "未标记正常退出", "安装 go crash output 失败", "清理 crash.log 失败"} {
+		if strings.Contains(lower, marker) {
+			return "error"
+		}
+	}
+	return "warning"
 }
 
 // recordCrashBreadcrumb 写入 crash.log 面包屑；crash scope 自身不会再回写以避免递归噪音。

@@ -409,6 +409,52 @@ func TestReadPreviousCrashStateIgnoresLiveAndCleanStates(t *testing.T) {
 	}
 }
 
+// TestRecordPreviousCrashKeepsBreadcrumbsOutOfErrorLevel 验证导入的历史 crash.log 面包屑不再一律标红。
+// crash.log 混有正常启动阶段记录和真正的崩溃线索，只有后者该是 error；
+// 一律标 error 会让每次启动都把历史面包屑当成新错误刷满日志页。
+func TestRecordPreviousCrashKeepsBreadcrumbsOutOfErrorLevel(t *testing.T) {
+	logDir := t.TempDir()
+	crashPath := filepath.Join(logDir, "crash.log")
+	cutoff := time.Now().UTC()
+	earlier := cutoff.Add(-time.Minute).Format(time.RFC3339Nano)
+
+	breadcrumb := earlier + "\tcrash\terror\t启动阶段：创建主窗口\n"
+	crashLine := earlier + "\tpanic\terror\t主入口 panic：boom\n"
+	if err := os.WriteFile(crashPath, []byte(breadcrumb+crashLine), 0o644); err != nil {
+		t.Fatalf("write crash log fixture: %v", err)
+	}
+
+	runtime := app.NewRuntime(app.ServiceOptions{
+		DatabasePath: filepath.Join(t.TempDir(), "go-desktop.db"),
+		LogDirPath:   logDir,
+	})
+	defer runtime.Shutdown()
+
+	runtime.RecordPreviousCrash(app.CrashState{
+		PID:       999999,
+		StartedAt: earlier,
+		UpdatedAt: cutoff.Format(time.RFC3339Nano),
+		Phase:     "运行 Wails",
+	}, true, crashPath)
+
+	response := runtime.QueryLogs(app.LogQuery{Scope: "crash", Page: 1, PageSize: 50})
+	severityByKind := map[string]string{}
+	for _, entry := range response.Logs {
+		if strings.Contains(entry.Message, "启动阶段：创建主窗口") {
+			severityByKind["breadcrumb"] = entry.Severity
+		}
+		if strings.Contains(entry.Message, "panic") {
+			severityByKind["panic"] = entry.Severity
+		}
+	}
+	if severityByKind["breadcrumb"] != "warning" {
+		t.Fatalf("expected breadcrumb to import as warning, got %q (%#v)", severityByKind["breadcrumb"], response.Logs)
+	}
+	if severityByKind["panic"] != "error" {
+		t.Fatalf("expected panic line to stay error, got %q (%#v)", severityByKind["panic"], response.Logs)
+	}
+}
+
 // TestStartupDeletesExpiredDailyLogFilesByRetentionDays 验证启动/设置保留清理只删除过期每日文件日志。
 func TestStartupDeletesExpiredDailyLogFilesByRetentionDays(t *testing.T) {
 	logDir := t.TempDir()

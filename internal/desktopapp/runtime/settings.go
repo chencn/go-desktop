@@ -138,11 +138,6 @@ func normaliseSettings(settings Settings) Settings {
 	return fromDomainSettings(appsettings.Normalize(toDomainSettings(settings)))
 }
 
-// normaliseUpdateCheckIntervalHours 只接受 settings domain 层声明的自动检查间隔。
-func normaliseUpdateCheckIntervalHours(value int) int {
-	return appsettings.NormalizeUpdateCheckIntervalHours(value)
-}
-
 // SettingsSnapshot 返回当前内存设置副本；调用方不能通过返回值修改 Runtime 状态。
 func (s *Runtime) SettingsSnapshot() Settings {
 	s.lock.RLock()

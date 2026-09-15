@@ -278,6 +278,9 @@ func main() {
 	}
 	crashReporter.Append("app", "Wails 主循环已返回")
 	appRuntime.RecordLogWithSeverity("app", "Wails 主循环已返回", "warning")
+	// Wails 主循环正常返回说明进程走完了退出流程；这里补标记，
+	// 让 Finish 删除状态文件，避免下次启动把本次正常退出误报为上次异常结束。
+	crashReporter.MarkClean("Wails 主循环返回")
 }
 
 // releaseAssetNames 保持 main.go 注入的更新检查器与 runtime 默认匹配同一组资产名。
