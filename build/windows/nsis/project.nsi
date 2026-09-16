@@ -1,6 +1,13 @@
 Unicode true
 
 ####
+## 压缩设置：LZMA solid 比 zlib 默认显著更小（同一二进制实测 12.6MB -> 11.1MB）。
+## 字典 16MB 已是甜点，继续加大会抬高解压内存却几乎不再减小体积。
+####
+SetCompressor /SOLID lzma
+SetCompressorDictSize 16
+
+####
 ## 由 scripts/sync_project_metadata.go 根据 project.metadata.json 生成；不要手工修改。
 ## 注意：这个文件里不能直接使用 Wails 模板替换，只能使用下面这些默认 define。
 ## 如果某个值没有在这里定义，wails_tools.nsh 会补默认值。
