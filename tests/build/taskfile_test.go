@@ -90,8 +90,9 @@ func TestReadmeDocumentsRootPackageForLocalStaticUpdates(t *testing.T) {
 	}
 }
 
-// TestDevFrontendStartsWithoutReinstallingDependencies 验证 Wails dev 启动 Vite 时不重复安装依赖，避免拖慢启动窗口。
-func TestDevFrontendStartsWithoutReinstallingDependencies(t *testing.T) {
+// TestDevFrontendDoesNotRepeatDependencyInstall 验证 Vite 启动命令自身不装依赖：
+// 依赖安装由 build:frontend 的 deps 承担，并靠 sources/generates 缓存，dev 链路只需保证只装一次。
+func TestDevFrontendDoesNotRepeatDependencyInstall(t *testing.T) {
 	source := readRootFile(t, "build", "Taskfile.yml")
 	start := strings.Index(source, "  dev:frontend:")
 	if start < 0 {
@@ -102,8 +103,11 @@ func TestDevFrontendStartsWithoutReinstallingDependencies(t *testing.T) {
 		devFrontend = devFrontend[:nextTask+1]
 	}
 
-	if strings.Contains(devFrontend, "install:frontend:deps") {
-		t.Fatal("common:dev:frontend must not run npm install; wails dev builds first, then starts Vite before the app wait window expires")
+	if strings.Contains(devFrontend, "npm install") {
+		t.Fatal("common:dev:frontend 不应在 Vite 启动命令里重复 npm install")
+	}
+	if !strings.Contains(source, "task: install:frontend:deps") {
+		t.Fatal("build:frontend 必须把 install:frontend:deps 列为 deps，否则 dev 链路启动前依赖可能缺失")
 	}
 }
 
@@ -249,14 +253,23 @@ func TestTrayMenuOnlyShowsDisplayAndExit(t *testing.T) {
 	}
 }
 
-// TestCloseToTrayDoesNotHijackMinimiseButton 验证关闭到托盘只挂在关闭事件，不劫持最小化按钮。
+// TestCloseToTrayDoesNotHijackMinimiseButton 验证关闭到托盘只挂在关闭事件上。
+// 监听最小化本身是正常需求（例如记录窗口行为），被禁止的只是在最小化回调里隐藏到托盘。
 func TestCloseToTrayDoesNotHijackMinimiseButton(t *testing.T) {
 	source := readRootFile(t, "main.go")
 	if !strings.Contains(source, "WindowClosing") || !strings.Contains(source, "ShouldHideOnClose()") {
 		t.Fatalf("main.go 应只在关闭窗口时判断是否隐藏到托盘")
 	}
-	if strings.Contains(source, "WindowMinimise") || strings.Contains(source, "窗口最小化到托盘") {
-		t.Fatalf("点击最小化应保留在任务栏，不应注册最小化到托盘逻辑")
+
+	const minimiseHandlerSpan = 400
+	if idx := strings.Index(source, "WindowMinimise"); idx >= 0 {
+		handler := source[idx:]
+		if len(handler) > minimiseHandlerSpan {
+			handler = handler[:minimiseHandlerSpan]
+		}
+		if strings.Contains(handler, "ShouldHideOnClose") || strings.Contains(handler, "Hide()") {
+			t.Fatal("点击最小化应保留在任务栏，最小化回调不得隐藏到托盘")
+		}
 	}
 }
 

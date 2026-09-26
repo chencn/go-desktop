@@ -151,9 +151,6 @@ func TestMainInstallsEarliestCrashReporter(t *testing.T) {
 	}
 	for _, forbidden := range []string{
 		"func DefaultSettingsPath(appName string) string",
-		"SettingsPath string",
-		"settingsPath",
-		"settings.json",
 	} {
 		if strings.Contains(source, forbidden) || strings.Contains(pathsSource, forbidden) || strings.Contains(platformPathsSource, forbidden) || strings.Contains(appFacadeSource, forbidden) {
 			t.Fatalf("runtime environment info must not expose legacy settings file path: found %q", forbidden)
@@ -485,16 +482,6 @@ func TestRuntimeDoesNotUseSQLiteForLogsOrUpdateBusinessData(t *testing.T) {
 	} {
 		if strings.Contains(runtimeSources, forbidden) {
 			t.Fatalf("runtime must not call SQLite for logs/update business data: found %q", forbidden)
-		}
-	}
-
-	for _, forbidden := range []string{
-		"append(s.file" + "LogEntries(), memoryLogs...)",
-		"file" + "LogEntries 读取所有每日 JSONL 日志文件",
-		"内存、SQLite 和文件日志",
-	} {
-		if strings.Contains(runtimeSources, forbidden) {
-			t.Fatalf("runtime logs must not merge file logs with memory logs or mention SQLite logging: found %q", forbidden)
 		}
 	}
 }

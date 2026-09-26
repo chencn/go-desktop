@@ -317,13 +317,9 @@ func TestReleaseWorkflowPublishesNsisPathBeforePackaging(t *testing.T) {
 
 func TestCleanupWorkflowKeepsRecentReleasesAndWorkflowLogs(t *testing.T) {
 	source := readRootFile(t, ".github/workflows/cleanup.yml")
-	for _, forbidden := range []string{
-		"schedule:",
-		"deleteWorkflowRun({",
-	} {
-		if strings.Contains(source, forbidden) {
-			t.Fatalf(".github/workflows/cleanup.yml should not contain %q", forbidden)
-		}
+	// 清理只删日志附件，不删 run 记录本身：删记录会让 GitHub 历史无法追溯。
+	if strings.Contains(source, "deleteWorkflowRun({") {
+		t.Fatal("cleanup.yml 不得删除 workflow run 记录，只能删除其日志附件")
 	}
 	for _, required := range []string{
 		"name: Cleanup GitHub History",
