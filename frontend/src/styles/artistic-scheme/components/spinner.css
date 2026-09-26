@@ -1,5 +1,0 @@
-/* Artistic Spinner: 覆盖 shadcn Spinner primitive */
-
-:root[data-display-scheme="artistic"] [data-slot="spinner"] {
-  color: var(--artistic-primary) !important;
-}

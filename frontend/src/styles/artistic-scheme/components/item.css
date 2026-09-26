@@ -1,6 +1,0 @@
-/* Artistic Item: 覆盖 shadcn Item primitive */
-
-:root[data-display-scheme="artistic"] [data-slot="item"] {
-  border-radius: var(--radius-md) !important;
-  transition: background-color var(--duration-base) ease, color var(--duration-base) ease !important;
-}

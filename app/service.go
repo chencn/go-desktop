@@ -100,47 +100,16 @@ type Settings struct {
 	LaunchHiddenToTray       bool   `json:"launchHiddenToTray"`       // LaunchHiddenToTray 只对自启隐藏启动生效。
 }
 
-// DisplayProfile 是某个显示方案的一组可持久化视觉 profile。
-type DisplayProfile struct {
-	UIStyle     string `json:"uiStyle"`     // UIStyle 选择此 profile 的组件风格。
-	BaseColor   string `json:"baseColor"`   // BaseColor 选择中性色/背景色盘。
-	ThemeColor  string `json:"themeColor"`  // ThemeColor 选择主品牌色。
-	AccentColor string `json:"accentColor"` // AccentColor 选择次级强调色。
-	ChartColor  string `json:"chartColor"`  // ChartColor 选择图表色调。
-	IconTone    string `json:"iconTone"`    // IconTone 控制图标颜色处理。
-	Menu        string `json:"menu"`        // Menu 控制导航区域样式。
-	MenuAccent  string `json:"menuAccent"`  // MenuAccent 控制选中菜单强调方式。
-	Radius      string `json:"radius"`      // Radius 控制组件圆角。
-	Density     string `json:"density"`     // Density 控制间距密度。
-	TextSize    string `json:"textSize"`    // TextSize 控制基础 UI 字号。
-	CardBorder  string `json:"cardBorder"`  // CardBorder 控制卡片边框强度。
-}
-
-// DisplayProfiles 用稳定 JSON 字段承载所有方案 profile。
-// 前端依赖字段名而不是 map，保证生成模型简单且可预测。
-type DisplayProfiles struct {
-	Shadcn   DisplayProfile `json:"shadcn"`   // Shadcn 保存 shadcn-vue profile。
-	Artistic DisplayProfile `json:"artistic"` // Artistic 保存落日艺术风格 profile。
-}
-
-// DisplayPreferences 是暴露给 UI 的 typed 显示偏好快照。
-// 扁平字段是当前 DisplayScheme 的生效值；Profiles 保留所有方案的持久化值。
+// DisplayPreferences 是暴露给 UI 的 typed 显示偏好快照（Element Plus 主题模型 V3，含液态玻璃光学）。
 type DisplayPreferences struct {
-	DisplayScheme string          `json:"displayScheme"` // DisplayScheme 选择当前生效显示方案。
-	UIStyle       string          `json:"uiStyle"`       // UIStyle 是当前生效组件风格。
-	ThemeMode     string          `json:"themeMode"`     // ThemeMode 是当前生效亮暗模式。
-	BaseColor     string          `json:"baseColor"`     // BaseColor 是当前生效中性色/背景色盘。
-	ThemeColor    string          `json:"themeColor"`    // ThemeColor 是当前生效主色。
-	AccentColor   string          `json:"accentColor"`   // AccentColor 是当前生效强调色。
-	ChartColor    string          `json:"chartColor"`    // ChartColor 是当前生效图表色调。
-	IconTone      string          `json:"iconTone"`      // IconTone 是当前生效图标颜色处理。
-	Menu          string          `json:"menu"`          // Menu 是当前生效导航样式。
-	MenuAccent    string          `json:"menuAccent"`    // MenuAccent 是当前生效选中菜单强调方式。
-	Radius        string          `json:"radius"`        // Radius 是当前生效圆角。
-	Density       string          `json:"density"`       // Density 是当前生效间距密度。
-	TextSize      string          `json:"textSize"`      // TextSize 是当前生效 UI 字号。
-	CardBorder    string          `json:"cardBorder"`    // CardBorder 是当前生效卡片边框强度。
-	Profiles      DisplayProfiles `json:"profiles"`      // Profiles 保留所有可编辑方案 profile。
+	ThemeMode string `json:"themeMode"` // ThemeMode 是当前亮暗模式。
+	Size      string `json:"size"`      // Size 是 Element Plus 全局组件尺寸。
+	// Backdrop 是极光折射流光背景开关。
+	Backdrop bool `json:"backdrop"`
+	// LgStyle 是液态玻璃折射风格：fresnel / frosted / sheen。
+	LgStyle string `json:"lgStyle"`
+	// LgIntensity 是 30-100 的折射光强百分比。
+	LgIntensity int `json:"lgIntensity"`
 }
 
 // LogEntry 是返回给前端的一条日志。
@@ -546,80 +515,20 @@ func toLogResponse(value appruntime.LogResponse) LogResponse {
 
 func toDisplayPreferences(value appruntime.DisplayPreferences) DisplayPreferences {
 	return DisplayPreferences{
-		DisplayScheme: value.DisplayScheme,
-		UIStyle:       value.UIStyle,
-		ThemeMode:     value.ThemeMode,
-		BaseColor:     value.BaseColor,
-		ThemeColor:    value.ThemeColor,
-		AccentColor:   value.AccentColor,
-		ChartColor:    value.ChartColor,
-		IconTone:      value.IconTone,
-		Menu:          value.Menu,
-		MenuAccent:    value.MenuAccent,
-		Radius:        value.Radius,
-		Density:       value.Density,
-		TextSize:      value.TextSize,
-		CardBorder:    value.CardBorder,
-		Profiles: DisplayProfiles{
-			Shadcn:   toDisplayProfile(value.Profiles.Shadcn),
-			Artistic: toDisplayProfile(value.Profiles.Artistic),
-		},
+		ThemeMode:   value.ThemeMode,
+		Size:        value.Size,
+		Backdrop:    value.Backdrop,
+		LgStyle:     value.LgStyle,
+		LgIntensity: value.LgIntensity,
 	}
 }
 
 func fromDisplayPreferences(value DisplayPreferences) appruntime.DisplayPreferences {
 	return appruntime.DisplayPreferences{
-		DisplayScheme: value.DisplayScheme,
-		UIStyle:       value.UIStyle,
-		ThemeMode:     value.ThemeMode,
-		BaseColor:     value.BaseColor,
-		ThemeColor:    value.ThemeColor,
-		AccentColor:   value.AccentColor,
-		ChartColor:    value.ChartColor,
-		IconTone:      value.IconTone,
-		Menu:          value.Menu,
-		MenuAccent:    value.MenuAccent,
-		Radius:        value.Radius,
-		Density:       value.Density,
-		TextSize:      value.TextSize,
-		CardBorder:    value.CardBorder,
-		Profiles: appruntime.DisplayProfiles{
-			Shadcn:   fromDisplayProfile(value.Profiles.Shadcn),
-			Artistic: fromDisplayProfile(value.Profiles.Artistic),
-		},
-	}
-}
-
-func toDisplayProfile(value appruntime.DisplayProfile) DisplayProfile {
-	return DisplayProfile{
-		UIStyle:     value.UIStyle,
-		BaseColor:   value.BaseColor,
-		ThemeColor:  value.ThemeColor,
-		AccentColor: value.AccentColor,
-		ChartColor:  value.ChartColor,
-		IconTone:    value.IconTone,
-		Menu:        value.Menu,
-		MenuAccent:  value.MenuAccent,
-		Radius:      value.Radius,
-		Density:     value.Density,
-		TextSize:    value.TextSize,
-		CardBorder:  value.CardBorder,
-	}
-}
-
-func fromDisplayProfile(value DisplayProfile) appruntime.DisplayProfile {
-	return appruntime.DisplayProfile{
-		UIStyle:     value.UIStyle,
-		BaseColor:   value.BaseColor,
-		ThemeColor:  value.ThemeColor,
-		AccentColor: value.AccentColor,
-		ChartColor:  value.ChartColor,
-		IconTone:    value.IconTone,
-		Menu:        value.Menu,
-		MenuAccent:  value.MenuAccent,
-		Radius:      value.Radius,
-		Density:     value.Density,
-		TextSize:    value.TextSize,
-		CardBorder:  value.CardBorder,
+		ThemeMode:   value.ThemeMode,
+		Size:        value.Size,
+		Backdrop:    value.Backdrop,
+		LgStyle:     value.LgStyle,
+		LgIntensity: value.LgIntensity,
 	}
 }

@@ -48,3 +48,37 @@ func TestSaveSettingsRollsBackWhenStartupIntegrationFails(t *testing.T) {
 		t.Fatalf("expected SQLite settings to roll back to %#v, got %#v", previous, current)
 	}
 }
+
+// TestEmptyGitHubProxyBaseSurvivesRestart 锁定「清空 GitHub 代理」是合法的持久化取值：
+// GitHubProxyBase 空串表示直连官方 API，重启后不能被 metadata 的默认代理地址覆盖回去。
+func TestEmptyGitHubProxyBaseSurvivesRestart(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "go-desktop.db")
+
+	runtimeService := appruntime.NewRuntime(appruntime.ServiceOptions{
+		DatabasePath: dbPath,
+		// 本用例只验证 KV 往返，系统集成换成空实现，避免测试触达注册表/快捷方式。
+		StartupIntegrationApplier: func(previous appruntime.Settings, next appruntime.Settings) error {
+			return nil
+		},
+	})
+	saved, err := runtimeService.SaveSettings(appruntime.Settings{
+		UpdateSource:             "github",
+		GitHubProxyBase:          "",
+		UpdateCheckIntervalHours: 3,
+		LogRetentionDays:         30,
+		LogLevel:                 "info",
+	})
+	runtimeService.Shutdown()
+	if err != nil {
+		t.Fatalf("save settings with cleared proxy: %v", err)
+	}
+	if saved.GitHubProxyBase != "" {
+		t.Fatalf("save should keep the cleared proxy choice, got %q", saved.GitHubProxyBase)
+	}
+
+	reloaded := appruntime.NewRuntime(appruntime.ServiceOptions{DatabasePath: dbPath})
+	defer reloaded.Shutdown()
+	if got := reloaded.SettingsSnapshot().GitHubProxyBase; got != "" {
+		t.Fatalf("cleared GitHubProxyBase must survive restart, got %q", got)
+	}
+}

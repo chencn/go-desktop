@@ -1,0 +1,75 @@
+/*
+  二次确认弹窗内容布局：设计稿 .apple-alert-dialog 的图标方块 + 居中文案 + 等宽按钮行。
+  弹窗材质、内边距与居中堆叠来自 styles/element-plus.css 的 .el-dialog.apple-dialog.is-alert，
+  本页只排版三个内容块。尺寸一律引用 --sp-* / --fs-* / --radius-* 令牌，默认档与设计稿逐像素相等。
+*/
+.alert-icon-sq {
+  display: flex;
+  flex-shrink: 0;
+  width: calc(52px * var(--ui-scale));
+  height: calc(52px * var(--ui-scale));
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--sp-2);
+  border-radius: calc(14px * var(--ui-scale));
+  background: linear-gradient(135deg, var(--color-value-ff3b30) 0%, var(--color-value-c41c13) 100%);
+  box-shadow: 0 var(--sp-4) var(--sp-14) color-mix(in srgb, var(--color-value-ff3b30) 35%, var(--color-transparent));
+  color: var(--color-white-solid);
+}
+
+/* 非破坏性确认（恢复默认外观）改用主色渐变，与蓝色确认键同调 */
+.alert-icon-sq.is-neutral {
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    color-mix(in srgb, var(--accent) 76%, var(--color-black-solid)) 100%
+  );
+  box-shadow: 0 var(--sp-4) var(--sp-14) color-mix(in srgb, var(--accent) 35%, var(--color-transparent));
+}
+
+.alert-header-text {
+  width: 100%;
+  line-height: normal;
+}
+
+.alert-header-text h3 {
+  margin: 0 0 var(--sp-6);
+  font-size: var(--fs-17);
+  font-weight: 600;
+  line-height: normal;
+  color: var(--fg);
+}
+
+.alert-header-text p {
+  margin: 0;
+  font-size: var(--fs-13);
+  line-height: 1.5;
+  color: var(--fg-2);
+}
+
+/* 正文里的强调与路径片段由调用方通过插槽传入，编译在父作用域，需要 :deep() 才能命中 */
+.alert-header-text :deep(strong) {
+  color: var(--danger);
+}
+
+/* 非破坏性确认（如恢复默认外观）：强调词回到正文色，避免红色读起来像删除 */
+.alert-header-text.is-neutral :deep(strong) {
+  color: var(--fg);
+}
+
+/* 路径片段沿用设计稿的等宽小徽标底色，并单独放开选中，方便复制到资源管理器 */
+.alert-header-text :deep(code) {
+  padding: var(--sp-1) var(--sp-4);
+  border-radius: var(--radius-xs);
+  background: var(--color-black-alpha-060);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  user-select: text;
+}
+
+.alert-actions-row {
+  display: flex;
+  width: 100%;
+  gap: var(--sp-12);
+  margin-top: var(--sp-6);
+}

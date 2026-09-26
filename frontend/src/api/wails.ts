@@ -176,89 +176,27 @@ export const defaultRuntimeSettings: Settings = {
   logLevel: 'info',
 }
 
-export type DisplayProfile = {
-  /** 组件风格 */
-  uiStyle: string
-  /** 基础色盘 */
-  baseColor: string
-  /** 主题色 */
-  themeColor: string
-  /** 强调色 */
-  accentColor: string
-  /** 图表色 */
-  chartColor: string
-  /** 图标颜色模式 */
-  iconTone: string
-  /** 菜单样式 */
-  menu: string
-  /** 菜单强调样式 */
-  menuAccent: string
-  /** 圆角 */
-  radius: string
-  /** 密度 */
-  density: string
-  /** 字体大小 */
-  textSize: string
-  /** 卡片边框强度 */
-  cardBorder: string
-}
-
-export type DisplayProfiles = {
-  shadcn: DisplayProfile
-  artistic: DisplayProfile
-}
-
-/** 显示偏好 */
-export type DisplayPreferences = DisplayProfile & {
-  /** 显示方案 */
-  displayScheme: string
+/** 显示偏好（Element Plus 主题模型：亮暗模式 + 全局尺寸 + 液态玻璃光学；主色固定 apple-blue 由 CSS 定义） */
+export type DisplayPreferences = {
   /** 主题模式 */
   themeMode: string
-  /** 所有平级显示方案的独立偏好 */
-  profiles: DisplayProfiles
-}
-
-const defaultShadcnDisplayProfile: DisplayProfile = {
-  accentColor: 'neutral',
-  baseColor: 'neutral',
-  cardBorder: 'visible',
-  chartColor: 'neutral',
-  density: 'comfortable',
-  iconTone: 'default',
-  menu: 'default',
-  menuAccent: 'subtle',
-  radius: 'medium',
-  textSize: 'normal',
-  themeColor: 'neutral',
-  uiStyle: 'vega',
-}
-
-
-
-const defaultArtisticDisplayProfile: DisplayProfile = {
-  accentColor: 'apple-blue',
-  baseColor: 'neutral',
-  cardBorder: 'visible',
-  chartColor: 'apple-blue',
-  density: 'comfortable',
-  iconTone: 'colorful',
-  menu: 'default',
-  menuAccent: 'bold',
-  radius: 'medium',
-  textSize: 'normal',
-  themeColor: 'apple-blue',
-  uiStyle: 'vega',
+  /** 全局组件尺寸（el-config-provider size） */
+  size: string
+  /** 极光折射流光背景开关 */
+  backdrop: boolean
+  /** 液态玻璃折射风格：fresnel / frosted / sheen */
+  lgStyle: string
+  /** 折射光强百分比，合法区间 30-100 */
+  lgIntensity: number
 }
 
 /** 前端预览模式使用的显示偏好默认值，真实运行时以后端 SQLite KV 为准。 */
 export const defaultDisplayPreferences: DisplayPreferences = {
-  ...defaultArtisticDisplayProfile,
-  displayScheme: 'artistic',
   themeMode: 'light',
-  profiles: {
-    shadcn: { ...defaultShadcnDisplayProfile },
-    artistic: { ...defaultArtisticDisplayProfile },
-  },
+  size: 'default',
+  backdrop: false,
+  lgStyle: 'fresnel',
+  lgIntensity: 75,
 }
 
 const previewDisplayPreferencesStorageKey = 'go-desktop.preview.displayPreferences'
@@ -554,35 +492,16 @@ function throwSaveError(label: string, error: unknown): never {
   throw error instanceof Error ? error : new Error(`${label}失败。`)
 }
 
-// 显示偏好包含嵌套 profiles，preview store 读写前复制一层，避免共享默认对象引用。
+// 显示偏好 preview store 读写前复制一层，避免共享默认对象引用。
 function cloneDisplayPreferences(value: DisplayPreferences): DisplayPreferences {
-  return {
-    ...value,
-    profiles: {
-      shadcn: { ...(value.profiles?.shadcn ?? defaultDisplayPreferences.profiles.shadcn) },
-      artistic: { ...(value.profiles?.artistic ?? defaultDisplayPreferences.profiles.artistic) },
-    },
-  }
+  return { ...value }
 }
 
 function normalisePreviewDisplayPreferences(value: unknown): DisplayPreferences {
   const parsed = typeof value === 'object' && value !== null ? value as Partial<DisplayPreferences> : {}
-  const profiles = typeof parsed.profiles === 'object' && parsed.profiles !== null ? parsed.profiles as Partial<DisplayProfiles> : {}
-  const displayScheme = parsed.displayScheme === 'shadcn' ? 'shadcn' : defaultDisplayPreferences.displayScheme
   return {
     ...cloneDisplayPreferences(defaultDisplayPreferences),
     ...parsed,
-    displayScheme,
-    profiles: {
-      shadcn: {
-        ...defaultDisplayPreferences.profiles.shadcn,
-        ...profiles.shadcn,
-      },
-      artistic: {
-        ...defaultDisplayPreferences.profiles.artistic,
-        ...profiles.artistic,
-      },
-    },
   }
 }
 

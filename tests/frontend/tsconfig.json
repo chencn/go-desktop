@@ -1,12 +1,19 @@
 {
   "extends": "../../frontend/tsconfig.json",
   "compilerOptions": {
-    "baseUrl": "../../frontend",
-    "types": ["node"],
-    "typeRoots": ["../../frontend/node_modules/@types"],
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "../../frontend/node_modules/@types"
+    ],
     "paths": {
-      "@/*": ["./src/*"],
-      "vitest": ["./node_modules/vitest/dist/index.d.ts"]
+      "@/*": [
+        "../../frontend/src/*"
+      ],
+      "vitest": [
+        "../../frontend/node_modules/vitest/dist/index.d.ts"
+      ]
     }
   },
   "include": [

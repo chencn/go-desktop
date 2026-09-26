@@ -1,400 +1,323 @@
-/* 首页布局：统计板块统一用 UiStatCard，4 卡常驻 4 列，字号只引用 --fs-* token。 */
+/*
+  概览页布局：只写本页特有的卡片内部结构与演示图表几何。
+  区块标题（.split-header / .section-title-*）、状态药丸（.badge-apple）与超椭圆徽标来自 styles/layout.css。
+  服务卡与指标卡的玻璃材质与 .lg-content 内边距来自 styles/liquid-glass.css，本页不重复。
+*/
 
-/* 板块标题右侧的汇总状态药丸（如"运行正常"）；卡片内部状态点由 UiStatCard 自己渲染。 */
-.section-title-with-status {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-inline {
-  display: inline-flex;
-  min-width: max-content;
-  align-items: center;
-  gap: 5px;
-  font-size: var(--fs-caption);
-  font-weight: 650;
-  line-height: 1;
-}
-
-.status-inline-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: currentColor;
-  box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 38%, var(--color-transparent));
-  animation: status-pulse 1.6s ease-out infinite;
-}
-
-.status-inline.is-ok {
-  color: var(--icon-green);
-}
-
-.status-inline.is-warning {
-  color: var(--icon-orange);
-}
-
-.status-inline.is-error {
-  color: var(--destructive);
-}
-
-@keyframes status-pulse {
-  70% {
-    box-shadow: 0 0 0 7px color-mix(in oklch, currentColor 0%, var(--color-transparent));
-  }
-  100% {
-    box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 0%, var(--color-transparent));
-  }
-}
-
-.monitor-heading {
-  margin-bottom: 12px;
-}
-
-.monitor-heading h3 {
-  margin: 0;
-  color: var(--foreground);
-  font-size: var(--fs-section);
-  line-height: 1.25;
-}
-
-.monitor-heading p {
-  margin: 0;
-  color: var(--muted-foreground);
-  font-size: var(--fs-caption);
-}
-
-/* 软件运行状况（4张卡）：常驻 4 列，保证空间充裕 */
-.software-status-grid {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-/* 业务统计（4张卡）：同样常驻 4 列 */
-.business-stats-grid {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.dashboard-grid,
-.log-summary-grid {
-  display: grid;
-  min-width: 0;
-  gap: 12px;
-}
-
-.log-summary-grid div {
-  display: grid;
-  min-width: 0;
-  align-content: center;
-  gap: 6px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--background);
-  padding: 16px;
-  transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1), background-color 220ms ease !important;
-}
-
-.log-summary-grid div:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in oklch, var(--primary) 18%, var(--border)) !important;
-  box-shadow: var(--artistic-shadow, 0 10px 30px -8px var(--color-black-alpha-080)) !important;
-  background: color-mix(in oklch, var(--background) 2%, var(--card)) !important;
-}
-
-.log-summary-grid strong {
-  overflow: hidden;
-  color: var(--foreground);
-  font-size: calc(var(--fs-section) + 3px);
-  line-height: 1.18;
-  overflow-wrap: anywhere;
-}
-
-.log-summary-grid span {
-  color: var(--muted-foreground);
-  font-size: var(--fs-caption);
-}
-
-.metric-delta-badge {
-  font-weight: 650;
-  backdrop-filter: blur(4px);
-  transition: all 200ms ease;
-}
-
-.metric-delta-badge.is-positive {
-  border-color: color-mix(in oklch, var(--icon-green) 34%, var(--border));
-  background: color-mix(in oklch, var(--icon-green) 9%, var(--card));
-  color: var(--icon-green);
-}
-
-.metric-delta-badge.is-negative {
-  border-color: color-mix(in oklch, var(--destructive) 34%, var(--border));
-  background: color-mix(in oklch, var(--destructive) 9%, var(--card));
-  color: var(--destructive);
-}
-
-.metric-delta-badge.is-neutral {
-  border-color: var(--border);
-  background: var(--secondary);
-  color: var(--muted-foreground);
-}
-
-.app-stat-card:hover .metric-delta-badge.is-positive {
-  border-color: var(--icon-green) !important;
-  background: var(--icon-green) !important;
-  color: var(--color-white-solid) !important;
-  box-shadow: 0 2px 8px color-mix(in oklch, var(--icon-green) 25%, var(--color-transparent)) !important;
-}
-
-.app-stat-card:hover .metric-delta-badge.is-negative {
-  border-color: var(--destructive) !important;
-  background: var(--destructive) !important;
-  color: var(--color-white-solid) !important;
-  box-shadow: 0 2px 8px color-mix(in oklch, var(--destructive) 25%, var(--color-transparent)) !important;
-}
-
-.app-stat-card:hover .metric-delta-badge.is-neutral {
-  border-color: var(--muted-foreground) !important;
-  background: var(--muted-foreground) !important;
-  color: var(--background) !important;
-}
-
-
+/* 演示图表三块面板的等高线：设计稿固定 140px，随 --ui-scale 一起缩放 */
 .dashboard-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: stretch;
-  gap: 20px;
-}
+  --demo-chart-height: calc(140px * var(--ui-scale));
 
-.chart-panel {
-  min-width: 0;
-  gap: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  background: color-mix(in oklch, var(--card) 70%, var(--color-transparent)) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in oklch, var(--border) 60%, var(--color-transparent)) !important;
-  transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1), background-color 220ms ease !important;
-}
-
-.chart-panel [data-slot="card-header"] {
-  border-bottom: 0 !important;
-  padding: 20px 24px 0 !important;
-}
-
-.chart-panel [data-slot="card-content"] {
-  padding: 16px 24px 20px !important;
-}
-
-.chart-panel:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in oklch, var(--primary) 20%, var(--border)) !important;
-  box-shadow: 0 16px 36px -8px color-mix(in oklch, var(--primary) 10%, var(--color-black-alpha-080)) !important;
-  background: color-mix(in oklch, var(--background) 4%, var(--card)) !important;
-}
-
-.chart-panel-wide {
-  grid-row: auto;
-}
-
-.demo-bar-chart {
   display: grid;
-  min-height: 280px;
+  grid-template-columns: 2fr 1.2fr 0.9fr;
+  gap: var(--sp-16);
+}
+
+/* 1. 软件运行状况：4 张底层服务健康卡 */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-16);
+  margin-bottom: var(--sp-24);
+}
+
+.service-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
+}
+
+.service-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
   min-width: 0;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  align-items: end;
-  gap: 12px;
+}
+
+.service-name {
+  font-size: var(--fs-14);
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.service-meta-text {
+  font-size: var(--fs-12);
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.service-footer-ver {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
+  padding-top: var(--sp-8);
+  border-top: 1px solid var(--border-soft);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--meta);
+}
+
+/* 2. 业务统计：4 张指标卡 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-16);
+  margin-bottom: var(--sp-24);
+}
+
+.stat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
+}
+
+.stat-label {
+  font-size: var(--fs-13);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.stat-icon-wrap {
+  width: var(--sp-32);
+  height: var(--sp-32);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-badge-lg);
+  color: var(--color-white-solid);
+  box-shadow: var(--tile-shadow-stat);
+}
+
+.stat-icon-wrap svg {
+  stroke: var(--color-white-solid) !important;
+  stroke-width: 2.2;
+}
+
+.stat-icon-wrap.indigo {
+  background: var(--tile-indigo);
+}
+
+.stat-icon-wrap.green {
+  background: var(--tile-green);
+}
+
+.stat-icon-wrap.orange {
+  background: var(--tile-orange-stat);
+}
+
+.stat-icon-wrap.purple {
+  background: var(--tile-purple);
+}
+
+.stat-value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-8);
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: var(--fs-26);
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: -0.02em;
+}
+
+.stat-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-7);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-12);
+  font-weight: 600;
+}
+
+.stat-delta.positive {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.stat-delta.neutral {
+  background: var(--info-light);
+  color: var(--info);
+}
+
+.stat-delta.negative {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+/* 3. 演示图表面板：设计稿 .chart-panel 自带卡片底、圆角与描边 */
+.chart-panel {
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--sp-18) var(--sp-20);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-14);
+}
+
+.chart-panel-title {
+  font-size: var(--fs-14);
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.chart-panel-desc {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-12);
+  color: var(--meta);
+}
+
+/* 柱状趋势图 */
+.demo-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: var(--demo-chart-height);
+  padding-top: var(--sp-14);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .demo-bar-column {
-  display: grid;
-  min-width: 0;
-  gap: 8px;
-}
-
-.demo-bar-track {
   display: flex;
-  height: 240px;
-  min-width: 0;
-  align-items: end;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: color-mix(in oklch, var(--secondary) 15%, var(--background));
-  transition: all 220ms ease;
-}
-
-.demo-bar-column:hover .demo-bar-track {
-  background: color-mix(in oklch, var(--secondary) 25%, var(--background));
-  border-color: color-mix(in oklch, var(--primary) 15%, var(--border));
-}
-
-.demo-bar-fill {
-  position: relative;
-  display: block;
-  width: 100%;
-  min-height: 18px;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  background: linear-gradient(to top, var(--primary) 60%, color-mix(in oklch, var(--primary) 65%, var(--color-white-solid)));
-  box-shadow: 0 0 10px color-mix(in oklch, var(--primary) 15%, var(--color-transparent));
-  transition: height 320ms cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-
-.demo-bar-fill::after {
-  content: '';
-  position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
-  background: linear-gradient(90deg, var(--color-transparent), var(--color-white-alpha-350), var(--color-transparent));
-  transform: translateX(-100%);
-  pointer-events: none;
-}
-
-.demo-bar-column:hover .demo-bar-fill::after {
-  animation: bar-shimmer 1.2s infinite;
-}
-
-@keyframes bar-shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.demo-bar-column:hover .demo-bar-fill {
-  filter: brightness(1.08);
-  box-shadow: 0 0 16px color-mix(in oklch, var(--primary) 40%, var(--color-transparent));
+  flex: 1;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-8);
 }
 
 .demo-bar-column small {
-  overflow: hidden;
-  color: var(--muted-foreground);
-  font-size: var(--fs-caption);
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: var(--fs-11);
+  color: var(--meta);
 }
 
+.demo-bar-track {
+  width: var(--sp-20);
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.demo-bar-fill {
+  width: 100%;
+  border-radius: var(--radius-xs) var(--radius-xs) var(--sp-1) var(--sp-1);
+  background: linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, var(--color-transparent)) 100%);
+  cursor: pointer;
+  transition: height var(--duration-base) var(--ease-apple);
+}
+
+.demo-bar-fill:hover {
+  filter: brightness(1.1);
+  transform: scaleY(1.03);
+}
+
+/* 处理分布 */
 .distribution-list {
-  display: grid;
-  min-width: 0;
-  gap: 16px;
+  display: flex;
+  height: var(--demo-chart-height);
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-12);
 }
 
 .distribution-row {
-  display: grid;
-  min-width: 0;
-  gap: 8px;
-  padding: 6px 8px;
-  margin: 0 -8px;
-  border-radius: var(--radius);
-  transition: all 220ms ease;
-}
-
-.distribution-row:hover {
-  background: color-mix(in oklch, var(--background) 3%, var(--card));
-  transform: translateX(4px);
-}
-
-.distribution-row div {
   display: flex;
-  min-width: 0;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.dist-meta {
+  display: flex;
   justify-content: space-between;
-  gap: 12px;
-  color: var(--muted-foreground);
-  font-size: var(--fs-caption);
-  transition: color 220ms ease;
+  font-size: var(--fs-12);
+  color: var(--fg-2);
 }
 
-.distribution-row strong {
-  color: var(--foreground);
-  transition: color 220ms ease;
-}
-
-.distribution-row:hover strong {
-  color: var(--primary);
-}
-
-.distribution-track {
-  display: block;
-  height: 10px;
+.dist-track {
+  width: 100%;
+  height: var(--sp-7);
   overflow: hidden;
-  border-radius: var(--radius-sm);
-  background: var(--secondary);
-  transition: all 220ms ease;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
 }
 
-.distribution-row:hover .distribution-track {
-  height: 12px;
-}
-
-.distribution-fill {
-  display: block;
+.dist-bar {
   height: 100%;
-  border-radius: inherit;
-  transition: width 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-pill);
 }
 
-.distribution-fill.is-chart-1 {
-  background: linear-gradient(to right, var(--chart-1) 70%, color-mix(in oklch, var(--chart-1) 50%, var(--color-white-solid)));
-  box-shadow: 0 0 8px color-mix(in oklch, var(--chart-1) 15%, var(--color-transparent));
-}
-
-.distribution-fill.is-chart-2 {
-  background: linear-gradient(to right, var(--chart-2) 70%, color-mix(in oklch, var(--chart-2) 50%, var(--color-white-solid)));
-  box-shadow: 0 0 8px color-mix(in oklch, var(--chart-2) 15%, var(--color-transparent));
-}
-
-.distribution-fill.is-chart-5 {
-  background: linear-gradient(to right, var(--chart-5) 70%, color-mix(in oklch, var(--chart-5) 50%, var(--color-white-solid)));
-  box-shadow: 0 0 8px color-mix(in oklch, var(--chart-5) 15%, var(--color-transparent));
-}
-
+/* 日志摘要 */
 .log-summary-grid {
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  display: grid;
+  height: var(--demo-chart-height);
+  grid-template-columns: 1fr;
+  align-content: center;
+  justify-content: center;
+  gap: var(--sp-10);
 }
 
-.log-summary-grid div:last-child strong {
-  color: var(--destructive);
+.log-stat-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
+  padding: var(--sp-8) var(--sp-12);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
 }
 
-/* 4 卡板块在 <= 1200px 降为 2 列（两行 4 个） */
-@media (max-width: 1200px) {
+.log-stat-box.info {
+  border-left: var(--sp-3) solid var(--accent);
+}
+
+.log-stat-box.warn {
+  border-left: var(--sp-3) solid var(--warn);
+}
+
+.log-stat-box.error {
+  border-left: var(--sp-3) solid var(--danger);
+}
+
+.log-stat-box strong {
+  font-family: var(--font-display);
+  font-size: var(--fs-18);
+  color: var(--fg);
+}
+
+.log-stat-box span {
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+/* 平板：4 列降 2 列并收紧到 14px，图表区纵向堆叠 */
+@media (max-width: 1023px) {
+  .services-grid,
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sp-14);
+  }
+
   .dashboard-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .software-status-grid,
-  .business-stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 980px) {
-  .log-summary-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .chart-panel-wide {
-    grid-row: auto;
-  }
-
-  .demo-bar-chart {
-    min-height: 220px;
-  }
-
-  .demo-bar-track {
-    height: 180px;
-  }
-}
-
-@media (max-width: 640px) {
-  .software-status-grid,
-  .business-stats-grid {
-    grid-template-columns: minmax(0, 1fr);
+/* 手机：全部单列，间距收紧 */
+@media (max-width: 767px) {
+  .services-grid,
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: var(--sp-12);
   }
 }

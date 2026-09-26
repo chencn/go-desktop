@@ -1,16 +1,17 @@
 <!--
-  文件职责：渲染日志筛选、日志列表、清理入口和状态提示。
-  页面所有查询最终走 appStore.refreshLogs，对应后端 QueryLogs 分页过滤接口。
+  文件职责：渲染日志筛选工具条、日志流表格、移动端卡片流和分页条。
+  说明：查询统一走 appStore.refreshLogs（后端 QueryLogs 分页过滤）；页大小由可视区高度实测得出，
+  不采用设计稿的固定 12 条，也不写 calc(100vh - N) 这类魔法数。
 -->
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { FileText, Maximize2, RefreshCw, Search, SlidersHorizontal, TimerReset, Trash2 } from '@lucide/vue'
+import { Maximize2, RefreshCw, Search, SlidersHorizontal, TimerReset, Trash2 } from '@lucide/vue'
 import { useAppStore } from '@/stores/app'
-import { cn } from '@/lib/utils'
 import { toMessage } from '@/app/state'
 import { formatDateTime } from '@/shared/format'
 import { displayMessage } from '@/shared/labels'
+import AlertDialog from '../shared/AlertDialog.vue'
 
 // knownLogScopes 覆盖运行时内置来源；动态来源会继续从当前日志结果合并。
 const knownLogScopes = ['all', 'app', 'process', 'window', 'startup', 'shortcut', 'update', 'settings', 'storage', 'log-file', 'crash', 'panic', 'single-instance']
@@ -38,8 +39,6 @@ const filtersOpen = ref(false)
 const fullscreen = ref(false)
 // autoRefresh 控制 5 秒轮询，适合跟踪安装器或运行时异常。
 const autoRefresh = ref(false)
-// clearDialogOpen 只控制二次确认；真正清理由 confirmClearLogs 触发后端 ClearLogs。
-const clearDialogOpen = ref(false)
 // timer 保存自动刷新 interval id，组件卸载或关闭自动刷新时必须清理。
 let timer: number | undefined
 // pageSizeObserver 跟随表格区域、分页条和窗口尺寸更新 pageSize。
@@ -75,18 +74,33 @@ const displayedLogPage = computed(() => {
 })
 
 const displayedPageSize = computed(() => effectiveLogPageSize.value)
-const canGoNext = computed(() => totalPages.value > 0 && appStore.logPage < totalPages.value)
 const displayedLogs = computed(() => logLayoutReady.value ? appStore.logs : [])
+
+// paginationSummary 对应设计稿分页条左侧摘要；布局未就绪时留白，避免先显示默认 50 条页大小。
+// 结尾附带后端最低门禁级别，与设置页「控制台日志级别」联动，方便确认筛选结果为空是被门禁挡住。
+const paginationSummary = computed(() => {
+  if (!logLayoutReady.value) return ''
+  const gate = String(appStore.settings?.logLevel ?? 'info').toUpperCase()
+  return `每页 ${displayedPageSize.value} 条，当前第 ${displayedLogPage.value} / ${totalPages.value} 页 (门禁过滤后共 ${appStore.logTotal} 条记录，系统最低门禁: ≥ ${gate})`
+})
+
+// emptyLogsText 与设计稿一致：空结果时提示当前生效的最低门禁级别。
+const emptyLogsText = computed(() => {
+  const gate = String(appStore.settings?.logLevel ?? 'info').toUpperCase()
+  return `暂无匹配日志 (门禁级别: ≥ ${gate})`
+})
 
 function calculateLogPageSize(tableElement?: HTMLElement | null, paginationElement?: HTMLElement | null) {
   if (typeof window === 'undefined' || !paginationElement) return 0
-  const isDesktop = window.matchMedia('(min-width: 761px)').matches
+  // 767px 是设计稿的手机/桌面分界，与本页 @media 断点保持一致。
+  const isDesktop = window.matchMedia('(min-width: 768px)').matches
   if (!isDesktop) return 12
   if (!tableElement) return 0
   const maxRows = isDesktop ? 40 : 30
-  const headerHeight = tableElement.querySelector('thead')?.getBoundingClientRect().height ?? 38
-  const rowElement = tableElement.querySelector('tbody tr:not(.log-empty-row)')
-  const rowHeight = rowElement?.getBoundingClientRect().height || (isDesktop ? 48 : 56)
+  // el-table 的表头和表体分别在 header-wrapper/body-wrapper 内，按内部 DOM 实测高度。
+  const headerHeight = tableElement.querySelector('.el-table__header-wrapper thead')?.getBoundingClientRect().height ?? 38
+  const rowElement = tableElement.querySelector('.el-table__body-wrapper tbody tr')
+  const rowHeight = rowElement?.getBoundingClientRect().height || (isDesktop ? 41 : 56)
 
   // 两种模式现在都使用受 Grid 约束的稳定容器高度来进行精确计算
   const available = Math.max(0, tableElement.getBoundingClientRect().height - headerHeight - 6)
@@ -131,8 +145,11 @@ async function refreshLogs(page = 1) {
   }
 }
 
-// confirmClearLogs 确认清理当前作用域日志，并用第一页查询条件刷新列表。
-async function confirmClearLogs() {
+// clearDialogOpen 控制「清空当前视图」二次确认弹窗（设计稿 .apple-alert-dialog）。
+const clearDialogOpen = ref(false)
+
+// clearViewLogs 清理当前作用域日志，并用第一页查询条件刷新列表。
+async function clearViewLogs() {
   clearDialogOpen.value = false
   try {
     await appStore.clearLogScope(scope.value, buildQuery(1))
@@ -187,10 +204,10 @@ watch(autoRefresh, (enabled) => {
   }
 })
 
-// watch 监听专注模式状态，把全局页面壳隐藏交给根 class 控制。
+// watch 监听专注模式状态，把外壳隐藏交给根 class 控制（样式见 styles/layout.css）。
 watch(fullscreen, (enabled) => {
   if (typeof document === 'undefined') return
-  document.documentElement.classList.toggle('is-log-fullscreen', enabled)
+  document.documentElement.classList.toggle('is-log-focus', enabled)
   void nextTick(updateLogPageSize)
 }, { immediate: true })
 
@@ -237,7 +254,7 @@ onUnmounted(() => {
   if (timer) window.clearInterval(timer)
   pageSizeObserver?.disconnect()
   if (typeof window !== 'undefined') window.removeEventListener('resize', updateLogPageSize)
-  if (typeof document !== 'undefined') document.documentElement.classList.remove('is-log-fullscreen')
+  if (typeof document !== 'undefined') document.documentElement.classList.remove('is-log-focus')
 })
 
 // logScopeLabel 只本地化已知 scope；未知动态 scope 保留原值，方便定位新后端来源。
@@ -297,176 +314,172 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
 </script>
 
 <template>
-  <Teleport to="body" :disabled="!fullscreen">
-    <div :class="cn('page-stack log-page', fullscreen && 'log-fullscreen', filtersOpen && 'has-open-filters')">
-      <section class="log-command-card" aria-label="日志筛选工具条">
-        <div class="log-command-toolbar">
-          <div class="log-command-tabs" aria-label="日志级别快捷查询">
-            <button type="button" class="log-command-tab" :class="{ 'is-active': severity === 'all' }" @click="applySeverityFilter('all')">
-              <span>全部</span>
-              <strong>{{ appStore.logStats.total }}</strong>
-            </button>
-            <button type="button" class="log-command-tab is-debug" :class="{ 'is-active': severity === 'debug' }" @click="applySeverityFilter('debug')">
-              <span>debug</span>
-              <strong>{{ appStore.logStats.debug }}</strong>
-            </button>
-            <button type="button" class="log-command-tab is-info" :class="{ 'is-active': severity === 'info' }" @click="applySeverityFilter('info')">
-              <span>info</span>
-              <strong>{{ appStore.logStats.info }}</strong>
-            </button>
-            <button type="button" class="log-command-tab is-warning" :class="{ 'is-active': severity === 'warning' }" @click="applySeverityFilter('warning')">
-              <span>warning</span>
-              <strong>{{ appStore.logStats.warning }}</strong>
-            </button>
-            <button type="button" class="log-command-tab is-error" :class="{ 'is-active': severity === 'error' }" @click="applySeverityFilter('error')">
-              <span>error</span>
-              <strong>{{ appStore.logStats.error }}</strong>
-            </button>
-          </div>
+  <div class="log-page">
+    <!-- 命令工具条卡片：级别页签、搜索、操作按钮，展开后在卡内追加筛选面板 -->
+    <section class="log-command-card" aria-label="日志筛选工具条">
+      <div class="log-command-toolbar">
+        <el-radio-group
+          class="log-command-tabs segmented-control is-tone-tabs"
+          :model-value="severity"
+          aria-label="日志级别快捷查询"
+          @update:model-value="applySeverityFilter(String($event))"
+        >
+          <el-radio-button value="all"><span>全部</span><strong>{{ appStore.logStats.total }}</strong></el-radio-button>
+          <el-radio-button value="debug" class="is-debug"><span>debug</span><strong>{{ appStore.logStats.debug }}</strong></el-radio-button>
+          <el-radio-button value="info" class="is-info"><span>info</span><strong>{{ appStore.logStats.info }}</strong></el-radio-button>
+          <el-radio-button value="warning" class="is-warning"><span>warning</span><strong>{{ appStore.logStats.warning }}</strong></el-radio-button>
+          <el-radio-button value="error" class="is-error"><span>error</span><strong>{{ appStore.logStats.error }}</strong></el-radio-button>
+        </el-radio-group>
 
-          <label class="log-command-search">
-            <Search class="icon-tone-gray" :size="18" />
-            <UiInput v-model="keyword" placeholder="错误、阶段、文件名..." aria-label="搜索日志关键词" />
-          </label>
-
-          <UiButton variant="secondary" @click="refreshLogs(appStore.logPage)">
-            <RefreshCw class="icon-tone-green" :size="18" />
-            刷新
-          </UiButton>
-          <UiButton :class="cn(autoRefresh && 'is-active')" variant="secondary" @click="autoRefresh = !autoRefresh">
-            <TimerReset class="icon-tone-indigo" :size="18" />
-            {{ autoRefresh ? '停止自动' : '自动刷新' }}
-          </UiButton>
-          <UiButton :aria-expanded="filtersOpen" variant="secondary" @click="filtersOpen = !filtersOpen">
-            <SlidersHorizontal class="icon-tone-indigo" :size="18" />
-            {{ filtersOpen ? '收起' : '筛选' }}
-            <UiBadge v-if="activeFilterCount > 0" variant="outline">{{ activeFilterCount }}</UiBadge>
-          </UiButton>
-          <UiButton :aria-pressed="fullscreen" variant="secondary" @click="fullscreen = !fullscreen">
-            <Maximize2 class="icon-tone-gray" :size="18" />
-            {{ fullscreen ? '退出专注' : '专注模式' }}
-          </UiButton>
+        <div class="log-command-search">
+          <Search class="log-search-icon" :size="15" aria-hidden="true" />
+          <el-input
+            v-model="keyword"
+            class="apple-field has-leading-icon"
+            placeholder="错误、阶段、文件名..."
+            aria-label="搜索日志关键词"
+          />
         </div>
-      </section>
 
-      <section v-if="filtersOpen" class="log-filter-panel log-collapsed-filter" aria-label="更多日志筛选">
-        <div class="log-toolbar log-collapsed-toolbar">
-          <UiField class="log-file-field">
-            <UiLabel>日期/日志文件</UiLabel>
-            <span class="input-with-icon">
-              <FileText class="icon-tone-gray" :size="17" />
-              <UiSelect :model-value="selectedLogFileName" :disabled="appStore.logFiles.length === 0" @update:model-value="selectedLogFileName = String($event)">
-                <UiSelectTrigger class="settings-control-select" aria-label="日志文件">
-                  <UiSelectValue placeholder="日志文件" />
-                </UiSelectTrigger>
-                <UiSelectContent>
-                  <UiSelectItem v-if="appStore.logFiles.length === 0" value="">内存临时日志</UiSelectItem>
-                  <UiSelectItem v-for="file in appStore.logFiles" :key="file.fileName" :value="file.fileName">
-                    {{ formatLogFileOption(file) }}
-                  </UiSelectItem>
-                </UiSelectContent>
-              </UiSelect>
-            </span>
-          </UiField>
-          <UiField>
-            <UiLabel>作用域</UiLabel>
-            <UiSelect :model-value="scope" @update:model-value="scope = String($event)">
-              <UiSelectTrigger class="settings-control-select" aria-label="作用域">
-                <UiSelectValue placeholder="全部作用域" />
-              </UiSelectTrigger>
-              <UiSelectContent>
-                <UiSelectItem v-for="item in logScopes" :key="item" :value="item">{{ logScopeLabel(item) }}</UiSelectItem>
-              </UiSelectContent>
-            </UiSelect>
-          </UiField>
-          <div class="log-filter-actions">
-            <UiButton :disabled="activeFilterCount === 0" variant="secondary" @click="clearFilters">重置筛选</UiButton>
-            <UiButton :disabled="appStore.logTotal === 0" variant="destructive" @click="clearDialogOpen = true">
-              <Trash2 :size="18" />
-              清空当前视图
-            </UiButton>
+        <el-button class="btn-apple" @click="refreshLogs(appStore.logPage)">
+          <RefreshCw class="log-tool-icon is-success" :size="15" aria-hidden="true" />
+          刷新
+        </el-button>
+        <el-button class="btn-apple" :aria-pressed="autoRefresh" @click="autoRefresh = !autoRefresh">
+          <TimerReset class="log-tool-icon is-indigo" :size="15" aria-hidden="true" />
+          {{ autoRefresh ? '停止自动' : '自动刷新' }}
+        </el-button>
+        <el-button class="btn-apple" :aria-expanded="filtersOpen" @click="filtersOpen = !filtersOpen">
+          <SlidersHorizontal class="log-tool-icon is-indigo" :size="15" aria-hidden="true" />
+          筛选
+          <span v-if="activeFilterCount > 0" class="nav-item-badge">{{ activeFilterCount }}</span>
+        </el-button>
+        <el-button class="btn-apple" :aria-pressed="fullscreen" @click="fullscreen = !fullscreen">
+          <Maximize2 class="log-tool-icon" :size="15" aria-hidden="true" />
+          {{ fullscreen ? '退出专注' : '专注模式' }}
+        </el-button>
+      </div>
+
+      <div v-if="filtersOpen" class="log-filter-panel">
+        <div class="log-collapsed-toolbar">
+          <div class="filter-item-label">
+            <span>日期/日志文件:</span>
+            <el-select
+              :model-value="selectedLogFileName"
+              class="apple-select"
+              :disabled="appStore.logFiles.length === 0"
+              :placeholder="appStore.logFiles.length === 0 ? '内存临时日志' : '当前日志文件'"
+              aria-label="日志文件"
+              @update:model-value="selectedLogFileName = String($event)"
+            >
+              <el-option v-if="appStore.logFiles.length === 0" value="" label="内存临时日志" />
+              <el-option
+                v-for="file in appStore.logFiles"
+                :key="file.fileName"
+                :value="file.fileName"
+                :label="formatLogFileOption(file)"
+              />
+            </el-select>
+          </div>
+          <div class="filter-item-label">
+            <span>作用域:</span>
+            <el-select
+              :model-value="scope"
+              class="apple-select"
+              aria-label="作用域"
+              @update:model-value="scope = String($event)"
+            >
+              <el-option v-for="item in logScopes" :key="item" :value="item" :label="logScopeLabel(item)" />
+            </el-select>
           </div>
         </div>
-      </section>
-
-      <section class="log-stream-panel" aria-label="日志流">
-        <div ref="logListRef" class="log-mobile-list" aria-label="应用日志移动列表">
-          <article v-if="displayedLogs.length === 0" class="log-mobile-card log-mobile-empty">
-            {{ logLayoutReady ? '暂无匹配日志' : '' }}
-          </article>
-          <article v-for="log in displayedLogs" :key="`${log.time}-${log.scope}-${log.message}`" class="log-mobile-card">
-            <div class="log-mobile-card__top">
-              <UiBadge class="log-level-badge" :class="logLevelClass(log.severity)" variant="outline">{{ logLevelLabel(log.severity) }}</UiBadge>
-              <span>{{ formatDateTime(log.time) }}</span>
-            </div>
-            <p class="log-mobile-card__message">{{ displayMessage(log.message) }}</p>
-            <dl class="log-mobile-card__meta">
-              <div>
-                <dt>来源</dt>
-                <dd>{{ logScopeLabel(log.scope) }}</dd>
-              </div>
-              <div>
-                <dt>级别</dt>
-                <dd>{{ logLevelLabel(log.severity) }}</dd>
-              </div>
-            </dl>
-          </article>
+        <div class="log-filter-actions">
+          <el-button class="btn-apple" :disabled="activeFilterCount === 0" @click="clearFilters">重置筛选</el-button>
+          <el-button class="btn-apple" type="danger" :disabled="appStore.logTotal === 0" @click="clearDialogOpen = true">
+            <Trash2 :size="14" aria-hidden="true" />
+            清空当前视图
+          </el-button>
         </div>
+      </div>
+    </section>
 
-        <div ref="logTableRef" class="log-table-shell">
-          <UiTable class="log-table" aria-label="应用日志">
-            <colgroup>
-              <col class="log-col-time">
-              <col class="log-col-scope">
-              <col class="log-col-level">
-              <col class="log-col-message">
-            </colgroup>
-            <UiTableHeader>
-              <UiTableRow>
-                <UiTableHead>时间</UiTableHead>
-                <UiTableHead>来源</UiTableHead>
-                <UiTableHead>级别</UiTableHead>
-                <UiTableHead>内容</UiTableHead>
-              </UiTableRow>
-            </UiTableHeader>
-            <UiTableBody>
-              <UiTableRow v-if="displayedLogs.length === 0" class="log-empty-row">
-                <UiTableCell colspan="4" class="log-empty-cell">{{ logLayoutReady ? '暂无匹配日志' : '' }}</UiTableCell>
-              </UiTableRow>
-              <UiTableRow
-                v-for="log in displayedLogs"
-                :key="`${log.time}-${log.scope}-${log.message}`"
-              >
-                <UiTableCell class="log-time-cell">{{ formatDateTime(log.time) }}</UiTableCell>
-                <UiTableCell class="log-scope-cell">{{ logScopeLabel(log.scope) }}</UiTableCell>
-                <UiTableCell class="log-level-cell">
-                  <UiBadge class="log-level-badge" :class="logLevelClass(log.severity)" variant="outline">{{ logLevelLabel(log.severity) }}</UiBadge>
-                </UiTableCell>
-                <UiTableCell class="log-message-cell" :title="displayMessage(log.message)">{{ displayMessage(log.message) }}</UiTableCell>
-              </UiTableRow>
-            </UiTableBody>
-          </UiTable>
-        </div>
-
-        <footer ref="logPaginationRef" class="log-footer log-pagination-card">
-          <span class="log-pagination-summary">{{ logLayoutReady ? `共 ${appStore.logTotal} 条，每页 ${displayedPageSize} 条，当前第 ${displayedLogPage} / ${totalPages} 页` : '' }}</span>
-          <div class="button-row">
-            <UiButton :disabled="appStore.logPage <= 1" variant="secondary" @click="refreshLogs(appStore.logPage - 1)">上一页</UiButton>
-            <UiButton :disabled="!canGoNext" variant="secondary" @click="refreshLogs(appStore.logPage + 1)">下一页</UiButton>
+    <!-- 日志流面板：桌面表格 + 移动卡片 + 分页条，三段共用一块面板底 -->
+    <section class="log-stream-panel" aria-label="日志流">
+      <div ref="logListRef" class="log-mobile-list" aria-label="应用日志移动列表">
+        <p v-if="displayedLogs.length === 0 && logLayoutReady" class="log-mobile-empty">{{ emptyLogsText }}</p>
+        <article v-for="log in displayedLogs" :key="`${log.time}-${log.scope}-${log.message}`" class="log-mobile-card">
+          <div class="log-mobile-card__top">
+            <span :class="`log-level-badge ${logLevelClass(log.severity)}`">{{ logLevelLabel(log.severity) }}</span>
+            <span>{{ formatDateTime(log.time) }}</span>
           </div>
-        </footer>
-      </section>
+          <p class="log-mobile-card__message">{{ displayMessage(log.message) }}</p>
+          <div class="log-mobile-card__meta">
+            <div><span>来源:</span><strong>{{ logScopeLabel(log.scope) }}</strong></div>
+            <div><span>级别:</span><strong>{{ logLevelLabel(log.severity) }}</strong></div>
+          </div>
+        </article>
+      </div>
 
-      <UiAlertDialog
-        :open="clearDialogOpen"
-        title="清空当前视图"
-        description="只隐藏当前视图中的匹配日志，每日文件日志不会被删除。"
-        confirm-text="清空"
-        @close="clearDialogOpen = false"
-        @confirm="confirmClearLogs"
-      />
-    </div>
-  </Teleport>
+      <div ref="logTableRef" class="log-table-shell">
+        <!-- 列宽对应设计稿（196/128/108 + 内容列补足），表头吸顶交给 el-table 的 height。 -->
+        <el-table
+          v-if="logLayoutReady || displayedLogs.length > 0"
+          class="apple-table"
+          :data="displayedLogs"
+          height="100%"
+          aria-label="应用日志"
+          :empty-text="logLayoutReady ? emptyLogsText : ''"
+        >
+          <el-table-column label="时间" width="196">
+            <template #default="{ row }">
+              <span class="log-time-cell">{{ formatDateTime(row.time) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="来源" width="128">
+            <template #default="{ row }">
+              <span class="log-scope-tag">{{ logScopeLabel(row.scope) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="级别" width="108">
+            <template #default="{ row }">
+              <span :class="`log-level-badge ${logLevelClass(row.severity)}`">{{ logLevelLabel(row.severity) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="内容" min-width="240" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span class="log-message-cell">{{ displayMessage(row.message) }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <footer ref="logPaginationRef" class="log-pagination-card">
+        <span>{{ paginationSummary }}</span>
+        <el-pagination
+          class="apple-pagination"
+          layout="prev, pager, next"
+          :total="appStore.logTotal"
+          :page-size="displayedPageSize"
+          :current-page="displayedLogPage"
+          :disabled="totalPages === 0"
+          @current-change="(page: number) => refreshLogs(page)"
+        />
+      </footer>
+    </section>
+
+    <!-- 清空当前视图的二次确认（设计稿 .apple-alert-dialog）：只清视图，每日归档文件保留 -->
+    <AlertDialog
+      :open="clearDialogOpen"
+      confirm-text="确认清空"
+      title="确定清空当前视图中的日志？"
+      @close="clearDialogOpen = false"
+      @confirm="clearViewLogs"
+    >
+      该操作将从当前视图中移除匹配的 <strong>{{ appStore.logTotal }} 条</strong> 展示记录。<br>本地磁盘上的每日日志归档文件（<code>{{
+        appStore.environmentInfo?.logFilePath || '未配置'
+      }}</code>）将安全保留，不会被删除。
+    </AlertDialog>
+  </div>
 </template>
 
 <style scoped src="./LogsPage.css"></style>

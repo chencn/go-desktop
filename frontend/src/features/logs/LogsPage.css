@@ -1,587 +1,295 @@
-:global(:root.is-log-fullscreen) .log-fullscreen {
-  visibility: visible;
-}
-
-.button-row {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.input-with-icon {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-}
-
-.input-with-icon input {
-  width: 100%;
-}
+/*
+  日志页布局：只写本页特有的结构，控件观感全部来自 element-plus.css 的皮肤类
+  （.btn-apple / .segmented-control.is-tone-tabs / .apple-field / .apple-select / .apple-table / .apple-pagination）。
+  尺寸一律引用 --sp-* / --fs-* / --radius-* 令牌，默认档与设计稿逐像素相等。
+*/
 
 .log-page {
-  --log-level-debug: var(--icon-gray);
-  --log-level-info: var(--artistic-info, var(--icon-cyan));
-  --log-level-warning: var(--artistic-warning, var(--icon-orange));
-  --log-level-error: var(--artistic-error, var(--destructive));
-
-  height: 100%;
-  min-height: 0;
-  align-content: stretch;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 12px;
-}
-
-.log-page.has-open-filters {
-  grid-template-rows: auto auto minmax(0, 1fr);
-}
-
-.log-command-card,
-.log-collapsed-filter {
+  display: flex;
   min-width: 0;
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  box-shadow: var(--artistic-shadow, 0 4px 18px var(--color-black-alpha-030));
-  padding: 14px;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  /* 设计稿 #view-logs.active 是 gap 16 的纵向流，命令卡自身再留 12px 下边距 */
+  gap: var(--sp-16);
 }
 
+/* 命令工具条卡片：设计稿 .log-command-card */
 .log-command-card {
-  position: relative;
-  container-type: inline-size;
+  overflow: hidden;
+  min-width: 0;
+  margin-bottom: var(--sp-12);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
 }
 
-.log-command-toolbar,
-.log-collapsed-toolbar {
+.log-command-toolbar {
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
-  align-items: end;
-  gap: 10px;
-}
-
-.log-command-toolbar > [data-slot="button"],
-.log-collapsed-toolbar > [data-slot="button"] {
-  flex: 0 0 auto;
-}
-
-.log-filter-panel {
-  min-width: 0;
-  container-type: inline-size;
-}
-
-.log-toolbar {
-  min-width: 0;
-  border: 0 !important;
-  background: var(--color-transparent) !important;
-  box-shadow: none !important;
-  backdrop-filter: none;
-  padding: 0;
-}
-
-.log-command-search {
-  display: grid;
-  width: min(280px, 100%);
-  min-width: 0;
-  flex: 1 1 220px;
-  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--background);
-  padding: 0 10px;
+  gap: var(--sp-10);
+  padding: var(--sp-10) var(--sp-14);
 }
 
-.log-command-search input {
-  height: 38px;
-  border: 0 !important;
-  background: var(--color-transparent) !important;
-  box-shadow: none !important;
+/* 搜索框：图标绝对定位在左 10px，文字起点由皮肤类的 .has-leading-icon 让开 */
+.log-command-search {
+  position: relative;
+  display: flex;
+  min-width: calc(180px * var(--ui-scale));
+  flex: 1;
+  align-items: center;
 }
 
-.log-file-field {
-  min-width: 0;
-  flex: 1 1 260px;
+.log-search-icon {
+  position: absolute;
+  left: var(--sp-10);
+  width: var(--sp-15);
+  height: var(--sp-15);
+  color: var(--meta);
+  pointer-events: none;
+}
+
+/* 工具条按钮内的图标语义色：设计稿逐颗指定（刷新绿、自动/筛选靛、专注随文字） */
+.log-tool-icon.is-success {
+  color: var(--success);
+}
+
+.log-tool-icon.is-indigo {
+  color: var(--icon-indigo);
+}
+
+/* 展开筛选抽屉：设计稿 .log-filter-panel（卡内下沿，靠 border-top 分隔） */
+.log-filter-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-12) var(--sp-16);
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-warm);
+}
+
+.log-collapsed-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-14);
+}
+
+.filter-item-label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  color: var(--fg-2);
+  font-size: var(--fs-12);
+  /* 中文可按字断行，标签不换行才能让整行按内容撑开 */
+  white-space: nowrap;
 }
 
 .log-filter-actions {
   display: flex;
-  min-width: 0;
   flex-wrap: wrap;
-  align-self: end;
-  justify-content: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: var(--sp-8);
 }
 
+/* 日志流容器：桌面表格 / 移动卡片 / 分页条共用一块面板底 */
 .log-stream-panel {
-  display: grid;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  align-content: stretch;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 12px;
-}
-
-.settings-control-select {
-  width: 100% !important;
-}
-
-.log-command-tabs {
-  display: inline-flex;
-  min-width: 0;
-  flex: 0 1 auto;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.log-command-tab {
-  --log-tab-color: var(--primary);
-
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--card);
-  padding: 0 13px;
-  color: var(--foreground);
-  font: inherit;
-  font-size: var(--fs-body);
-  font-weight: 550;
-  white-space: nowrap;
-  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
-}
-
-.log-command-tab strong {
-  color: var(--log-tab-color);
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-  font-weight: 750;
-}
-
-.log-command-tab:hover,
-.log-command-tab.is-active {
-  border-color: color-mix(in oklch, var(--log-tab-color) 35%, var(--border));
-  background: color-mix(in oklch, var(--log-tab-color) 10%, var(--card));
-  color: var(--log-tab-color);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--log-tab-color) 10%, var(--color-transparent));
-}
-
-.log-command-tab.is-debug {
-  --log-tab-color: var(--muted-foreground);
-}
-
-.log-command-tab.is-info {
-  --log-tab-color: var(--log-level-info);
-}
-
-.log-command-tab.is-warning {
-  --log-tab-color: var(--log-level-warning);
-}
-
-.log-command-tab.is-error {
-  --log-tab-color: var(--log-level-error);
-}
-
-.log-footer {
   display: flex;
   min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--muted-foreground);
-  font-size: var(--fs-caption);
-}
-
-.log-pagination-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--card);
-  padding: 10px 12px;
-  box-shadow: var(--shadow-xs, none);
-}
-
-.log-pagination-summary {
-  min-width: 0;
-  color: var(--muted-foreground);
+  min-height: 440px;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
 }
 
 .log-table-shell {
-  height: 100%;
   min-width: 0;
   min-height: 0;
+  flex: 1;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  box-shadow: 0 1px 2px var(--color-black-alpha-030);
 }
 
+/* 单元格内容：设计稿用行内样式指定，这里换成表格内的语义类 */
+.log-time-cell {
+  color: var(--meta);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+}
+
+.log-message-cell {
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+}
+
+.log-level-badge {
+  display: inline-block;
+  padding: var(--sp-2) var(--sp-6);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.log-level-badge.is-debug {
+  background: var(--info-light);
+  color: var(--info);
+}
+
+.log-level-badge.is-info {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.log-level-badge.is-warning {
+  background: var(--warn-light);
+  color: var(--warn);
+}
+
+.log-level-badge.is-error {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.log-scope-tag {
+  display: inline-block;
+  padding: var(--sp-2) var(--sp-6);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+}
+
+/* 移动端卡片流：桌面隐藏，≤767 取代表格 */
 .log-mobile-list {
   display: none;
-}
-
-.log-mobile-card {
-  display: grid;
   min-width: 0;
-  gap: 12px;
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  padding: 14px;
-  box-shadow: var(--artistic-shadow, 0 4px 18px var(--color-black-alpha-030));
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-10);
+  padding: var(--sp-12);
+  overflow-y: auto;
 }
 
 .log-mobile-empty {
-  min-height: 116px;
-  place-items: center;
-  color: var(--muted-foreground);
-  font-size: var(--fs-caption);
+  margin: 0;
+  padding: var(--sp-32) 0;
+  color: var(--meta);
+  text-align: center;
+}
+
+.log-mobile-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--sp-8);
+  padding: var(--sp-12) var(--sp-14);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-warm);
 }
 
 .log-mobile-card__top {
   display: flex;
-  min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-}
-
-.log-mobile-card__top > span {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--muted-foreground);
+  color: var(--meta);
   font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: var(--fs-11);
 }
 
 .log-mobile-card__message {
   margin: 0;
   min-width: 0;
-  color: var(--foreground);
+  color: var(--fg);
   font-family: var(--font-mono);
-  font-size: var(--fs-mono);
-  line-height: 1.55;
-  overflow-wrap: anywhere;
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  word-break: break-all;
 }
 
 .log-mobile-card__meta {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0;
+  display: flex;
+  gap: var(--sp-16);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--border-soft);
+  color: var(--muted);
+  font-size: var(--fs-11);
 }
 
-.log-mobile-card__meta dt {
-  color: var(--muted-foreground);
-  font-size: var(--fs-caption);
+.log-mobile-card__meta div {
+  display: flex;
+  gap: var(--sp-4);
 }
 
-.log-mobile-card__meta dd {
-  margin: 3px 0 0;
-  overflow: hidden;
-  color: var(--foreground);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.log-pagination-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-10);
+  padding: var(--sp-10) var(--sp-18);
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-warm);
+  color: var(--meta);
+  font-size: var(--fs-12);
 }
 
-.log-table-shell :deep(.log-table[data-slot="table"]) {
-  width: 100%;
-  min-width: 760px;
-  border-collapse: collapse !important;
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--fs-mono);
-  table-layout: fixed;
-}
-
-.log-stream-panel .log-table-shell [data-slot="table-container"] {
-  height: 100%;
-  min-height: 0;
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: var(--color-transparent) !important;
-  backdrop-filter: none !important;
-  box-shadow: none !important;
-  -webkit-overflow-scrolling: touch;
-}
-
-.log-table-shell :deep(.log-table .log-col-time) {
-  width: 196px;
-}
-
-.log-table-shell :deep(.log-table .log-col-scope) {
-  width: 128px;
-}
-
-.log-table-shell :deep(.log-table .log-col-level) {
-  width: 108px;
-}
-
-.log-table-shell :deep(.log-table .log-col-message) {
-  width: auto;
-}
-
-.log-table-shell :deep(.log-table [data-slot="table-row"]) {
-  transition: background-color 160ms ease;
-}
-
-.log-table-shell :deep(.log-table [data-slot="table-header"]) {
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--background) 80%, var(--card));
-}
-
-.log-table-shell :deep(.log-table [data-slot="table-body"] [data-slot="table-row"]:hover) {
-  background: color-mix(in srgb, var(--muted) 42%, var(--card));
-}
-
-.log-table-shell :deep(.log-table [data-slot="table-head"]) {
-  border-bottom: 1px solid var(--border) !important;
-  background: color-mix(in srgb, var(--background) 80%, var(--card)) !important;
-  color: var(--muted-foreground) !important;
-  font-family: var(--font-sans);
-  font-size: var(--fs-caption) !important;
-  font-weight: 600 !important;
-  letter-spacing: 0 !important;
-  text-align: left;
-  text-transform: none !important;
-}
-
-.log-table-shell :deep(.log-table [data-slot="table-cell"]),
-.log-table-shell :deep(.log-table [data-slot="table-head"]) {
-  overflow: hidden;
-  border-top: 1px solid var(--border);
-  padding: 12px 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.log-table-shell :deep(.log-table [data-slot="table-cell"]) {
-  color: var(--foreground);
-  line-height: 1.45;
-  vertical-align: middle;
-}
-
-.log-table-shell :deep(.log-table .log-time-cell),
-.log-table-shell :deep(.log-table .log-scope-cell) {
-  color: var(--muted-foreground);
-}
-
-.log-table-shell :deep(.log-table .log-level-cell) {
-  overflow: visible;
-}
-
-.log-table-shell :deep(.log-table .log-message-cell) {
-  overflow: hidden;
-  color: var(--foreground);
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.log-table-shell :deep(.log-table .log-empty-cell) {
-  height: 112px;
-  color: var(--muted-foreground);
-  font-family: var(--font-sans);
-  text-align: center;
-  white-space: normal;
-}
-
-.log-level-badge {
-  --log-level-color: var(--muted-foreground);
-  border-color: color-mix(in oklch, var(--log-level-color) 28%, var(--border)) !important;
-  background: color-mix(in oklch, var(--log-level-color) 9%, var(--color-transparent)) !important;
-  color: var(--log-level-color) !important;
-  font-family: var(--font-mono);
-  font-weight: 650;
-  text-transform: lowercase;
-}
-
-.log-level-badge.is-debug {
-  --log-level-color: var(--log-level-debug);
-}
-
-.log-level-badge.is-info {
-  --log-level-color: var(--log-level-info);
-}
-
-.log-level-badge.is-warning {
-  --log-level-color: var(--log-level-warning);
-}
-
-.log-level-badge.is-error {
-  --log-level-color: var(--log-level-error);
-}
-
-.log-table-shell :deep(.log-table [data-slot="table-header"] [data-slot="table-head"]) {
-  border-top: 0;
-}
-
-.log-fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  isolation: isolate;
-  display: grid;
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  max-width: none;
-  min-width: 0;
-  min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
-  margin: 0;
-  overflow: hidden;
-  background: var(--background);
-  padding: 0;
-}
-
-.log-fullscreen.has-open-filters {
-  grid-template-rows: auto auto minmax(0, 1fr);
-}
-
-.page-stack.log-fullscreen {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-}
-
-.log-fullscreen .log-command-card {
-  margin: 20px 24px 0;
-}
-
-.log-fullscreen .log-collapsed-filter {
-  margin: 0 24px;
-}
-
-.log-fullscreen .log-stream-panel {
-  min-height: 0;
-  overflow: hidden;
-  padding: 0 24px 24px;
-}
-
-.log-fullscreen .log-filter-panel {
-  max-height: 220px;
-  overflow: auto;
-}
-
-.log-fullscreen .log-table-shell,
-.log-fullscreen .log-stream-panel [data-slot="table-container"] {
-  height: 100%;
-  min-height: 0;
-}
-
-.log-fullscreen .log-stream-panel [data-slot="table-container"] {
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-}
-
-@media (max-width: 980px) {
-  .log-page,
-  .log-stream-panel {
-    height: auto;
-    min-height: 0;
-  }
-
-  .log-page {
-    display: flex;
+/* 手机端：工具条纵向堆叠，页签横向滚动（滚动与等分行为由皮肤层负责），表格换成卡片流 */
+@media (max-width: 767px) {
+  .log-command-toolbar {
     flex-direction: column;
-    align-content: start;
-    align-self: start;
+    align-items: stretch;
   }
 
-  .log-stream-panel {
-    display: flex;
-    flex-direction: column;
-    overflow: visible;
-  }
-
-  .log-table-shell {
-    height: min(44vh, 360px);
-    min-height: 220px;
-    max-height: 360px;
-  }
-
-  .log-table-shell :deep(.log-table[data-slot="table"]) {
-    min-width: 760px;
-  }
-
-  .log-stream-panel [data-slot="table-container"] {
-    height: 100%;
-    max-height: none;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .log-filter-actions {
-    justify-content: flex-start;
-  }
-
-  .log-footer {
-    display: grid;
-    justify-content: stretch;
-  }
-
-  .button-row {
-    justify-content: flex-start;
-  }
-}
-
-@container (max-width: 820px) {
-  .log-file-field,
-  .log-filter-actions {
-    flex-basis: 100%;
-  }
-
-  .log-filter-actions {
-    justify-content: flex-start;
-  }
-}
-
-@container (max-width: 560px) {
-  .log-file-field,
-  .log-filter-actions {
-    flex-basis: 100%;
-  }
-
-  .log-filter-actions > [data-slot="button"] {
-    flex: 1 1 148px;
-  }
-}
-
-@media (max-width: 760px) {
-  .log-command-card,
-  .log-collapsed-filter {
-    padding: 12px;
-  }
-
-  .log-command-tabs {
+  .log-command-toolbar > .log-command-tabs {
     width: 100%;
-  }
-
-  .log-command-tab {
-    flex: 1 1 calc(50% - 4px);
     min-width: 0;
-    padding: 0 10px;
   }
 
   .log-command-search {
+    min-width: 0;
+  }
+
+  .log-filter-panel {
+    --apple-select-width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-12);
+  }
+
+  .log-collapsed-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-12);
     width: 100%;
-    flex-basis: 100%;
+  }
+
+  /* 筛选标签在手机端纵向铺满，下拉与输入框同宽（设计稿 §11C） */
+  .filter-item-label {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--sp-6);
+    width: 100%;
+    white-space: normal;
+  }
+
+  .filter-item-label span {
+    color: var(--fg);
+    font-size: var(--fs-13);
+    font-weight: 500;
   }
 
   .log-table-shell {
@@ -589,37 +297,6 @@
   }
 
   .log-mobile-list {
-    display: grid;
-    min-width: 0;
-    gap: 12px;
-    padding: 0;
-  }
-
-  .log-filter-actions > [data-slot="button"],
-  .log-command-toolbar > [data-slot="button"] {
-    flex: 1 1 148px;
-  }
-
-  .log-pagination-card {
-    gap: 10px;
-  }
-
-  .log-pagination-card .button-row {
-    justify-content: stretch;
-  }
-
-  .log-pagination-card .button-row [data-slot="button"] {
-    flex: 1 1 120px;
-  }
-}
-
-@media (max-width: 420px) {
-  .log-command-toolbar > [data-slot="button"] {
-    flex-basis: calc(50% - 4px);
-    min-width: 0;
-  }
-
-  .log-mobile-card__meta {
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
   }
 }

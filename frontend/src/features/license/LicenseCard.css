@@ -1,0 +1,90 @@
+/*
+  授权卡片布局：设计稿 .license-card 的渐变卡片 + .license-field 字段组。
+  控件观感来自 styles/element-plus.css 的皮肤类（.apple-field / .btn-apple.is-append），
+  本页只负责卡片结构、字段间距与组合输入框的伸缩比例。
+  尺寸一律引用 --sp-* / --fs-* / --radius-* 令牌，默认档与设计稿逐像素相等。
+*/
+.license-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--sp-16);
+  padding: var(--sp-22) var(--sp-24);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--surface-warm) 100%);
+  box-shadow: var(--shadow-card);
+}
+
+.license-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.license-card-heading {
+  min-width: 0;
+  /* 设计稿整页不写 line-height，kicker 那一行的行盒由字体 normal 决定（14px 时约 19px） */
+  line-height: normal;
+}
+
+.license-card-kicker {
+  color: var(--accent);
+  font-size: var(--fs-11);
+  font-weight: 600;
+  line-height: normal;
+  text-transform: uppercase;
+}
+
+.license-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  margin: var(--sp-2) 0 0;
+  color: var(--fg);
+  font-size: var(--fs-16);
+  font-weight: 600;
+  line-height: normal;
+}
+
+/* 激活失败才出现的错误行；成功态保持设计稿的两行结构 */
+.license-error {
+  color: var(--danger);
+  font-size: var(--fs-13);
+  line-height: normal;
+  user-select: text;
+}
+
+.license-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.license-field label {
+  color: var(--fg-2);
+  font-size: var(--fs-13);
+  font-weight: 500;
+  line-height: normal;
+}
+
+.license-key-label {
+  margin-top: var(--sp-8);
+}
+
+.input-with-append {
+  display: flex;
+  align-items: stretch;
+}
+
+/* 设备码输入框：观感（36px 加高、等宽、左半圆角、去右描边）由皮肤类的 is-tall / is-mono / is-appended 提供，
+   本页只给组合宽度：--apple-field-width 让位给 flex，输入框吃掉剩余空间 */
+.license-device-field {
+  --apple-field-width: auto;
+}
+
+.license-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--sp-8);
+}

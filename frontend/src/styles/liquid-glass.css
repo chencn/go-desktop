@@ -1,0 +1,403 @@
+/*
+  液态玻璃材质层（逐条对照设计稿 index.html §2「Liquid Glass 双模光学材质系统」+ 上游 D:\liquid-glass）。
+  真实无边框窗口即设计稿的 .app-window.is-maximized 形态，因此这里把设计稿的 .window-stage 舞台
+  下沉到 html：桌面底色 / 极光色带 / 卡片材质联动全部由 html.has-backdrop 与 html.dark 驱动，
+  组件规则一律不感知主题。
+*/
+
+/* ==========================================================================
+   1. .lg 三层光学基元（上游 liquid-glass.css，禁止在此改写数值）
+   .lg-surface 底层折射磨砂 / .lg-light 随动边缘高光 / .lg-sheen 45° 色散漫反射 / .lg-content 内容层
+   ========================================================================== */
+.lg {
+  --lg-radius: 40px;
+  --lg-tint: var(--color-white-alpha-018);
+  --lg-pointer-x: 28%;
+  --lg-pointer-y: 12%;
+  position: relative;
+  border-radius: var(--lg-radius);
+  /* 宿主保持透明与无滤镜，让真实 backdrop 留在下层 */
+  box-shadow: 0 24px 36px -20px var(--color-value-rgba-31-42-58-0p23), 0 8px 16px -10px var(--color-value-rgba-31-42-58-0p19);
+  transition: box-shadow 0.2s ease;
+}
+
+.lg-surface,
+.lg-light,
+.lg-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.lg-surface {
+  z-index: 0;
+  background: var(--lg-tint);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.lg-light {
+  z-index: 1;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* 随动高光只沿边缘透出一圈，靠 rim mask 把中心挖空 */
+.lg-light::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at var(--lg-pointer-x) var(--lg-pointer-y),
+    var(--color-white-alpha-680),
+    var(--color-white-alpha-150) 38%,
+    var(--color-transparent) 68%
+  );
+  -webkit-mask-image: var(--lg-rim-mask, linear-gradient(var(--color-transparent), var(--color-transparent)));
+  mask-image: var(--lg-rim-mask, linear-gradient(var(--color-transparent), var(--color-transparent)));
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.lg-sheen {
+  z-index: 2;
+  background:
+    linear-gradient(155deg, var(--color-white-alpha-075), var(--color-transparent) 24%, var(--color-transparent) 77%,
+      var(--color-white-alpha-018)),
+    radial-gradient(ellipse at var(--lg-pointer-x) var(--lg-pointer-y), var(--color-white-alpha-042), var(--color-transparent) 57%);
+}
+
+.lg-content {
+  position: relative;
+  z-index: 3;
+  border-radius: inherit;
+}
+
+.lg:focus-visible,
+.lg:has(:focus-visible) {
+  outline: 2px solid var(--color-value-3463ce);
+  outline-offset: var(--sp-5);
+}
+
+/* 逐实例降级：不支持 backdrop-filter 或用户要求降低透明度/对比度时回实心晶体 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lg-surface {
+    background: var(--lg-solid, var(--color-value-e9ecf1));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .lg-surface {
+    background: var(--lg-solid, var(--color-value-e9ecf1)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .lg-light,
+  .lg-sheen {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .lg {
+    outline: 1px solid CanvasText;
+    color: CanvasText;
+  }
+  .lg-surface {
+    background: Canvas !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .lg-light,
+  .lg-sheen {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lg,
+  .lg * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   2. 极光流光舞台（设计稿 .window-stage / .stage-backdrop）
+   真实窗口铺满 WebView，没有设计稿假窗口的外框留白，因此舞台映射到 html：
+   清爽态与稿子一致（窗口实色），开启极光后窗口与主视口转透明，让玻璃层真正折射色带。
+   ========================================================================== */
+html {
+  background: var(--stage-desktop);
+}
+
+html.has-backdrop {
+  background: var(--stage-aurora);
+}
+
+html.has-backdrop .app-window,
+html.has-backdrop .app-main-viewport {
+  background: var(--color-transparent);
+}
+
+.stage-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s var(--ease-apple), visibility 0.4s ease;
+}
+
+html.has-backdrop .stage-backdrop {
+  opacity: 1;
+  visibility: visible;
+}
+
+.stage-line {
+  position: absolute;
+  inset: 0;
+  background-image: var(--stage-grid);
+  background-size: 64px 64px;
+  background-position: 32px 16px;
+}
+
+.stage-band {
+  position: absolute;
+  top: 48%;
+  left: -15%;
+  width: 130%;
+  height: 80px;
+  border-radius: 999px;
+  background: var(--stage-spectrum);
+  opacity: 0.38;
+  filter: blur(48px);
+  transform: rotate(-14deg);
+  transform-origin: center;
+}
+
+.stage-band.stage-band-lead {
+  top: 22%;
+  height: 38px;
+  opacity: 0.28;
+  filter: blur(36px);
+}
+
+.stage-band.stage-band-tail {
+  top: 76%;
+  height: 52px;
+  opacity: 0.22;
+  filter: blur(44px);
+}
+
+.stage-glow-ambient {
+  position: absolute;
+  width: 560px;
+  height: 560px;
+  top: 15%;
+  right: 8%;
+  border-radius: 50%;
+  background: var(--stage-ambient);
+  filter: blur(70px);
+}
+
+/* ==========================================================================
+   3. 双模业务玻璃卡（首页服务卡 / 指标卡）
+   设计稿硬性规范：卡片中央不允许任何刺眼光圈；清爽态与侧栏菜单同质感，
+   极光态才启用随动高光与色散，Hover 一律只做 2px 物理微浮起。
+   ========================================================================== */
+.service-card.lg,
+.stat-card.lg {
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: 0 !important;
+  overflow: hidden;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  transition: transform 0.22s var(--ease-apple), box-shadow 0.22s var(--ease-apple), border-color 0.22s ease,
+    background 0.22s ease !important;
+}
+
+.service-card.lg .lg-content {
+  padding: var(--sp-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-10);
+}
+
+.stat-card.lg .lg-content {
+  padding: var(--sp-16) var(--sp-18);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+/* A. 日间清爽态 */
+html:not(.dark):not(.has-backdrop) .service-card.lg,
+html:not(.dark):not(.has-backdrop) .stat-card.lg {
+  background: var(--color-white-alpha-720);
+  border: 1px solid var(--color-black-alpha-080);
+  box-shadow: 0 4px 16px -4px var(--color-black-alpha-050), 0 1px 2px var(--color-black-alpha-030);
+}
+
+html:not(.dark):not(.has-backdrop) .service-card.lg .lg-surface,
+html:not(.dark):not(.has-backdrop) .stat-card.lg .lg-surface {
+  display: block;
+  background: linear-gradient(135deg, var(--color-white-alpha-850) 0%, var(--color-white-alpha-650) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-950), inset 0 -1px 2px var(--color-black-alpha-020);
+}
+
+html:not(.dark):not(.has-backdrop) .service-card.lg .lg-sheen,
+html:not(.dark):not(.has-backdrop) .stat-card.lg .lg-sheen {
+  display: block;
+  opacity: 0.5;
+  visibility: visible;
+  background: linear-gradient(135deg, var(--color-white-alpha-350) 0%, var(--color-white-alpha-050) 35%,
+    var(--color-transparent) 60%);
+}
+
+html:not(.dark):not(.has-backdrop) .service-card.lg:hover,
+html:not(.dark):not(.has-backdrop) .stat-card.lg:hover {
+  transform: translateY(-2px);
+  background: var(--color-white-alpha-880);
+  border-color: var(--color-black-alpha-140);
+  box-shadow: 0 10px 24px -4px var(--color-black-alpha-080), 0 2px 6px var(--color-black-alpha-030),
+    inset 0 1px 1px var(--color-white-solid);
+}
+
+html:not(.dark):not(.has-backdrop) .service-card.lg:hover .lg-surface,
+html:not(.dark):not(.has-backdrop) .stat-card.lg:hover .lg-surface {
+  background: linear-gradient(135deg, var(--color-white-alpha-950) 0%, var(--color-white-alpha-750) 100%);
+}
+
+/* B. 夜间清爽态：与侧栏菜单一致的深空灰晶体，杜绝白光斑 */
+html.dark:not(.has-backdrop) .service-card.lg,
+html.dark:not(.has-backdrop) .stat-card.lg {
+  background: var(--lg-card-fill);
+  border: 1px solid var(--color-white-alpha-120);
+  box-shadow: var(--lg-card-shadow);
+}
+
+html.dark:not(.has-backdrop) .service-card.lg .lg-surface,
+html.dark:not(.has-backdrop) .stat-card.lg .lg-surface {
+  display: block;
+  background: var(--lg-card-surface);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-140), inset 0 -1px 2px var(--color-black-alpha-400);
+}
+
+html.dark:not(.has-backdrop) .service-card.lg .lg-sheen,
+html.dark:not(.has-backdrop) .stat-card.lg .lg-sheen {
+  display: block;
+  opacity: 0.3;
+  visibility: visible;
+  background: linear-gradient(135deg, var(--color-white-alpha-080) 0%, var(--color-transparent) 40%);
+}
+
+html.dark:not(.has-backdrop) .service-card.lg:hover,
+html.dark:not(.has-backdrop) .stat-card.lg:hover {
+  transform: translateY(-2px);
+  background: var(--lg-card-fill-hover);
+  border-color: var(--color-white-alpha-220);
+  box-shadow: var(--lg-card-shadow-hover);
+}
+
+html.dark:not(.has-backdrop) .service-card.lg:hover .lg-surface,
+html.dark:not(.has-backdrop) .stat-card.lg:hover .lg-surface {
+  background: var(--lg-card-surface-hover);
+}
+
+/* 中央光圈手电筒在两个清爽态都彻底关闭（设计稿：只有极光态允许随动光斑） */
+html:not(.has-backdrop) .service-card.lg .lg-light,
+html:not(.has-backdrop) .stat-card.lg .lg-light {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* C. 极光态：中性晶体折射，不染杂色 */
+html.has-backdrop .service-card.lg,
+html.has-backdrop .stat-card.lg {
+  background: var(--color-transparent);
+  border: 1px solid var(--color-white-alpha-320);
+  box-shadow: 0 16px 36px -10px var(--color-black-alpha-450), 0 1px 3px var(--color-black-alpha-200);
+}
+
+html.has-backdrop .service-card.lg .lg-surface,
+html.has-backdrop .stat-card.lg .lg-surface {
+  display: block;
+  background: var(--color-white-alpha-120);
+  backdrop-filter: blur(28px) saturate(210%);
+  -webkit-backdrop-filter: blur(28px) saturate(210%);
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-350);
+}
+
+html.has-backdrop .service-card.lg .lg-light,
+html.has-backdrop .stat-card.lg .lg-light,
+html.has-backdrop .service-card.lg .lg-sheen,
+html.has-backdrop .stat-card.lg .lg-sheen {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+}
+
+html.has-backdrop .service-card.lg:hover,
+html.has-backdrop .stat-card.lg:hover {
+  transform: translateY(-2.5px);
+  border-color: var(--color-white-alpha-650);
+  box-shadow: 0 22px 48px -10px var(--color-black-alpha-550), 0 4px 12px var(--color-black-alpha-200);
+}
+
+html.dark.has-backdrop .service-card.lg,
+html.dark.has-backdrop .stat-card.lg {
+  border: 1px solid var(--color-white-alpha-120);
+  box-shadow: 0 12px 30px -10px var(--color-black-alpha-600), 0 4px 10px var(--color-black-alpha-400);
+}
+
+html.dark.has-backdrop .service-card.lg .lg-surface,
+html.dark.has-backdrop .stat-card.lg .lg-surface {
+  background: var(--color-value-rgba-28-28-32-0p76);
+}
+
+/* ==========================================================================
+   4. 折射风格与光强引擎（设置页三项偏好写在 <html data-lg-style> 与 --lg-intensity-factor）
+   fresnel 自然高透 / frosted 晶莹磨砂 / sheen 双层反射
+   ========================================================================== */
+html[data-lg-style="fresnel"] .service-card.lg .lg-surface,
+html[data-lg-style="fresnel"] .stat-card.lg .lg-surface {
+  backdrop-filter: blur(calc(20px * var(--lg-intensity-factor, 0.75))) saturate(180%);
+  -webkit-backdrop-filter: blur(calc(20px * var(--lg-intensity-factor, 0.75))) saturate(180%);
+}
+
+html[data-lg-style="frosted"] .service-card.lg .lg-surface,
+html[data-lg-style="frosted"] .stat-card.lg .lg-surface {
+  backdrop-filter: blur(calc(32px * var(--lg-intensity-factor, 0.75))) saturate(205%);
+  -webkit-backdrop-filter: blur(calc(32px * var(--lg-intensity-factor, 0.75))) saturate(205%);
+  background: color-mix(in srgb, var(--lg-frosted-fill-light) calc(92% * var(--lg-intensity-factor, 0.75)), var(--color-transparent));
+}
+
+html.dark[data-lg-style="frosted"] .service-card.lg .lg-surface,
+html.dark[data-lg-style="frosted"] .stat-card.lg .lg-surface {
+  background: color-mix(in srgb, var(--lg-frosted-fill-dark) calc(88% * var(--lg-intensity-factor, 0.75)), var(--color-transparent));
+}
+
+html[data-lg-style="sheen"] .service-card.lg .lg-sheen,
+html[data-lg-style="sheen"] .stat-card.lg .lg-sheen {
+  opacity: calc(0.85 * var(--lg-intensity-factor, 0.75));
+  background: linear-gradient(135deg, var(--color-white-alpha-500) 0%, var(--color-white-alpha-150) 30%,
+    var(--color-transparent) 60%);
+}
+
+html.dark[data-lg-style="sheen"] .service-card.lg .lg-sheen,
+html.dark[data-lg-style="sheen"] .stat-card.lg .lg-sheen {
+  opacity: calc(0.7 * var(--lg-intensity-factor, 0.75));
+  background: linear-gradient(135deg, var(--color-white-alpha-180) 0%, var(--color-white-alpha-040) 40%,
+    var(--color-transparent) 70%);
+}

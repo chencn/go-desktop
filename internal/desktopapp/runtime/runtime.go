@@ -12,7 +12,6 @@ import (
 	"github.com/chencn/go-desktop/internal/adapters/configstore"
 	"github.com/chencn/go-desktop/internal/adapters/filelog"
 	"github.com/chencn/go-desktop/internal/adapters/githubrelease"
-	"github.com/chencn/go-desktop/internal/desktopapp/display"
 	updater "github.com/chencn/go-desktop/internal/desktopapp/update"
 	processutil "github.com/chencn/go-desktop/internal/platform/process"
 
@@ -118,10 +117,9 @@ type Runtime struct {
 	// updateSchedulerStop 停止后台更新检查任务。
 	updateSchedulerStop context.CancelFunc
 
-	// displayPreferences 当前显示偏好
+	// displayPreferences 当前显示偏好（亮暗模式 + 全局尺寸，Element Plus 主题模型 V3）
 	// 由 SQLite KV 配置项加载，前端只通过 typed facade 读取和保存
-	displayPreferencesV2 display.PreferencesV2 // displayPreferencesV2 保存完整显示偏好 JSON profile。
-	displayPreferences   DisplayPreferences    // displayPreferences 保存当前方案生效偏好，供前端读取。
+	displayPreferences DisplayPreferences
 
 	// logs 内存中的日志条目
 	// 用于当前前端视图和文件不可读时兜底

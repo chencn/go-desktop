@@ -1,410 +1,182 @@
-/* SettingsPage.css - 温暖落日毛玻璃风格设置页面专属样式 */
+/*
+  设置页布局：设计稿 .settings-stack 两张分组卡片 + 每卡片若干 .settings-row-item。
+  控件观感全部来自 element-plus.css 的皮肤类（.apple-switch / .apple-select / .apple-field /
+  .segmented-control / .btn-apple），本页只负责行结构与宽度。
+  尺寸一律引用 --sp-* / --fs-* / --radius-* 令牌，默认档与设计稿逐像素相等。
+*/
 
-.settings-section {
-  display: grid;
+.settings-stack {
+  display: flex;
   min-width: 0;
-  gap: 12px;
-  width: 100%;
-}
-
-.aesthetic-section-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-
-.settings-section-heading h3 {
-  margin: 0;
-  color: var(--foreground);
-  font-size: var(--fs-section);
-  line-height: 1.25;
-}
-
-.settings-section-heading p {
-  margin: 0;
-  color: var(--muted-foreground);
-  font-size: var(--fs-caption);
-  line-height: 1.45;
-}
-
-.aesthetic-reset-btn {
-  flex-shrink: 0;
-}
-
-/* 统一的配置项流式网格，确保上下两个分区内部列数一致，完美对齐 */
-.settings-control-list,
-.aesthetic-content-stack {
-  container: settings-fields / inline-size;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.settings-row-item {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card);
-  transition: all 200ms ease;
-}
-
-.settings-row-item:hover {
-  background: color-mix(in oklch, var(--background) 2%, var(--card));
-  border-color: color-mix(in oklch, var(--primary) 15%, var(--border));
-}
-
-.settings-row-item.is-select-row {
-  grid-template-columns: auto minmax(0, 1fr) minmax(140px, 180px);
-}
-
-.row-copy {
-  display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  gap: var(--sp-24);
+  /* 与其他页面共用 .app-main-viewport 的 28px 栏距：设计稿的 880px 量宽只属于 1400px 假窗口，
+     真实窗口最大化后会把整页挤成居中小票，故这里通栏而非居中限宽。 */
+  /* 设计稿：预留滚动安全距离，避免末行控件贴住视口下缘。96px 不属于间距刻度，本地声明 */
+  --settings-scroll-safe-area: calc(96px * var(--ui-scale));
+
+  padding-bottom: var(--settings-scroll-safe-area);
 }
 
-.row-copy strong {
-  font-size: var(--fs-body);
-  font-weight: 700;
-  color: var(--foreground);
-}
-
-.row-copy small {
-  font-size: var(--fs-caption);
-  color: var(--muted-foreground);
-  line-height: 1.45;
-}
-
-.settings-control-select {
-  width: 100%;
-}
-
-.settings-control-input {
-  width: min(280px, 100%);
-  justify-self: end;
-}
-
-.settings-control-switch {
-  justify-self: end;
-}
-
-.aesthetic-field-col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.scheme-field-container {
-  grid-column: 1 / -1;
-}
-
-/* 外观设置项包装为与业务设置卡片一致的视觉模块 */
-.aesthetic-field-col:not(.scheme-field-container) {
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card);
-  transition: all 200ms ease;
-}
-
-.aesthetic-field-col:not(.scheme-field-container):hover {
-  background: color-mix(in oklch, var(--background) 2%, var(--card));
-  border-color: color-mix(in oklch, var(--primary) 15%, var(--border));
-}
-
-.aesthetic-field-title {
-  font-size: var(--fs-body);
-  font-weight: 700;
-  color: var(--foreground);
-}
-
-.field-desc-para {
-  font-size: var(--fs-caption);
-  color: var(--muted-foreground);
-  margin: 0;
-  line-height: 1.4;
-}
-
-.active-badge {
-  font-size: calc(var(--fs-caption) - 1px);
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--artistic-primary, var(--primary));
-  background: color-mix(in srgb, var(--artistic-primary, var(--primary)) 12%, var(--color-transparent));
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--artistic-primary, var(--primary)) 20%, var(--color-transparent));
-}
-
-/* 显示方案卡片设计 */
-.scheme-cards-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-}
-
-.scheme-card-box {
+/* 分组卡片：设计稿 .settings-group-card
+   overflow 必须可见，否则行内 el-select 的 iOS Popover 浮层会被卡片边界裁断；
+   圆角改由表头和末行各自补上，卡面依旧是被裁圆的观感。 */
+.settings-group-card {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card);
-  padding: 14px;
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 260ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: visible;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
 }
 
-.scheme-card-box::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 2px solid var(--color-transparent);
-  border-radius: var(--radius);
-  transition: all 260ms ease;
-  pointer-events: none;
-}
-
-.scheme-card-box.is-active::before {
-  border-color: var(--artistic-primary, var(--primary));
-}
-
-.scheme-card-box.is-active {
-  background: var(--card) !important;
-  transform: translateY(-2px);
-}
-
-/* 方案专属微发光背景 */
-.scheme-card-box.glow-shadcn.is-active {
-  box-shadow: 0 8px 24px -8px var(--color-value-rgba-100-116-139-0p35);
-}
-.scheme-card-box.glow-artistic.is-active {
-  box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--artistic-primary, var(--primary)) 45%, var(--color-transparent));
-}
-
-.scheme-title-text {
-  font-size: var(--fs-body);
-  font-weight: 800;
-  color: var(--foreground);
-  margin-bottom: 4px;
-  z-index: 2;
-}
-
-.scheme-desc-text {
-  font-size: calc(var(--fs-caption) - 1px);
-  color: var(--muted-foreground);
-  line-height: 1.35;
-  z-index: 2;
-}
-
-/* 分段选择器 (Segmented Control) */
-.visual-segmented-control {
-  display: flex;
-  background: var(--color-value-rgba-120-119-130-0p08);
-  border-radius: var(--radius);
-  padding: 4px;
-  gap: 2px;
-}
-
-:root[data-theme="night"] .visual-segmented-control {
-  background: var(--color-white-alpha-050);
-}
-
-.visual-segment-btn {
-  flex: 1;
+/* 分组头：暖表面 + 下边框，右侧可放次要按钮 */
+.settings-group-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 34px;
-  border: 0;
-  border-radius: calc(var(--radius) - 4px);
-  background: var(--color-transparent);
-  color: var(--muted-foreground);
-  font-size: calc(var(--fs-body) - 1px);
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: 1px solid var(--border-soft);
+  border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
+  background: var(--surface-warm);
+}
+
+.settings-group-title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  margin: 0;
+  color: var(--fg);
+  font-size: var(--fs-15);
   font-weight: 600;
-  cursor: pointer;
-  transition: all 200ms ease;
+  line-height: normal;
 }
 
-.visual-segment-btn:hover {
-  color: var(--foreground);
-  background: var(--color-white-alpha-300);
+.settings-group-desc {
+  margin: var(--sp-2) 0 0;
+  color: var(--meta);
+  font-size: var(--fs-12);
+  line-height: normal;
 }
 
-:root[data-theme="night"] .visual-segment-btn:hover {
-  background: var(--color-white-alpha-030);
-}
+/* 设置行：左文案右控件 */
+.settings-row-item {
+  /* 触发框右边缘由本行锚定；max-content 会被 EP 的 overflow:hidden 选择区压回 min-width，
+     所以这里给显式宽度，保证最长选项文案不被截断 */
+  --apple-select-width: var(--sp-280);
+  --apple-select-label-width: 100%;
 
-.visual-segment-btn.is-active {
-  background: var(--color-white-solid);
-  color: var(--artistic-primary, var(--primary));
-  box-shadow: 0 3px 10px var(--color-black-alpha-060);
-}
-
-:root[data-theme="night"] .visual-segment-btn.is-active {
-  background: var(--color-white-alpha-120);
-  color: var(--color-white-solid);
-}
-
-/* 圆形色盘流式排布，能一行显示完就一行，显示不完才折行 */
-.color-dot-palette {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 4px 0;
-}
-
-.color-dot-palette.is-disabled-grid {
-  opacity: 0.45;
-  pointer-events: none;
-}
-
-.aesthetic-field-col[aria-disabled="true"] {
-  opacity: 0.72;
-}
-
-.aesthetic-field-col[aria-disabled="true"] .field-desc-para,
-.aesthetic-field-col[aria-disabled="true"] .managed-badge {
-  color: var(--muted-foreground);
-}
-
-.is-managed-palette {
-  opacity: 0.58;
-  pointer-events: none;
-}
-
-.color-dot-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid var(--color-transparent);
-  background: var(--color-transparent);
-  padding: 0;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-14) var(--sp-20);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.settings-row-item:last-child {
+  border-bottom: none;
+  border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px);
+}
+
+/* 行左半：图标徽标 + 文案，整体占据剩余宽度并把文案压缩到可截断 */
+.settings-row-leading {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: var(--sp-12);
+}
+
+.settings-row-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.settings-row-label {
+  color: var(--fg);
+  font-size: var(--fs-14);
+  font-weight: 500;
+  line-height: normal;
+}
+
+.settings-row-helper {
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: normal;
+}
+
+/* GitHub 代理输入框：与同页下拉框右对齐同宽（--sp-280），手机端跟随通栏规则 */
+.settings-proxy-field {
+  --apple-field-width: var(--sp-280);
+}
+
+/* 液态折射光强行：设计稿用内联样式铺出「滑块 + 百分比读数」，170/42 不在间距刻度上，故页内声明 */
+.settings-slider-wrap {
+  --settings-slider-min-width: calc(170px * var(--ui-scale));
+  --settings-slider-value-width: calc(42px * var(--ui-scale));
+
+  display: flex;
+  min-width: var(--settings-slider-min-width);
+  align-items: center;
+  gap: var(--sp-10);
+}
+
+/* 原生 range 只靠 accent-color 上色，与设计稿一致，不额外包装 EP 滑块 */
+.settings-slider {
+  min-width: 0;
+  flex: 1;
+  accent-color: var(--accent);
   cursor: pointer;
-  transition: border-color 180ms ease, transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.color-dot-btn:hover {
-  transform: scale(1.12);
+.settings-slider-value {
+  min-width: var(--settings-slider-value-width);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  font-weight: 600;
+  text-align: right;
 }
 
-.color-dot-btn:disabled {
-  cursor: not-allowed;
-}
+/* 手机端：常规复合行（分段器、输入框、下拉框、滑块）改为上下堆叠，控件通栏 */
+@media (max-width: 767px) {
+  .settings-row-item {
+    --apple-select-width: 100%;
 
-.color-dot-btn:disabled:hover {
-  transform: none;
-}
-
-.color-dot-btn.is-selected {
-  border-color: var(--primary);
-  transform: scale(1.05);
-}
-
-.color-palette-circle {
-  display: block;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1px solid var(--color-black-alpha-060);
-  box-shadow: 0 2px 4px var(--color-black-alpha-050);
-  transition: all 180ms ease;
-}
-
-:root[data-theme="night"] .color-palette-circle {
-  border-color: var(--color-white-alpha-150);
-}
-
-/* 色块只引用 runtime 色盘变量，具体色值唯一维护在 frontend/src/styles.css。 */
-.color-palette-circle[data-accent="neutral"] { background: var(--runtime-color-neutral); }
-.color-palette-circle[data-accent="stone"] { background: var(--runtime-color-stone); }
-.color-palette-circle[data-accent="zinc"] { background: var(--runtime-color-zinc); }
-.color-palette-circle[data-accent="mauve"] { background: var(--runtime-color-mauve); }
-.color-palette-circle[data-accent="olive"] { background: var(--runtime-color-olive); }
-.color-palette-circle[data-accent="mist"] { background: var(--runtime-color-mist); }
-.color-palette-circle[data-accent="taupe"] { background: var(--runtime-color-taupe); }
-.color-palette-circle[data-accent="amber"] { background: var(--runtime-color-amber); }
-.color-palette-circle[data-accent="apple-blue"] { background: var(--runtime-color-apple-blue); }
-.color-palette-circle[data-accent="blue"] { background: var(--runtime-color-blue); }
-.color-palette-circle[data-accent="cyan"] { background: var(--runtime-color-cyan); }
-.color-palette-circle[data-accent="emerald"] { background: var(--runtime-color-emerald); }
-.color-palette-circle[data-accent="indigo"] { background: var(--runtime-color-indigo); }
-.color-palette-circle[data-accent="orange"] { background: var(--runtime-color-orange); }
-.color-palette-circle[data-accent="pink"] { background: var(--runtime-color-pink); }
-.color-palette-circle[data-accent="rose"] { background: var(--runtime-color-rose); }
-.color-palette-circle[data-accent="sky"] { background: var(--runtime-color-sky); }
-.color-palette-circle[data-accent="teal"] { background: var(--runtime-color-teal); }
-
-/* 响应式断点 */
-@media (max-width: 768px) {
-  .settings-section {
-    gap: 12px;
-  }
-}
-
-@media (max-width: 1535px) {
-  .settings-control-list,
-  .aesthetic-content-stack {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@container settings-fields (max-width: 900px) {
-  .settings-row-item.is-select-row,
-  .settings-row-item.is-input-row {
-    grid-template-columns: auto minmax(0, 1fr);
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--sp-12);
   }
 
-  .settings-control-select,
-  .settings-row-item.is-input-row .settings-control-input {
-    grid-column: 1 / -1;
-    justify-self: stretch;
+  .settings-row-leading {
     width: 100%;
   }
-}
 
-@media (max-width: 640px) {
-  .settings-control-list,
-  .aesthetic-content-stack {
-    grid-template-columns: minmax(0, 1fr);
+  /* 开关行严格对齐 iOS 系统设置：单行两端对齐，左信息右开关，绝不换行折断 */
+  .settings-row-item:has(.apple-switch) {
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: var(--sp-14);
   }
 
-  .settings-row-item {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 12px;
+  .settings-row-item:has(.apple-switch) .settings-row-leading {
+    min-width: 0;
+    width: auto;
+    flex: 1;
   }
 
-  .settings-control-switch {
-    grid-column: 3;
+  /* 光强滑块通栏：设计稿 .slider-control-wrap 在手机端同样撑满整行 */
+  .settings-slider-wrap {
+    width: 100%;
+    max-width: 100%;
   }
 
-  .scheme-cards-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-  }
-
-  .aesthetic-section-heading {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .aesthetic-reset-btn {
-    align-self: flex-start;
+  .settings-proxy-field {
+    --apple-field-width: 100%;
   }
 }

@@ -102,7 +102,9 @@ func NormalizeLogLevel(level string) string {
 // FromConfigItems 从 SQLite 配置项恢复 typed 设置，缺失或解析失败的项使用 base。
 func FromConfigItems(items map[string]configstore.ConfigItem, base Settings) Settings {
 	base.UpdateSource = configString(items, KeyUpdateSource, base.UpdateSource)
-	base.GitHubProxyBase = configString(items, KeyGitHubProxyBase, base.GitHubProxyBase)
+	// GitHubProxyBase 的空串是合法取值（直连官方 API），只能按 key 是否存在决定回退，
+	// 否则用户清掉代理后下次启动会被静默改回 metadata 默认代理。
+	base.GitHubProxyBase = configOptionalString(items, KeyGitHubProxyBase, base.GitHubProxyBase)
 	base.UpdateCheckIntervalHours = configInt(items, KeyUpdateCheckIntervalHours, base.UpdateCheckIntervalHours)
 	base.MinimizeToTray = configBool(items, KeyWindowMinimizeToTray, base.MinimizeToTray)
 	base.AlwaysOnTop = configBool(items, KeyWindowAlwaysOnTop, base.AlwaysOnTop)
@@ -156,6 +158,16 @@ func configString(items map[string]configstore.ConfigItem, key string, fallback 
 		}
 	}
 	return fallback
+}
+
+// configOptionalString 只在配置项缺失时回退 fallback；已保存的空串是合法值。
+// GitHubProxyBase 用空串表示「不走代理直连官方 API」，用 configString 会让该选择在重启后被默认代理地址覆盖。
+func configOptionalString(items map[string]configstore.ConfigItem, key string, fallback string) string {
+	item, ok := items[key]
+	if !ok {
+		return fallback
+	}
+	return strings.TrimSpace(item.Value)
 }
 
 // configBool 读取 bool 配置，解析失败时保留 fallback。

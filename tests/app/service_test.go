@@ -135,31 +135,20 @@ func TestDisplayPreferencesPersistThroughSQLiteConfig(t *testing.T) {
 	defer runtimeService.Shutdown()
 
 	saved, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
-		UIStyle:     "nova",
-		ThemeMode:   "dark",
-		BaseColor:   "mauve",
-		ThemeColor:  "blue",
-		AccentColor: "emerald",
-		ChartColor:  "amber",
-		IconTone:    "colorful",
-		Menu:        "inverted",
-		MenuAccent:  "bold",
-		Radius:      "large",
-		Density:     "compact",
-		TextSize:    "large",
-		CardBorder:  "soft",
+		ThemeMode: "dark",
+		Size:      "small",
 	})
 	if err != nil {
 		t.Fatalf("save display preferences: %v", err)
 	}
-	if saved.ThemeMode != "dark" || saved.BaseColor != "mauve" || saved.IconTone != "colorful" || saved.AccentColor != "blue" {
+	if saved.ThemeMode != "dark" || saved.Size != "small" {
 		t.Fatalf("expected display preferences to save, got %#v", saved)
 	}
 
 	reloaded := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
 	defer reloaded.Shutdown()
 	preferences := reloaded.DisplayPreferencesSnapshot()
-	if preferences.ThemeMode != "dark" || preferences.BaseColor != "mauve" || preferences.MenuAccent != "bold" || preferences.AccentColor != "blue" {
+	if preferences.ThemeMode != "dark" || preferences.Size != "small" {
 		t.Fatalf("expected display preferences from sqlite, got %#v", preferences)
 	}
 }
@@ -170,248 +159,26 @@ func TestDisplayPreferencesNormaliseInvalidValues(t *testing.T) {
 	defer runtimeService.Shutdown()
 
 	saved, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
-		UIStyle:     "unknown",
-		ThemeMode:   "night",
-		BaseColor:   "slate",
-		ThemeColor:  "blue",
-		AccentColor: "emerald",
-		ChartColor:  "amber",
-		IconTone:    "rainbow",
-		Menu:        "default",
-		MenuAccent:  "bold",
-		Radius:      "large",
-		Density:     "compact",
-		TextSize:    "large",
-		CardBorder:  "soft",
+		ThemeMode: "night",
+		Size:      "huge",
 	})
 	if err != nil {
 		t.Fatalf("save display preferences: %v", err)
 	}
-	if saved.UIStyle != "vega" || saved.ThemeMode != "light" || saved.BaseColor != "neutral" {
+	if saved.ThemeMode != "light" || saved.Size != "default" {
 		t.Fatalf("expected invalid display values to fall back to defaults, got %#v", saved)
 	}
-	if saved.ThemeColor != "blue" || saved.AccentColor != "blue" || saved.MenuAccent != "bold" {
-		t.Fatalf("expected artistic accent to follow theme color while valid values survive normalisation, got %#v", saved)
-	}
 }
 
-// TestDisplayPreferencesJSONPersistsProfilesAcrossRestart 验证显示偏好按方案 profile 写入单个 JSON 配置项，并在重启后保持当前方案。
-func TestDisplayPreferencesJSONPersistsProfilesAcrossRestart(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "go-desktop.db")
-	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
-	shutdownRuntime := func() {
-		if runtimeService != nil {
-			runtimeService.Shutdown()
-			runtimeService = nil
-		}
-	}
-	defer shutdownRuntime()
-
-	if _, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
-		DisplayScheme: "shadcn",
-		ThemeMode:     "dark",
-	}); err != nil {
-		t.Fatalf("切换到 shadcn 显示方案失败：%v", err)
-	}
-
-	_, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
-		DisplayScheme: "shadcn",
-		UIStyle:       "nova",
-		ThemeMode:     "dark",
-		BaseColor:     "mauve",
-		ThemeColor:    "rose",
-		AccentColor:   "emerald",
-		ChartColor:    "amber",
-		IconTone:      "colorful",
-		Menu:          "inverted",
-		MenuAccent:    "bold",
-		Radius:        "large",
-		Density:       "compact",
-		TextSize:      "large",
-		CardBorder:    "soft",
-	})
-	if err != nil {
-		t.Fatalf("保存 shadcn 显示偏好失败：%v", err)
-	}
-
-	if _, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
-		DisplayScheme: "artistic",
-		ThemeMode:     "dark",
-	}); err != nil {
-		t.Fatalf("切换到 artistic 显示方案失败：%v", err)
-	}
-
-	artistic, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
-		DisplayScheme: "artistic",
-		ThemeMode:     "dark",
-		BaseColor:     "stone",
-		ThemeColor:    "blue",
-		AccentColor:   "cyan",
-		ChartColor:    "blue",
-		Menu:          "default",
-		MenuAccent:    "subtle",
-		Radius:        "medium",
-		Density:       "comfortable",
-		TextSize:      "normal",
-		CardBorder:    "visible",
-	})
-	if err != nil {
-		t.Fatalf("保存 artistic 显示偏好失败：%v", err)
-	}
-	if artistic.DisplayScheme != "artistic" || artistic.ThemeColor != "blue" || artistic.AccentColor != "blue" || artistic.IconTone != "colorful" {
-		t.Fatalf("期望 artistic 生效偏好包含方案默认值和显式输入，实际为 %#v", artistic)
-	}
-	shutdownRuntime()
-
-	reloaded := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
-	defer reloaded.Shutdown()
-	loadedArtistic := reloaded.DisplayPreferencesSnapshot()
-	if loadedArtistic.DisplayScheme != "artistic" || loadedArtistic.ThemeMode != "dark" || loadedArtistic.ThemeColor != "blue" || loadedArtistic.Menu != "default" {
-		t.Fatalf("期望重启后恢复 artistic 生效偏好，实际为 %#v", loadedArtistic)
-	}
-	if loadedArtistic.AccentColor != loadedArtistic.ThemeColor {
-		t.Fatalf("期望重启后 artistic 品牌辅助色跟随品牌主题色，实际为 %#v", loadedArtistic)
-	}
-
-	shadcn, err := reloaded.SaveDisplayPreferences(app.DisplayPreferences{
-		DisplayScheme: "shadcn",
-		ThemeMode:     "dark",
-	})
-	if err != nil {
-		t.Fatalf("切回 shadcn 失败：%v", err)
-	}
-	if shadcn.UIStyle != "nova" || shadcn.BaseColor != "mauve" || shadcn.ThemeColor != "rose" || shadcn.AccentColor != "emerald" || shadcn.IconTone != "colorful" {
-		t.Fatalf("期望 shadcn profile 未被 artistic 覆盖，实际为 %#v", shadcn)
-	}
-}
-
-// TestDisplayPreferencesSnapshotsIncludeProfilesAcrossRestart 验证 API 快照携带全部 profile，前端重启后切换方案不会用默认值覆盖数据库。
-func TestDisplayPreferencesSnapshotsIncludeProfilesAcrossRestart(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "go-desktop.db")
-	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
-
-	saved, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
-		DisplayScheme: "artistic",
-		ThemeMode:     "dark",
-		Profiles: app.DisplayProfiles{
-			Shadcn: app.DisplayProfile{
-				UIStyle:     "nova",
-				BaseColor:   "mauve",
-				ThemeColor:  "rose",
-				AccentColor: "emerald",
-				ChartColor:  "amber",
-				IconTone:    "colorful",
-				Menu:        "inverted-translucent",
-				MenuAccent:  "bold",
-				Radius:      "large",
-				Density:     "compact",
-				TextSize:    "large",
-				CardBorder:  "soft",
-			},
-			Artistic: app.DisplayProfile{
-				UIStyle:     "vega",
-				BaseColor:   "stone",
-				ThemeColor:  "orange",
-				AccentColor: "cyan",
-				ChartColor:  "blue",
-				IconTone:    "colorful",
-				Menu:        "inverted",
-				MenuAccent:  "bold",
-				Radius:      "small",
-				Density:     "comfortable",
-				TextSize:    "medium",
-				CardBorder:  "visible",
-			},
-		},
-	})
-	if err != nil {
-		t.Fatalf("保存带 profiles 的显示偏好失败：%v", err)
-	}
-	if saved.DisplayScheme != "artistic" || saved.Menu != "inverted" || saved.MenuAccent != "bold" || saved.Radius != "small" {
-		t.Fatalf("期望 artistic 生效值来自 artistic profile，实际为 %#v", saved)
-	}
-	if saved.Profiles.Shadcn.UIStyle != "nova" || saved.Profiles.Shadcn.AccentColor != "emerald" {
-		t.Fatalf("期望保存响应带回 shadcn profile，实际为 %#v", saved.Profiles)
-	}
-	if saved.Profiles.Artistic.AccentColor != saved.Profiles.Artistic.ThemeColor {
-		t.Fatalf("期望 artistic profile 的品牌辅助色被归一化为品牌主题色，实际为 %#v", saved.Profiles.Artistic)
-	}
-	runtimeService.Shutdown()
-
-	reloaded := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
-	defer reloaded.Shutdown()
-	snapshot := reloaded.DisplayPreferencesSnapshot()
-	if snapshot.DisplayScheme != "artistic" || snapshot.Profiles.Shadcn.ThemeColor != "rose" || snapshot.Profiles.Artistic.Menu != "inverted" {
-		t.Fatalf("期望重启后快照保留两套 profile，实际为 %#v", snapshot)
-	}
-
-	switched, err := reloaded.SaveDisplayPreferences(app.DisplayPreferences{
-		DisplayScheme: "shadcn",
-		ThemeMode:     snapshot.ThemeMode,
-		Profiles:      snapshot.Profiles,
-	})
-	if err != nil {
-		t.Fatalf("前端式切回 shadcn 失败：%v", err)
-	}
-	if switched.UIStyle != "nova" || switched.ThemeColor != "rose" || switched.AccentColor != "emerald" || switched.Menu != "inverted-translucent" {
-		t.Fatalf("期望切回 shadcn 后恢复原 profile，实际为 %#v", switched)
-	}
-}
-
-// TestDisplayPreferencesJSONDefaultsWhenDatabaseIsEmpty 验证空数据库只需要 JSON 默认项即可得到 artistic 默认生效偏好。
+// TestDisplayPreferencesJSONDefaultsWhenDatabaseIsEmpty 验证空数据库返回 V3 默认偏好。
 func TestDisplayPreferencesJSONDefaultsWhenDatabaseIsEmpty(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "go-desktop.db")
 	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: dbPath})
 	defer runtimeService.Shutdown()
 
 	preferences := runtimeService.DisplayPreferencesSnapshot()
-	if preferences.DisplayScheme != "artistic" {
-		t.Fatalf("期望空数据库默认显示方案为 artistic，实际为 %#v", preferences)
-	}
-	if preferences.Menu != "default" {
-		t.Fatalf("期望空数据库默认菜单值可被设置页直接展示，实际为 %#v", preferences)
-	}
-	if preferences.BaseColor != "neutral" || preferences.ChartColor != "apple-blue" || preferences.Radius != "medium" || preferences.CardBorder != "visible" {
-		t.Fatalf("期望空数据库默认值与外观设置页默认预设一致，实际为 %#v", preferences)
-	}
-}
-
-// TestDisplayPreferencesArtisticNormalisesValues 验证后端裁决 artistic 方案非法值，并把辅助色托管为主题色。
-func TestDisplayPreferencesArtisticNormalisesValues(t *testing.T) {
-	runtimeService := app.NewRuntime(app.ServiceOptions{DatabasePath: filepath.Join(t.TempDir(), "go-desktop.db")})
-	defer runtimeService.Shutdown()
-
-	if _, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
-		DisplayScheme: "artistic",
-		ThemeMode:     "dark",
-	}); err != nil {
-		t.Fatalf("切换到 artistic 显示方案失败：%v", err)
-	}
-
-	saved, err := runtimeService.SaveDisplayPreferences(app.DisplayPreferences{
-		DisplayScheme: "artistic",
-		UIStyle:       "nova",
-		ThemeMode:     "dark",
-		BaseColor:     "mauve",
-		ThemeColor:    "rose",
-		AccentColor:   "emerald",
-		ChartColor:    "amber",
-		IconTone:      "colorful",
-		Menu:          "default-translucent",
-		MenuAccent:    "bold",
-		Radius:        "none",
-		Density:       "compact",
-		TextSize:      "large",
-		CardBorder:    "soft",
-	})
-	if err != nil {
-		t.Fatalf("保存 artistic 显示偏好失败：%v", err)
-	}
-	if saved.DisplayScheme != "artistic" || saved.UIStyle != "nova" || saved.BaseColor != "mauve" || saved.ThemeColor != "rose" || saved.AccentColor != "rose" {
-		t.Fatalf("期望 artistic 合法输入被保留，实际为 %#v", saved)
-	}
-	if saved.Menu != "default-translucent" || saved.Radius != "none" || saved.ChartColor != "amber" || saved.IconTone != "colorful" || saved.MenuAccent != "bold" || saved.Density != "compact" || saved.TextSize != "large" || saved.CardBorder != "soft" {
-		t.Fatalf("期望 artistic 可编辑项保留合法输入，实际为 %#v", saved)
+	if preferences.ThemeMode != "light" || preferences.Size != "default" {
+		t.Fatalf("期望空数据库返回默认亮暗模式和全局尺寸，实际为 %#v", preferences)
 	}
 }
 

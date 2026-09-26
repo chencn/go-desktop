@@ -184,62 +184,77 @@ describe('app state reducer', () => {
 })
 
 describe('display preference state', () => {
-  it('preserves persisted color tokens while accent follows theme color in every scheme', () => {
+  it('hydrates persisted theme mode and size and exports the same snapshot', () => {
     display.hydrateDisplayPreferences({
-      displayScheme: 'artistic',
       themeMode: 'dark',
-      profiles: {
-        shadcn: {
-          accentColor: 'teal',
-          chartColor: 'sky',
-          themeColor: 'rose',
-        },
-        artistic: {
-          accentColor: 'cyan',
-          chartColor: 'amber',
-          themeColor: 'indigo',
-        },
-      },
+      size: 'small',
     })
 
-    let exported = display.exportDisplayPreferences()
-    expect(exported.displayScheme).toBe('artistic')
-    expect(exported.themeColor).toBe('indigo')
-    expect(exported.accentColor).toBe('indigo')
-    expect(exported.chartColor).toBe('amber')
-    expect(exported.profiles.artistic.accentColor).toBe('indigo')
-
-    display.useDisplayPreferences().setDisplayScheme('shadcn')
-    exported = display.exportDisplayPreferences()
-    expect(exported.displayScheme).toBe('shadcn')
-    expect(exported.themeColor).toBe('rose')
-    expect(exported.accentColor).toBe('rose')
-    expect(exported.chartColor).toBe('sky')
-    expect(exported.profiles.shadcn.accentColor).toBe('rose')
+    const exported = display.exportDisplayPreferences()
+    expect(exported.themeMode).toBe('dark')
+    expect(exported.size).toBe('small')
+    expect(display.useDisplayPreferences().themeMode.value).toBe('dark')
+    expect(display.useDisplayPreferences().size.value).toBe('small')
   })
 
-  it('ignores direct accent color writes because accent is managed by theme color', () => {
+  it('falls back to defaults for invalid persisted values and on reset', () => {
     display.resetDisplayPreferences()
     const preferences = display.useDisplayPreferences()
 
-    preferences.setDisplayScheme('shadcn')
-    preferences.setThemeColor('rose')
-    preferences.setAccentColor('teal')
-
+    display.hydrateDisplayPreferences({
+      themeMode: 'night',
+      size: 'huge',
+    })
     let exported = display.exportDisplayPreferences()
-    expect(exported.displayScheme).toBe('shadcn')
-    expect(exported.themeColor).toBe('rose')
-    expect(exported.accentColor).toBe('rose')
-    expect(exported.profiles.shadcn.accentColor).toBe('rose')
+    expect(exported.themeMode).toBe('light')
+    expect(exported.size).toBe('default')
 
-    preferences.setDisplayScheme('artistic')
-    preferences.setThemeColor('indigo')
-    preferences.setAccentColor('cyan')
-
+    display.hydrateDisplayPreferences({
+      themeMode: 'dark',
+      size: 'large',
+    })
     exported = display.exportDisplayPreferences()
-    expect(exported.displayScheme).toBe('artistic')
-    expect(exported.themeColor).toBe('indigo')
-    expect(exported.accentColor).toBe('indigo')
-    expect(exported.profiles.artistic.accentColor).toBe('indigo')
+    expect(exported.themeMode).toBe('dark')
+    expect(exported.size).toBe('large')
+
+    preferences.setThemeMode('light')
+    preferences.setSize('default')
+    exported = display.exportDisplayPreferences()
+    expect(exported.themeMode).toBe('light')
+    expect(exported.size).toBe('default')
+
+    preferences.resetDisplayPreferences()
+    expect(display.exportDisplayPreferences()).toEqual({
+      themeMode: 'light',
+      size: 'default',
+      backdrop: false,
+      lgStyle: 'fresnel',
+      lgIntensity: 75,
+    })
+  })
+
+  // 液态玻璃三项与主题/尺寸同一条持久化链路（后端 display.preferences.v3），必须同样被 hydrate/export/reset 覆盖。
+  it('hydrates, exports and falls back the liquid glass axes', () => {
+    display.hydrateDisplayPreferences({
+      themeMode: 'light',
+      size: 'default',
+      backdrop: true,
+      lgStyle: 'sheen',
+      lgIntensity: 90,
+    })
+    expect(display.exportDisplayPreferences()).toMatchObject({
+      backdrop: true,
+      lgStyle: 'sheen',
+      lgIntensity: 90,
+    })
+
+    // 非法风格与越界光强逐项回退默认档，不能把脏值写进 CSS 变量。
+    display.hydrateDisplayPreferences({ lgStyle: 'crystal', lgIntensity: 250 })
+    expect(display.exportDisplayPreferences()).toMatchObject({ lgStyle: 'fresnel', lgIntensity: 75 })
+
+    // 旧 SQLite 数据没有这三项时保持默认，而不是把 undefined / 0 当成有效档位。
+    display.resetDisplayPreferences()
+    display.hydrateDisplayPreferences({ themeMode: 'dark' })
+    expect(display.exportDisplayPreferences()).toMatchObject({ backdrop: false, lgStyle: 'fresnel', lgIntensity: 75 })
   })
 })

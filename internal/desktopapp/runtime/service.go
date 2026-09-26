@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chencn/go-desktop/internal/desktopapp/display"
 	"github.com/chencn/go-desktop/internal/desktopapp/metadata"
 	updater "github.com/chencn/go-desktop/internal/desktopapp/update"
 	"github.com/chencn/go-desktop/internal/platform/paths"
@@ -63,7 +62,6 @@ func NewRuntime(options ServiceOptions) *Runtime {
 		crashReporter:           options.CrashReporter,
 		cachePath:               options.CachePath,
 		settings:                defaultSettings(),
-		displayPreferencesV2:    display.DefaultV2(),
 		displayPreferences:      defaultDisplayPreferences(),
 		logViewClearedAt:        map[string]time.Time{},
 		updateState:             idleUpdateStatus(),

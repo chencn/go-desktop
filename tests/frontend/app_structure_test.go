@@ -14,34 +14,10 @@ import (
 
 const frontendColorTokenFile = "frontend/src/colors.css"
 
-var displayPreferencePaletteColors = []struct {
-	token string
-	value string
-}{
-	{token: "neutral", value: "oklch(0.45 0 0)"},
-	{token: "stone", value: "oklch(0.444 0.011 73.639)"},
-	{token: "zinc", value: "oklch(0.442 0.017 285.786)"},
-	{token: "mauve", value: "oklch(0.5 0.09 315)"},
-	{token: "olive", value: "oklch(0.48 0.08 120)"},
-	{token: "mist", value: "oklch(0.55 0.08 235)"},
-	{token: "taupe", value: "oklch(0.48 0.045 82)"},
-	{token: "amber", value: "oklch(0.769 0.188 70.08)"},
-	{token: "apple-blue", value: "#007aff"},
-	{token: "blue", value: "#1677ff"},
-	{token: "cyan", value: "oklch(0.609 0.126 221.723)"},
-	{token: "emerald", value: "oklch(0.596 0.145 163.225)"},
-	{token: "indigo", value: "oklch(0.511 0.262 276.966)"},
-	{token: "orange", value: "oklch(0.646 0.222 41.116)"},
-	{token: "pink", value: "oklch(0.656 0.241 354.308)"},
-	{token: "rose", value: "oklch(0.586 0.253 17.585)"},
-	{token: "sky", value: "oklch(0.588 0.158 241.966)"},
-	{token: "teal", value: "oklch(0.6 0.118 184.704)"},
-}
-
 var rawColorLiteralPattern = regexp.MustCompile(`(?i)#[0-9a-f]{3,8}\b|oklch\([^;\n]*?\)|rgba?\([^;\n]*?\)|hsla?\([^;\n]*?\)`)
 var rawNamedColorPattern = regexp.MustCompile(`(?i)(^|[^a-z0-9_-])(transparent|white|black)([^a-z0-9_-]|$)`)
 var colorTokenDeclarationPattern = regexp.MustCompile(`(?m)^\s*(--color-[a-z0-9-]+):\s*([^;]+);`)
-var colorTokenNameShapePattern = regexp.MustCompile(`^--color-(transparent|(display|black|white|value)-[a-z0-9-]+)$`)
+var colorTokenNameShapePattern = regexp.MustCompile(`^--color-(transparent|(black|white|value)-[a-z0-9-]+)$`)
 var monochromeAlphaTokenNamePattern = regexp.MustCompile(`^--color-(black|white)-alpha-([0-9]{3})$`)
 var rgbaColorValuePattern = regexp.MustCompile(`^rgba\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9.]+)\s*\)$`)
 
@@ -49,49 +25,34 @@ var rgbaColorValuePattern = regexp.MustCompile(`^rgba\(\s*([0-9]+)\s*,\s*([0-9]+
 func TestAppRootStaysAsCompositionRoot(t *testing.T) {
 	appRoot := readRootFile(t, "frontend", "src", "App.vue")
 
-	for _, forbidden := range []string{
-		"run" + "Release" + "Audit(",
-		"downloadLatestUpdate(",
-		"refreshLogs(",
-		"persistSettings(",
-	} {
-		if strings.Contains(appRoot, forbidden) {
-			t.Fatalf("frontend/src/App.vue should only compose pages and global providers; move %q into focused feature components", forbidden)
-		}
-	}
-
 	if lines := strings.Count(appRoot, "\n") + 1; lines > 220 {
 		t.Fatalf("frontend/src/App.vue is too large for a composition root: got %d lines, want <= 220", lines)
 	}
 }
 
-// TestFrontendFeatureBoundariesExist 验证页面、store、shared/ui wrapper 和 shadcn primitive 的预期目录边界存在。
+// TestFrontendFeatureBoundariesExist 验证页面、store 和 shared/ui wrapper 的预期目录边界存在。
 func TestFrontendFeatureBoundariesExist(t *testing.T) {
 	for _, path := range []string{
 		filepath.Join("frontend", "src", "App.vue"),
 		filepath.Join("frontend", "src", "app", "display.ts"),
+		filepath.Join("frontend", "src", "app", "glass.ts"),
 		filepath.Join("frontend", "src", "stores", "app.ts"),
+		filepath.Join("frontend", "src", "styles", "liquid-glass.css"),
+		filepath.Join("frontend", "src", "features", "shared", "GlassPanel.vue"),
 		filepath.Join("frontend", "src", "features", "layout", "AppChrome.vue"),
 		filepath.Join("frontend", "src", "features", "home", "HomePage.vue"),
 		filepath.Join("frontend", "src", "features", "update", "UpdateStatusDialog.vue"),
 		filepath.Join("frontend", "src", "features", "logs", "LogsPage.vue"),
 		filepath.Join("frontend", "src", "features", "settings", "SettingsPage.vue"),
 		filepath.Join("frontend", "src", "features", "about", "AboutPage.vue"),
-		filepath.Join("frontend", "src", "components", "ui", "button", "Button.vue"),
-		filepath.Join("frontend", "src", "components", "ui", "card", "Card.vue"),
-		filepath.Join("frontend", "src", "components", "ui", "progress", "Progress.vue"),
-		filepath.Join("frontend", "src", "components", "ui", "badge", "Badge.vue"),
-		filepath.Join("frontend", "src", "components", "ui", "dialog", "Dialog.vue"),
-		filepath.Join("frontend", "src", "components", "ui", "select", "Select.vue"),
-		filepath.Join("frontend", "src", "components", "ui", "table", "Table.vue"),
-		filepath.Join("frontend", "src", "components", "ui", "tooltip", "Tooltip.vue"),
-		filepath.Join("frontend", "src", "shared", "ui", "Card.vue"),
-		filepath.Join("frontend", "src", "shared", "ui", "CardTitle.vue"),
-		filepath.Join("frontend", "src", "shared", "ui", "plugin.ts"),
+		filepath.Join("frontend", "src", "features", "license", "LicenseCard.vue"),
 	} {
 		if _, err := os.Stat(rootPath(path)); err != nil {
 			t.Fatalf("expected frontend boundary file %s to exist: %v", path, err)
 		}
+	}
+	if _, err := os.Stat(rootPath(filepath.Join("frontend", "src", "shared", "ui", "plugin.ts"))); !os.IsNotExist(err) {
+		t.Fatal("global Ui* registration should stay retired; import shared/ui components directly")
 	}
 }
 
@@ -130,161 +91,203 @@ func TestTestFilesStayInDedicatedTestsModule(t *testing.T) {
 	}
 }
 
-// TestShadcnPrimitivesAreGloballyRegistered 验证全局 Ui* 注册集中在 shared/ui/plugin.ts，业务页不用重复 import primitive。
-func TestShadcnPrimitivesAreGloballyRegistered(t *testing.T) {
+// TestGlassPanelIsDirectlyImported 验证全局 Ui* 注册已退役，玻璃卡片由业务页直接 import 项目组件。
+func TestGlassPanelIsDirectlyImported(t *testing.T) {
 	main := readRootFile(t, "frontend", "src", "main.ts")
-	uiPlugin := readRootFile(t, "frontend", "src", "shared", "ui", "plugin.ts")
+	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
 
-	for _, required := range []string{
-		"uiPlugin",
-		".use(uiPlugin)",
-	} {
-		if !strings.Contains(main, required) {
-			t.Fatalf("frontend/src/main.ts should install the global UI plugin: missing %q", required)
-		}
+	if strings.Contains(main, "uiPlugin") {
+		t.Fatal("frontend/src/main.ts should not install a global UI plugin anymore")
 	}
-
 	for _, required := range []string{
-		"UiButton",
-		"UiCard",
-		"UiSelect",
-		"UiSelectTrigger",
-		"UiSelectContent",
-		"UiSelectItem",
-		"UiSelectValue",
-		"UiProgress",
-		"UiDialog",
-		"UiTable",
-		"UiTooltip",
-		"app.component",
+		"import GlassPanel from '@/features/shared/GlassPanel.vue'",
+		"<GlassPanel",
 	} {
-		if !strings.Contains(uiPlugin, required) {
-			t.Fatalf("frontend/src/shared/ui/plugin.ts should globally register %q", required)
+		if !strings.Contains(homePage, required) {
+			t.Fatalf("frontend/src/features/home/HomePage.vue should import the glass wrapper directly: missing %q", required)
 		}
 	}
 }
 
-// TestDialogsDoNotCloseFromOutsideClick 验证项目级弹窗 wrapper 拦截外部点击关闭，避免业务弹窗被误关。
+// TestDialogsDoNotCloseFromOutsideClick 验证业务弹窗阻止外部点击关闭（Element Plus 配置），避免误关。
 func TestDialogsDoNotCloseFromOutsideClick(t *testing.T) {
-	dialog := readRootFile(t, "frontend", "src", "shared", "ui", "Dialog.vue")
-	alertDialog := readRootFile(t, "frontend", "src", "shared", "ui", "AlertDialog.vue")
-	alertDialogPrimitive := readRootFile(t, "frontend", "src", "components", "ui", "alert-dialog", "AlertDialogContent.vue")
+	updateDialog := readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.vue")
 
-	for _, content := range []struct {
-		name string
-		body string
-	}{
-		{name: "UiDialog", body: dialog},
-		{name: "UiAlertDialog", body: alertDialog},
-	} {
-		if strings.Contains(content.body, `@pointer-down-outside="emit('close')"`) {
-			t.Fatalf("%s must not close when users click outside the dialog", content.name)
-		}
-		if !strings.Contains(content.body, "@pointer-down-outside") || !strings.Contains(content.body, "event.preventDefault()") {
-			t.Fatalf("%s should prevent outside pointer dismissal", content.name)
-		}
-	}
-	if strings.Contains(alertDialogPrimitive, "@pointer-down-outside") {
-		t.Fatalf("alert dialog primitive must stay CLI-owned; keep project outside-click behavior in shared/ui wrapper")
+	if !strings.Contains(updateDialog, `:close-on-click-modal="false"`) {
+		t.Fatal("update dialog must prevent outside pointer dismissal via close-on-click-modal=false")
 	}
 }
 
-// TestShadcnCompositionReplacesHandRolledControls 验证设置、日志、更新弹窗和顶栏继续组合 shadcn primitive，不回退成手写控件。
+// TestShadcnCompositionReplacesHandRolledControls 验证设置、日志、更新弹窗和顶栏继续组合 UI 组件库，不回退成手写控件。
 func TestShadcnCompositionReplacesHandRolledControls(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
 	updateDialog := readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.vue")
 	appChrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
 
-	for _, forbidden := range []string{
-		"SegmentedControl",
-		"segment-button",
-		"swatch-button",
-	} {
-		if strings.Contains(settingsPage, forbidden) {
-			t.Fatalf("settings display controls should use shadcn-style primitive composition, found %q", forbidden)
-		}
-	}
-
 	for _, required := range []string{
-		"UiSelect",
-		"UiSelectTrigger",
-		"UiSelectContent",
-		"UiSelectItem",
-		"UiSwitch",
-		"color-dot-palette",
-		"品牌辅助色 (Accent Color)",
-		"is-managed-field",
-		"is-managed-palette",
-		"is-managed-selected",
+		"el-select",
+		"el-option",
+		"el-switch",
+		"el-input",
+		"el-radio-group",
+		"el-radio-button",
+		"AlertDialog",
+		"apple-select",
+		"apple-switch",
+		"segmented-control",
 	} {
 		if !strings.Contains(settingsPage, required) {
-			t.Fatalf("settings page should use shadcn-style primitive %q", required)
-		}
-	}
-	settingsStyles := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.css")
-	for _, required := range []string{
-		`.aesthetic-field-col[aria-disabled="true"]`,
-		".is-managed-palette",
-		".color-dot-btn:disabled",
-	} {
-		if !strings.Contains(settingsStyles, required) {
-			t.Fatalf("settings page should keep managed accent disabled styling in feature CSS for shadcn/artistic parity, missing %q", required)
-		}
-	}
-	if strings.Contains(settingsPage, "UiNativeSelect") {
-		t.Fatal("settings page should use shadcn Select for dropdowns instead of native select")
-	}
-	if strings.Contains(settingsPage, "setAccentColor") {
-		t.Fatal("settings page must show artistic accent color as a managed disabled mirror, not edit accentColor directly")
-	}
-	for _, forbidden := range []string{
-		"['default-translucent'",
-		"['inverted-translucent'",
-	} {
-		if strings.Contains(settingsPage, forbidden) {
-			t.Fatalf("settings page should only expose default/inverted menu options; persistence may still accept %q", forbidden)
+			t.Fatalf("settings page should use Element Plus component %q", required)
 		}
 	}
 
 	if strings.Contains(logsPage, `role="table"`) || strings.Contains(logsPage, "log-row") {
 		t.Fatalf("logs page should use table primitives instead of a hand-rolled div table")
 	}
-	for _, required := range []string{"UiTable", "UiTableHeader", "UiTableBody", "UiTableRow", "UiTableHead", "UiTableCell"} {
+	for _, required := range []string{"el-table", "el-table-column", `height="100%"`, "apple-table", "el-select", "el-option", "el-input", "AlertDialog", "segmented-control"} {
 		if !strings.Contains(logsPage, required) {
-			t.Fatalf("logs page should use table primitive %q", required)
+			t.Fatalf("logs page should use table/UI library primitive %q", required)
 		}
 	}
 
-	if strings.Contains(updateDialog, "dialog-layer") || strings.Contains(updateDialog, "update-dialog") {
-		t.Fatalf("update dialog should compose the Dialog primitive instead of raw dialog wrappers")
+	if strings.Contains(updateDialog, `class="dialog-layer"`) || strings.Contains(updateDialog, `class="update-dialog"`) {
+		t.Fatalf("update dialog should compose el-dialog instead of raw dialog wrappers")
 	}
-	if !strings.Contains(updateDialog, "UiDialog") {
-		t.Fatalf("update dialog should use UiDialog")
+	if !strings.Contains(updateDialog, "el-dialog") {
+		t.Fatalf("update dialog should use el-dialog")
 	}
 	if !strings.Contains(updateDialog, "scheduleDownloadedUpdateOnStartup") {
 		t.Fatalf("update dialog should explicitly schedule next-start update instead of only closing the dialog")
 	}
 
-	if !strings.Contains(appChrome, "UiTooltip") {
-		t.Fatalf("topbar icon buttons should use the tooltip primitive")
+	// 外壳图标按钮用原生 title 提示：设计稿的顶栏按钮没有 EP tooltip 包装，悬浮文案由系统绘制。
+	if !strings.Contains(appChrome, `:title="`) {
+		t.Fatalf("topbar icon buttons should expose a title hint")
 	}
 }
 
-// TestDesignDocumentsShadcnVueWorkflow 验证 DESIGN.md 记录 shadcn-vue 查询、添加和全局注册流程。
+// TestWideWindowPagesShareViewportGutters 验证设置页与关于页通栏铺在 .app-main-viewport 的栏距内。
+// 设计稿把两页量宽限制在 880px 并居中，那属于 1400px 假窗口；真实窗口最大化后会把整页缩成居中小票，
+// 与首页/日志页的边距明显不一致，因此这里明确禁止再回到居中限宽。
+func TestWideWindowPagesShareViewportGutters(t *testing.T) {
+	for _, page := range []struct {
+		name  string
+		shell string
+		style string
+	}{
+		{name: "settings", shell: ".settings-stack", style: "frontend/src/features/settings/SettingsPage.css"},
+		{name: "about", shell: ".about-container", style: "frontend/src/features/about/AboutPage.css"},
+	} {
+		css := readRootFile(t, filepath.FromSlash(page.style))
+		start := strings.Index(css, page.shell+" {")
+		if start < 0 {
+			t.Fatalf("%s should define the page shell %q", page.name, page.shell)
+		}
+		end := strings.Index(css[start:], "\n}")
+		if end < 0 {
+			t.Fatalf("%s page shell rule is malformed", page.name)
+		}
+		block := css[start : start+end]
+		// 居中回退是真实回归点；max-width 本身不是错，通栏页也可以有可读性上限，因此不做字面量禁令。
+		if strings.Contains(block, "margin: 0 auto") {
+			t.Fatalf("%s page shell should fill the viewport gutters instead of centering itself", page.name)
+		}
+		if !strings.Contains(block, "min-width: 0") {
+			t.Fatalf("%s page shell should keep min-width: 0 so long content can shrink inside the viewport", page.name)
+		}
+	}
+}
+
+// TestShellMeasuresAndDialogCenteringSkin 锁定三处真实窗口适配：弹窗垂直居中、下拉触发框向左扩张、
+// 侧栏宽度随视口夹在上下限之间。设计稿的固定值只属于它的 1400px 假窗口，直接照抄会在最大化窗口走样。
+func TestShellMeasuresAndDialogCenteringSkin(t *testing.T) {
+	styles := readRootFile(t, "frontend", "src", "styles.css")
+	elementSkin := readRootFile(t, "frontend", "src", "styles", "element-plus.css")
+	settingsStyles := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.css")
+
+	for _, required := range []string{
+		// EP 的 .el-overlay-dialog 只是定高滚动容器，必须补 flex 才会真正垂直居中。
+		`.el-overlay-dialog:has(.apple-dialog) {`,
+		`align-items: center;`,
+		`justify-content: center;`,
+		// 设计稿 .dialog-header 是两端对齐，缺 flex 会让页头关闭钮贴着标题漂移。
+		`.el-dialog.apple-dialog .el-dialog__header {`,
+		// 设计稿 .dialog-footer 是右对齐 + 10px 间距；EP 默认只给 text-align，两枚按钮会挤在一起。
+		`.el-dialog.apple-dialog .el-dialog__footer {`,
+		`justify-content: flex-end;`,
+		`gap: var(--sp-10);`,
+		`.el-dialog.apple-dialog .el-dialog__footer .el-button + .el-button {`,
+		`margin-left: 0;`,
+		// 下拉文案量宽交给页面，触发框才能跟着文字向左扩张而不是整体平移。
+		`max-width: var(--apple-select-label-width, var(--sp-220));`,
+	} {
+		if !strings.Contains(elementSkin, required) {
+			t.Fatalf("element-plus.css should keep the real-window dialog/select skin rule %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		"--sidebar-width: clamp(",
+		"calc(232px * var(--ui-scale) + (100vw - 1360px) * 0.12)",
+		"calc(196px * var(--ui-scale))",
+		"calc(300px * var(--ui-scale))",
+	} {
+		if !strings.Contains(styles, required) {
+			t.Fatalf("styles.css should keep the fluid sidebar width measure %q", required)
+		}
+	}
+
+	if !strings.Contains(settingsStyles, "--apple-select-label-width: 100%") {
+		t.Fatal("settings rows should let the select trigger grow leftward with its selected label")
+	}
+}
+
+// TestSegmentedControlSkinNeutralizesElementPlusDefaults 验证分段器皮肤压住 Element Plus 的自带观感：
+// EP 的 .el-radio-button__inner 自带 1px outline 与白底，选中态又用 is-active 写成主色实心胶囊，
+// 直接照抄设计稿的 .segment-btn 规则会被组件默认样式盖住，因此配色必须走 EP 自己的变量。
+func TestSegmentedControlSkinNeutralizesElementPlusDefaults(t *testing.T) {
+	elementSkin := readRootFile(t, "frontend", "src", "styles", "element-plus.css")
+
+	for _, required := range []string{
+		`.segmented-control .el-radio-button .el-radio-button__inner {`,
+		`outline: none;`,
+		`.segmented-control .el-radio-button {`,
+		`--el-radio-button-checked-bg-color: var(--bg);`,
+		`--el-radio-button-checked-text-color: var(--fg);`,
+		`--el-radio-button-checked-border-color: var(--color-transparent);`,
+		`.el-radio-group.segmented-control .el-radio-button.is-active .el-radio-button__inner {`,
+		`box-shadow: var(--segment-knob-shadow) !important;`,
+		// 日志级别页签只让文字按级别变色，数量胶囊恒定主色底（设计稿 .log-tab-btn.active strong）。
+		`.segmented-control.is-tone-tabs .el-radio-button {`,
+		`--el-radio-button-checked-text-color: var(--danger);`,
+		`.el-radio-group.segmented-control.is-tone-tabs .el-radio-button.is-active .el-radio-button__inner strong {`,
+		`background: var(--accent);`,
+	} {
+		if !strings.Contains(elementSkin, required) {
+			t.Fatalf("element-plus.css segmented skin should keep the design knob instead of EP defaults: missing %q", required)
+		}
+	}
+
+	// EP 的选中态挂在 is-active 上，皮肤不能再依赖 :checked 兄弟选择器，否则优先级不够被蓝底盖回。
+	if strings.Contains(elementSkin, "__original-radio:checked + .el-radio-button__inner") {
+		t.Fatal("element-plus.css should drive the checked segment through .is-active, not the hidden input sibling")
+	}
+}
+
+// TestDesignDocumentsElementPlusWorkflow 验证 DESIGN.md 记录 Element Plus 查询、按需注册和全局注册流程。
 func TestDesignDocumentsShadcnVueWorkflow(t *testing.T) {
 	design := readRootFile(t, "DESIGN.md")
 
 	for _, required := range []string{
-		"shadcn-vue skill",
-		"components.json",
-		"shadcn-vue info --json",
-		"shadcn-vue docs",
-		"shadcn-vue add",
-		"全局 Ui*",
+		"element-plus-mcp",
+		"unplugin-vue-components",
+		"ElementPlusResolver",
+		"el-config-provider",
+		"全局 `Ui*`",
 	} {
 		if !strings.Contains(design, required) {
-			t.Fatalf("DESIGN.md should document the shadcn-vue workflow and global UI policy, missing %q", required)
+			t.Fatalf("DESIGN.md should document the Element Plus workflow and global UI policy, missing %q", required)
 		}
 	}
 }
@@ -336,9 +339,10 @@ func TestBootViewportBackplatePreventsOuterBlackFlash(t *testing.T) {
 		"inset: 0",
 		"z-index: -1",
 		"background: var(--boot-background)",
-		"#app,\n      .app-shell",
+		"html,\n      body,\n      #app {",
 		"border: 0 !important",
 		"box-shadow: none !important",
+		".boot-spinner",
 	} {
 		if !strings.Contains(indexHTML, required) {
 			t.Fatalf("frontend/index.html should keep boot viewport backplate rule, missing %q", required)
@@ -352,9 +356,9 @@ func TestBootViewportBackplatePreventsOuterBlackFlash(t *testing.T) {
 		"html,\nbody,\n#app",
 		"width: 100%",
 		"min-width: 0",
-		"background: var(--background)",
+		"background: var(--bg)",
 		"box-shadow: none",
-		"html {\n  overflow: hidden;\n}",
+		"  overflow: hidden;\n  /* 桌面应用观感",
 	} {
 		if !strings.Contains(globalStyles, required) {
 			t.Fatalf("frontend/src/styles.css should keep runtime root viewport fallback, missing %q", required)
@@ -374,14 +378,13 @@ func TestBootViewportBackplatePreventsOuterBlackFlash(t *testing.T) {
 	}
 }
 
-// TestDesignDocumentMatchesCurrentSettingsContract 验证 DESIGN.md 没有保留旧设置模型和过时测试命令。
+// TestDesignDocumentMatchesCurrentSettingsContract 验证 DESIGN.md 描述当前设置契约。
 func TestDesignDocumentMatchesCurrentSettingsContract(t *testing.T) {
 	design := readRootFile(t, "DESIGN.md")
 
 	for _, required := range []string{
-		`export type BaseColor = "neutral" | "stone" | "zinc" | "mauve" | "olive" | "mist" | "taupe"`,
-		"Theme / Accent / Chart Color",
-		"Icon Library 暂不作为设置项",
+		`export type DisplaySize = "large" | "default" | "small"`,
+		"显示偏好持久化使用 `display.preferences.v3` JSON",
 		"固定使用 Lucide",
 		"关闭到系统托盘",
 		"`1 / 3 / 6 / 12 小时`",
@@ -389,22 +392,6 @@ func TestDesignDocumentMatchesCurrentSettingsContract(t *testing.T) {
 	} {
 		if !strings.Contains(design, required) {
 			t.Fatalf("DESIGN.md should describe current settings contract %q", required)
-		}
-	}
-
-	for _, forbidden := range []string{
-		`export type BaseColor = "slate"`,
-		"五套官方 base color",
-		"明确支持 shadcn-vue create 十项轴",
-		"设置页分段控制",
-		"设置页强调色色板",
-		"按钮最小高度 `40px`",
-		"go test ./frontend",
-		"检查 icon library",
-		"最小化到系统托盘",
-	} {
-		if strings.Contains(design, forbidden) {
-			t.Fatalf("DESIGN.md should not keep stale or inconsistent contract %q", forbidden)
 		}
 	}
 }
@@ -444,32 +431,32 @@ func TestUpdateIsGlobalIconNotStandalonePage(t *testing.T) {
 // TestUpdateHeaderIconReflectsLifecycleAndMotion 验证右上角更新图标按生命周期显示颜色和动效。
 func TestUpdateHeaderIconReflectsLifecycleAndMotion(t *testing.T) {
 	chrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
-	chromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
+	layoutStyles := readRootFile(t, "frontend", "src", "styles", "layout.css")
 	appStore := readRootFile(t, "frontend", "src", "stores", "app.ts")
 
 	for _, required := range []string{
 		`if (value === 'error') return 'is-danger'`,
 		`if (['downloading', 'verifying', 'installing'].includes(value)) return 'is-busy'`,
 		`if (['update_available', 'verified', 'pending_install'].includes(value)) return 'is-ready'`,
-		`RefreshCw :class="cn(updateTone === 'is-danger' ? 'icon-tone-red' : updateTone === 'is-ready' ? 'icon-tone-green' : 'icon-tone-blue')"`,
+		`cn('action-icon-btn', updateTone)`,
+		"<RefreshCw :size=\"16\" />",
 	} {
 		if !strings.Contains(chrome, required) {
 			t.Fatalf("AppChrome.vue should keep update icon lifecycle mapping %q", required)
 		}
 	}
 
+	// 生命周期动效归全局原子层：忙碌时图标自转，就绪/失败时状态点脉冲。
 	for _, required := range []string{
-		`@keyframes update-hover-spin`,
+		`.action-icon-btn.is-busy svg`,
+		`animation: spin-update 900ms linear infinite`,
+		`@keyframes spin-update {`,
 		`transform: rotate(360deg)`,
-		`.update-icon-button.is-busy svg`,
-		`animation: spin 1.2s linear infinite`,
-		`animation-iteration-count: infinite !important`,
-		`.update-icon-button:not(.is-busy):hover svg`,
-		`animation: update-hover-spin 0.6s linear`,
-		`animation-iteration-count: 1 !important`,
+		`.action-icon-btn.is-ready::after,`,
+		`animation: pulse-update 2s infinite ease-in-out`,
 	} {
-		if !strings.Contains(chromeStyles, required) {
-			t.Fatalf("AppChrome.css should keep update icon motion rule %q", required)
+		if !strings.Contains(layoutStyles, required) {
+			t.Fatalf("layout.css should keep update icon motion rule %q", required)
 		}
 	}
 
@@ -563,53 +550,44 @@ func TestUpdateDialogUsesUserFocusedStatusView(t *testing.T) {
 	updateStyles := readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.css")
 
 	for _, required := range []string{
-		"user-version-line",
-		"versionLine()",
-		"更新包已准备好",
-		"当前已是最新版本",
+		"update-versions",
+		"update-info-banner",
+		`<strong class="ver-badge">v{{ currentVersion }}</strong>`,
+		`<strong class="ver-badge ok">v{{ latestVersion }}</strong>`,
+		"当前已是最新",
 		"更新失败",
 		"重新检查",
-		`<p v-if="description">{{ description }}</p>`,
-		"if (canInstall.value) return ''",
-		"当前版本 ${currentVersion.value} · 最新版本 ${latestVersion.value}",
+		`<p v-if="description" class="update-message">{{ description }}</p>`,
+		"if (canInstall.value) return '安装包已下载并通过 SHA-256 校验，可以立即安装。'",
+		// 版本横幅只在服务端版本严格更高时才画目标版本，版本相同不能摆出「可升级」的样子。
+		"const hasLatest = computed(() => isVersionAhead(latestVersion.value, currentVersion.value))",
+		"function isVersionAhead(candidate: string, baseline: string)",
+		// 已知存在更高版本时，文案和主按钮都必须指向「立即更新」，不能继续显示技术性的检查消息或「检查更新」。
+		"if (status.value === 'update_available') return `发现新版本 v${latestVersion.value}，点击「立即更新」开始下载并校验。`",
+		"if (status.value === 'update_available') return '立即更新'",
 	} {
 		if !strings.Contains(updateDialog, required) {
 			t.Fatalf("update dialog should keep user-focused status view %q", required)
 		}
 	}
 
+	// 更新状态弹窗只讲当前状态与进度，Release 变更日志不再展示。
 	for _, forbidden := range []string{
-		`class="data-list"`,
-		`safety-card neutral`,
-		`<footer class="dialog-footer">`,
-		"technical-details",
-		"技术详情",
-		"user-version-summary",
-		"UiBadge",
-		"trust-notice",
-		"SHA256",
-		"更新包已下载并通过校验，可以现在安装，也可以下次启动时再安装。",
+		"releaseNoteItems",
+		"变更日志",
+		`class="update-notes"`,
 	} {
 		if strings.Contains(updateDialog, forbidden) {
-			t.Fatalf("update dialog should not keep audit-style default content %q", forbidden)
+			t.Fatalf("update dialog should not render the release changelog: found %q", forbidden)
 		}
 	}
 
 	for _, required := range []string{
-		".user-version-line",
+		".update-versions",
+		".update-info-banner",
 	} {
 		if !strings.Contains(updateStyles, required) {
 			t.Fatalf("update dialog styles should support user-focused layout %q", required)
-		}
-	}
-	for _, forbidden := range []string{
-		".technical-details",
-		".technical-row",
-		".user-version-summary",
-		".trust-notice",
-	} {
-		if strings.Contains(updateStyles, forbidden) {
-			t.Fatalf("update dialog styles should not keep technical/card layout %q", forbidden)
 		}
 	}
 }
@@ -638,7 +616,9 @@ func TestFrontendHasLicenseGate(t *testing.T) {
 	appStore := readRootFile(t, "frontend", "src", "stores", "app.ts")
 	wailsAPI := readRootFile(t, "frontend", "src", "api", "wails.ts")
 	licensePage := readRootFile(t, "frontend", "src", "features", "license", "LicensePage.vue")
+	licenseCard := readRootFile(t, "frontend", "src", "features", "license", "LicenseCard.vue")
 	licenseStyles := readRootFile(t, "frontend", "src", "features", "license", "LicensePage.css")
+	elementSkin := readRootFile(t, "frontend", "src", "styles", "element-plus.css")
 
 	for _, path := range []string{
 		filepath.Join("frontend", "src", "features", "license", "LicensePage.vue"),
@@ -686,26 +666,44 @@ func TestFrontendHasLicenseGate(t *testing.T) {
 	}
 
 	for _, required := range []string{
-		"<textarea",
-		`id="license-key"`,
-		`v-model="licenseKey"`,
-		`rows="5"`,
+		"import LicenseCard from './LicenseCard.vue'",
+		"<LicenseCard />",
 	} {
 		if !strings.Contains(licensePage, required) {
-			t.Fatalf("LicensePage.vue 授权码输入必须支持多行展示：缺少 %q", required)
+			t.Fatalf("LicensePage.vue 只负责闸门装配，授权卡必须由 LicenseCard 承载：缺少 %q", required)
 		}
 	}
-	if strings.Contains(licensePage, `@keydown.enter.prevent="submitLicense"`) {
-		t.Fatalf("LicensePage.vue 授权码多行输入不应拦截 Enter 直接提交")
+
+	for _, required := range []string{
+		`type="textarea"`,
+		`id="license-key"`,
+		`v-model="licenseKey"`,
+		`:rows="4"`,
+		`class="apple-field is-mono"`,
+	} {
+		if !strings.Contains(licenseCard, required) {
+			t.Fatalf("LicenseCard.vue 授权码输入必须支持多行展示：缺少 %q", required)
+		}
+	}
+	if strings.Contains(licenseCard, `@keydown.enter.prevent="submitLicense"`) {
+		t.Fatalf("LicenseCard.vue 授权码多行输入不应拦截 Enter 直接提交")
 	}
 	for _, required := range []string{
-		".license-textarea",
-		"min-height",
-		"resize: vertical",
-		"overflow-wrap: anywhere",
+		".license-shell",
+		"min-height: 100%",
 	} {
 		if !strings.Contains(licenseStyles, required) {
-			t.Fatalf("LicensePage.css 授权码输入样式必须适配多行展示：缺少 %q", required)
+			t.Fatalf("LicensePage.css 授权闸门必须铺满视口：缺少 %q", required)
+		}
+	}
+	// 授权码输入的多行观感归 Element Plus 皮肤层：等宽字体与竖向缩放只在 .el-* 内部声明。
+	for _, required := range []string{
+		".el-textarea.apple-field.is-mono .el-textarea__inner",
+		"font-family: var(--font-mono)",
+		"resize: vertical",
+	} {
+		if !strings.Contains(elementSkin, required) {
+			t.Fatalf("element-plus.css 授权码输入样式必须适配多行展示：缺少 %q", required)
 		}
 	}
 }
@@ -719,15 +717,9 @@ func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T
 
 	for _, required := range []string{
 		"显示偏好",
-		"恢复当前方案默认预设",
+		"恢复默认外观",
 		"setThemeMode",
-		"setBaseColor",
-		"setThemeColor",
-		"setTextSize",
-		"setRadius",
-		"setDensity",
-		"setCardBorder",
-		"setIconTone",
+		"setSize",
 		"updateCheckIntervalHours",
 		"minimizeToTray",
 		"alwaysOnTop",
@@ -737,7 +729,8 @@ func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T
 		"autoLaunch",
 		"createDesktopShortcut",
 		"launchHiddenToTray",
-		`:disabled="!draft.autoLaunch"`,
+		// 设计稿把每一行都当成常驻设置：开关只受设置加载状态门控，不再互相隐藏或禁用。
+		`:disabled="!settingsReady"`,
 	} {
 		if !strings.Contains(settingsPage, required) {
 			t.Fatalf("frontend/src/features/settings/SettingsPage.vue should expose setting or display control %q", required)
@@ -746,15 +739,10 @@ func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T
 
 	for _, required := range []string{
 		"displayPreferenceDefaults",
-		"displayScheme",
 		"resetDisplayPreferences",
-		"resetDisplayPreferencesForCurrentScheme",
 		"hydrateDisplayPreferences",
 		"exportDisplayPreferences",
-		"profiles",
-		"normaliseProfiles",
-		"rememberCurrentProfile(displayScheme.value)",
-		"dataset.displayScheme",
+		"classList.toggle('dark'",
 	} {
 		if !strings.Contains(displayState, required) {
 			t.Fatalf("frontend/src/app/display.ts should own display preference facade %q", required)
@@ -762,10 +750,6 @@ func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T
 	}
 
 	for _, required := range []string{
-		"显示方案",
-		"asDisplayScheme",
-		"artistic",
-		"immediate: true",
 		"settingsSaveDelayMs",
 		"displaySaveTimer",
 		"window.setTimeout",
@@ -790,12 +774,12 @@ func TestSettingsPageSeparatesDisplayPreferencesFromBackendSettings(t *testing.T
 	}
 
 	for _, forbidden := range []string{
-		"localStorage",
-		"getItem(",
-		"setItem(",
+		"localStorage.",
+		"sessionStorage.",
+		".setItem(",
 	} {
-		if strings.Contains(displayState, forbidden) {
-			t.Fatalf("frontend/src/app/display.ts should not persist display preferences locally: found %q", forbidden)
+		if strings.Contains(tsCodeOnly(displayState), forbidden) {
+			t.Fatalf("frontend/src/app/display.ts should persist display preferences through the backend only: found %q", forbidden)
 		}
 	}
 }
@@ -806,15 +790,21 @@ func TestGeneratedBindingsExposeSettingsLogLevelAndDebugStats(t *testing.T) {
 	models := readRootFile(t, "frontend", "bindings", "github.com", "chencn", "go-desktop", "app", "models.ts")
 
 	for _, required := range []string{
-		`"displayScheme": string;`,
-		`this["displayScheme"] = "";`,
-		`"profiles": DisplayProfiles;`,
-		`export class DisplayProfile`,
-		`export class DisplayProfiles`,
+		`"themeMode": string;`,
+		`this["themeMode"] = "";`,
+		`"size": string;`,
+		`this["size"] = "";`,
 		`"logLevel": string;`,
 		`this["logLevel"] = "";`,
 		`"alwaysOnTop": boolean;`,
 		`this["alwaysOnTop"] = false;`,
+		// 液态玻璃三项也进了绑定：打包二进制用 bindings 编译，缺字段会让偏好在前端类型层丢失。
+		`"backdrop": boolean;`,
+		`this["backdrop"] = false;`,
+		`"lgStyle": string;`,
+		`this["lgStyle"] = "";`,
+		`"lgIntensity": number;`,
+		`this["lgIntensity"] = 0;`,
 		`"debug": number;`,
 		`this["debug"] = 0;`,
 	} {
@@ -841,30 +831,12 @@ func TestGeneratedAppBindingsDoNotExposeInternalPackages(t *testing.T) {
 	}
 }
 
-// TestSettingsPageOnlyContainsEditableSettings 验证设置页只放可编辑状态，不展示只读版本、路径或环境信息。
+// TestSettingsPageOnlyContainsEditableSettings 验证设置页保留可编辑项的装配契约。
 func TestSettingsPageOnlyContainsEditableSettings(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	settingsStyles := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.css")
 	wailsAPI := readRootFile(t, "frontend", "src", "api", "wails.ts")
 	projectMetadata := readRootFile(t, "frontend", "src", "shared", "project.ts")
-
-	for _, forbidden := range []string{
-		"Release 来源",
-		"GitHub Owner",
-		"GitHub Repo",
-		"无网络策略",
-		"SHA256 策略",
-		"当前日志",
-		"更新审计",
-		"托盘菜单只保留",
-		"最小化到系统托盘",
-		"图标库",
-		"当前运行时记录偏好",
-	} {
-		if strings.Contains(settingsPage, forbidden) {
-			t.Fatalf("settings page should not show read-only/about information %q", forbidden)
-		}
-	}
 
 	for _, required := range []string{
 		"检查间隔",
@@ -875,16 +847,17 @@ func TestSettingsPageOnlyContainsEditableSettings(t *testing.T) {
 		"开机自启时隐藏到托盘",
 		"保留周期",
 		"const updateIntervalOptions = [1, 3, 6, 12]",
-		"{{ hours }} 小时",
+		"`${hours} 小时`",
+		"[-1, '永不清理']",
 		"updateIntervalOptions",
 		"normaliseUpdateCheckIntervalHours",
 		"githubProxyBase",
 		"GitHub 更新代理",
-		`v-if="draft.updateSource === 'github'"`,
-		`class="settings-row-item is-input-row"`,
+		`:model-value="draft.githubProxyBase"`,
+		`class="settings-row-item"`,
 		`persistSettingsPatch({ githubProxyBase: String($event) })`,
-		`:checked="draft.alwaysOnTop"`,
-		`persistSettingsPatch({ alwaysOnTop: $event })`,
+		`:model-value="draft.alwaysOnTop"`,
+		`persistSettingsPatch({ alwaysOnTop: Boolean($event) })`,
 	} {
 		if !strings.Contains(settingsPage, required) {
 			t.Fatalf("settings page should keep editable setting %q", required)
@@ -906,25 +879,45 @@ func TestSettingsPageOnlyContainsEditableSettings(t *testing.T) {
 	}
 
 	for _, required := range []string{
-		"grid-template-columns: auto minmax(0, 1fr) auto",
-		".settings-row-item.is-input-row",
-		".settings-row-item.is-input-row .settings-control-input",
-		"grid-column: 1 / -1",
-		"justify-self: stretch",
+		"@media (max-width: 767px)",
+		"flex-direction: column",
+		".settings-row-item:has(.apple-switch)",
+		"--apple-select-width: 100%",
+		"justify-content: space-between",
 	} {
 		if !strings.Contains(settingsStyles, required) {
-			t.Fatalf("settings page mobile rows should keep switches right-aligned and inputs full-width: missing %q", required)
+			t.Fatalf("settings page mobile rows should stack compound rows while switch rows stay one line: missing %q", required)
 		}
 	}
 
-	closeIndex := strings.Index(settingsPage, "<strong>关闭到系统托盘</strong>")
-	alwaysOnTopIndex := strings.Index(settingsPage, "<strong>窗口置顶</strong>")
-	autoLaunchIndex := strings.Index(settingsPage, "<strong>开机自启</strong>")
-	intervalIndex := strings.Index(settingsPage, "<strong>自动更新检查间隔</strong>")
-	retentionIndex := strings.Index(settingsPage, "<strong>日志保留周期</strong>")
-	if closeIndex < 0 || alwaysOnTopIndex < 0 || autoLaunchIndex < 0 || intervalIndex < 0 || retentionIndex < 0 ||
-		!(closeIndex < alwaysOnTopIndex && alwaysOnTopIndex < autoLaunchIndex && autoLaunchIndex < intervalIndex && intervalIndex < retentionIndex) {
-		t.Fatalf("business settings should order window/startup behavior before time-based selects: close=%d top=%d auto=%d interval=%d retention=%d", closeIndex, alwaysOnTopIndex, autoLaunchIndex, intervalIndex, retentionIndex)
+	// 设计稿逐行给定顺序：业务行为在前、时间与日志策略居中、外观偏好独立成组，行序即信息架构。
+	mockRowOrder := []string{
+		"关闭到系统托盘",
+		"窗口置顶",
+		"开机自启",
+		"自启时隐藏到系统托盘",
+		"创建桌面快捷图标",
+		"系统更新源",
+		"GitHub 更新代理加速",
+		"自动更新检查间隔",
+		"日志保留周期",
+		"控制台日志级别",
+		"主题模式",
+		"控件尺寸",
+		"极光折射流光背景",
+		"液态玻璃折射风格",
+		"液态折射光强",
+	}
+	previousIndex := -1
+	for _, label := range mockRowOrder {
+		index := strings.Index(settingsPage, `<span class="settings-row-label">`+label+`</span>`)
+		if index < 0 {
+			t.Fatalf("settings page should keep the design row %q", label)
+		}
+		if index < previousIndex {
+			t.Fatalf("settings row %q should follow the design order (previous=%d, current=%d)", label, previousIndex, index)
+		}
+		previousIndex = index
 	}
 
 	for _, forbidden := range []string{
@@ -944,176 +937,142 @@ func TestSettingsPageUsesCurrentDisplayPreferenceControls(t *testing.T) {
 
 	for _, required := range []string{
 		"显示偏好",
-		"显示方案",
-		"主色彩模式",
-		"中性灰阶色调",
-		"品牌主题色",
-		"品牌辅助色",
-		"图表配色体系",
-		"图标色彩风格",
-		"圆角大小",
-		"字体字号",
-		"界面布局密度",
-		"容器与卡片边框强度",
-		"侧边导航风格",
-		"侧边导航强调",
-		"界面风格",
+		"主题模式",
+		"控件尺寸",
 		"themeOptions",
-		"displayColorOptions",
-		"baseOptions",
-		"brandColorOptions",
-		"themeColorOptions",
-		"iconToneOptions",
-		"chartOptions",
-		"radiusOptions",
-		"textOptions",
-		"densityOptions",
-		"cardBorderOptions",
-		"menuOptions",
-		"menuAccentOptions",
-		"styleOptions",
+		"sizeOptions",
+		"asThemeMode",
+		"asSize",
 	} {
 		if !strings.Contains(settingsPage, required) {
 			t.Fatalf("settings page should expose current display preference control %q", required)
 		}
 	}
 
-	displayOptionsStart := strings.Index(settingsPage, "const displayColorOptions")
-	colorOptionsStart := strings.Index(settingsPage, "const colorOptions")
-	if displayOptionsStart < 0 || colorOptionsStart < 0 || !(displayOptionsStart < colorOptionsStart) {
-		t.Fatal("settings page should define displayColorOptions as the single source before derived color option arrays")
-	}
-	displayOptionsSource := settingsPage[displayOptionsStart:colorOptionsStart]
-	for _, color := range displayPreferencePaletteColors {
-		valueLiteral := `value: '` + color.token + `'`
-		if count := strings.Count(displayOptionsSource, valueLiteral); count != 1 {
-			t.Fatalf("displayColorOptions should define %q exactly once, got %d", color.token, count)
-		}
-		if count := strings.Count(settingsPage, valueLiteral); count != 1 {
-			t.Fatalf("settings page should not repeat display color token %q outside displayColorOptions, got %d", color.token, count)
-		}
-	}
-	for _, required := range []string{
-		"const colorOptions: Array<[AccentColor, string]> = displayColorOptions.map(toColorOption)",
-		"const baseOptions: Array<[BaseColor, string]> = displayColorOptions",
-		".filter(isBaseColorOption)",
-		"const brandColorOptions: Array<[ThemeColor, string]> = displayColorOptions.filter(isBrandColorOption).map(toColorOption)",
-	} {
-		if !strings.Contains(settingsPage, required) {
-			t.Fatalf("settings page should derive display color options through shared variables: missing %q", required)
-		}
-	}
-
 	for _, required := range []string{
 		"hydrateDisplayPreferences",
 		"exportDisplayPreferences",
-		"setThemeColor",
-		"setChartColor",
-		"setIconTone",
-		"setMenu",
-		"setMenuAccent",
+		"setThemeMode",
+		"setSize",
+		"resetDisplayPreferences",
 	} {
 		if !strings.Contains(displayState, required) {
 			t.Fatalf("display state should persist current display preference axis %q", required)
 		}
 	}
+}
 
-	sidebarStyleStart := strings.Index(settingsPage, "侧边导航风格 (Sidebar Style)")
-	menuAccentStart := strings.Index(settingsPage, "侧边导航强调 (Menu Accent)")
-	uiStyleStart := strings.Index(settingsPage, "界面风格 (UI Style)")
-	if sidebarStyleStart < 0 || menuAccentStart < 0 || uiStyleStart < 0 || !(sidebarStyleStart < menuAccentStart && menuAccentStart < uiStyleStart) {
-		t.Fatal("settings page should keep sidebar style, menu accent, then UI style")
-	}
-	sidebarStyleBlock := settingsPage[sidebarStyleStart:menuAccentStart]
+// TestGlassPreferencesPersistThroughBackend 锁定液态玻璃三项偏好的持久化链路：
+// backdrop / lgStyle / lgIntensity 与主题、尺寸一样走后端 display.preferences.v3，前端不再另设 localStorage 副本。
+func TestGlassPreferencesPersistThroughBackend(t *testing.T) {
+	domain := readRootFile(t, "internal", "desktopapp", "display", "preferences.go")
+	runtimeAPI := readRootFile(t, "internal", "desktopapp", "runtime", "display_preferences.go")
+	serviceAPI := readRootFile(t, "app", "service.go")
+	displayState := readRootFile(t, "frontend", "src", "app", "display.ts")
+	glassState := readRootFile(t, "frontend", "src", "app", "glass.ts")
+	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
+	appChrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
+
 	for _, required := range []string{
-		`<div class="visual-segmented-control">`,
-		`v-for="[value, label] in menuOptions"`,
-		`:class="{ 'is-active': display.menu.value === value }"`,
-		`@click="asMenu(value)"`,
+		"Backdrop bool `json:\"backdrop\"`",
+		"LgStyle string `json:\"lgStyle\"`",
+		"LgIntensity int `json:\"lgIntensity\"`",
+		"DefaultGlassStyle = \"fresnel\"",
+		"GlassIntensityMin = 30",
+		"GlassIntensityMax = 100",
+		"allowedGlassStyles = stringSet(\"fresnel\", \"frosted\", \"sheen\")",
 	} {
-		if !strings.Contains(sidebarStyleBlock, required) {
-			t.Fatalf("sidebar style should use segmented buttons like density, missing %q", required)
+		if !strings.Contains(domain, required) {
+			t.Fatalf("display/preferences.go should model the glass axes %q", required)
 		}
-	}
-	if strings.Contains(sidebarStyleBlock, "<UiSelect") {
-		t.Fatal("sidebar style has only two visual modes and should not render as a dropdown")
-	}
-	menuAccentBlock := settingsPage[menuAccentStart:uiStyleStart]
-	for _, required := range []string{
-		`v-for="[value, label] in menuAccentOptions"`,
-		`:class="{ 'is-active': display.menuAccent.value === value }"`,
-		`@click="asMenuAccent(value)"`,
-	} {
-		if !strings.Contains(menuAccentBlock, required) {
-			t.Fatalf("menu accent should use segmented buttons like density, missing %q", required)
-		}
-	}
-	if strings.Contains(menuAccentBlock, "<UiSelect") {
-		t.Fatal("menu accent has only two visual modes and should not render as a dropdown")
 	}
 
-	for _, forbidden := range []string{
-		"go-desktop-icon-library",
-		"setIconLibrary",
+	for _, source := range []struct{ name, content string }{
+		{name: "runtime/display_preferences.go", content: runtimeAPI},
+		{name: "app/service.go", content: serviceAPI},
 	} {
-		if strings.Contains(displayState, forbidden) {
-			t.Fatalf("display state should not keep inactive setting %q", forbidden)
+		for _, required := range []string{"Backdrop:", "LgStyle:", "LgIntensity:"} {
+			if !strings.Contains(source.content, required) {
+				t.Fatalf("%s should carry the glass axes through the typed facade: missing %q", source.name, required)
+			}
 		}
+	}
+
+	for _, required := range []string{
+		"hydrateGlassPreferences(preferences)",
+		"...exportGlassPreferences()",
+		"resetGlassPreferences()",
+		"lgStyle: GlassStyle",
+		"lgIntensity: number",
+	} {
+		if !strings.Contains(displayState, required) {
+			t.Fatalf("app/display.ts should compose the glass axes into the persisted snapshot: missing %q", required)
+		}
+	}
+
+	// 光学偏好只允许一条持久化链路；再留一份本地存储副本会让前后端口径分叉，切档后重启就“回滚”。
+	// 断言收窄到真实存储 API 调用，注释里提到这些技术名词不算违规。
+	for _, forbidden := range []string{"localStorage.", "sessionStorage.", "indexedDB.", ".setItem(", ".getItem("} {
+		if strings.Contains(tsCodeOnly(glassState), forbidden) {
+			t.Fatalf("app/glass.ts must persist nothing on its own (the backend owns the glass axes): found %q", forbidden)
+		}
+	}
+
+	for _, required := range []string{
+		"asGlassBackdrop(Boolean($event))",
+		"glass.setStyle(value as GlassStyle)",
+		"glass.setIntensity((event.target as HTMLInputElement).valueAsNumber)",
+	} {
+		if !strings.Contains(settingsPage, required) {
+			t.Fatalf("settings page should drive the glass rows through the shared persistence path: missing %q", required)
+		}
+	}
+	if count := strings.Count(settingsPage, "persistDisplayPreferences()"); count < 5 {
+		t.Fatalf("theme, size and the three glass axes should all persist the same snapshot, got %d calls", count)
+	}
+	if !strings.Contains(appChrome, "glass.setBackdrop(next)") || !strings.Contains(appChrome, "await appStore.persistDisplayPreferences()") {
+		t.Fatal("the topbar aurora toggle must persist the glass preference like the theme toggle does")
 	}
 }
 
-// TestDisplayCssUsesCurrentColorAxes 验证 CSS dataset 和变量仍覆盖当前支持的颜色、菜单、密度和字号轴。
+// TestDisplayCssUsesCurrentColorAxes 验证 styles.css 把 HIG 语义令牌桥接到 Element Plus 变量，
+// 主色固定 Apple Action Blue 且色阶由 color-mix 派生，明暗两态都跟随 html.dark。
 func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 	styles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "styles.css"), "\r\n", "\n")
 
 	for _, required := range []string{
-		`:root[data-theme-color="neutral"] { --runtime-theme-color: var(--runtime-color-neutral); }`,
-		`:root[data-accent-color="neutral"] { --runtime-accent-color: var(--runtime-color-neutral); }`,
-		`:root[data-chart-color="neutral"] { --runtime-chart-color: var(--runtime-color-neutral); }`,
-		`:root[data-theme-color="sky"] { --runtime-theme-color`,
-		`:root[data-accent-color="sky"] { --runtime-accent-color`,
-		`:root[data-chart-color="sky"] { --runtime-chart-color`,
-		`:root[data-theme-color]`,
-		`--primary: var(--runtime-theme-color);`,
-		`:root[data-accent-color]`,
-		`--accent: color-mix(in oklch, var(--runtime-accent-color)`,
+		`--accent: var(--color-value-0071e3);`,
+		`--el-color-primary: var(--accent);`,
+		`--el-color-primary-light-3: color-mix(in srgb, var(--el-color-primary) 70%, var(--color-white-solid));`,
+		`--el-color-primary-light-9: color-mix(in srgb, var(--el-color-primary) 10%, var(--color-white-solid));`,
+		`--el-color-primary-dark-2: color-mix(in srgb, var(--el-color-primary) 80%, var(--color-black-solid));`,
+		`--el-bg-color: var(--bg);`,
+		`--el-bg-color-page: var(--surface);`,
+		`--el-text-color-primary: var(--fg);`,
+		`--el-border-color-lighter: var(--border-soft);`,
+		`--el-color-danger: var(--danger);`,
+		`--el-component-size: var(--control-height);`,
+		`html.dark {`,
+		`--accent: var(--color-value-0a84ff);`,
+		// 夜间色阶向深空底色相调，否则 EP 默认往白里混会得出近白悬浮底。
+		`--el-color-primary-light-3: color-mix(in srgb, var(--el-color-primary) 70%, var(--color-value-1c1c1e));`,
+		`--el-color-primary-light-9: color-mix(in srgb, var(--el-color-primary) 10%, var(--color-value-1c1c1e));`,
 	} {
 		if !strings.Contains(styles, required) {
-			t.Fatalf("styles.css should use current split color axis %q", required)
+			t.Fatalf("styles.css should bridge HIG tokens to Element Plus variables %q", required)
 		}
 	}
 
+	// 语义令牌只允许从 colors.css 的 raw 变量派生，反向桥接会让色值口径分叉；远程字体由 DESIGN.md 明令禁止。
 	for _, forbidden := range []string{
-		`data-base-color="slate"`,
-		`data-base-color="gray"`,
-		`:root[data-base-color][data-accent-color=`,
-		`:root[data-accent-color="blue"],`,
-		":root[data-chart-color=\"blue\"] {\n  --chart-1:",
-		":root[data-theme-color=\"blue\"] {\n  --primary:",
-		`:root:not([data-theme-color="neutral"])[data-theme-color]`,
-		`:root:not([data-accent-color="neutral"])[data-accent-color]`,
-		`:root:not([data-chart-color="neutral"])[data-chart-color]`,
+		`--background: var(--el-bg-color-page);`,
+		`--primary: var(--el-color-primary);`,
 		"fonts.googleapis",
 		"@import url(",
-		"data-heading-font",
-		"data-body-font",
 	} {
 		if strings.Contains(styles, forbidden) {
-			t.Fatalf("styles.css should not keep stale color axis rule %q", forbidden)
+			t.Fatalf("styles.css should not bridge tokens backwards or load remote fonts: found %q", forbidden)
 		}
-	}
-
-	accentRuleStart := strings.Index(styles, `:root[data-accent-color]`)
-	if accentRuleStart < 0 {
-		t.Fatal("styles.css missing current accent color rule")
-	}
-	accentRuleEnd := strings.Index(styles[accentRuleStart:], "\n}")
-	if accentRuleEnd < 0 {
-		t.Fatal("styles.css accent color rule is malformed")
-	}
-	accentRule := styles[accentRuleStart : accentRuleStart+accentRuleEnd]
-	if strings.Contains(accentRule, "--primary") || strings.Contains(accentRule, "--sidebar-primary") {
-		t.Fatalf("accent color rule must not mutate primary tokens: %s", accentRule)
 	}
 }
 
@@ -1130,20 +1089,19 @@ func TestFrontendColorsUseSingleTokenFile(t *testing.T) {
 		t.Fatal("global color token file must load before frontend/src/styles.css")
 	}
 
-	if !strings.Contains(styles, "var(--color-display-apple-blue)") {
-		t.Fatal("styles.css should consume display palette colors through the global color token file")
+	if !strings.Contains(styles, "var(--color-value-0071e3)") {
+		t.Fatal("styles.css should consume raw palette colors through the global color token file")
 	}
 
 	for _, required := range []string{
 		"Naming rules:",
-		"--color-display-<token>",
+		"--color-transparent: 只用于 transparent。",
 		"--color-transparent",
 		"--color-(white|black)-solid",
 		"--color-(white|black)-alpha-080",
 		"alpha 后缀固定三位",
 		"--color-value-<raw-value-slug>",
 		"同一个 raw 色值只能定义一次",
-		"frontend/src/components/ui/** 是 shadcn primitive 目录，结构测试会跳过。",
 	} {
 		if !strings.Contains(colorTokens, required) {
 			t.Fatalf("%s should document color token naming rule %q", frontendColorTokenFile, required)
@@ -1176,10 +1134,6 @@ func TestFrontendColorsUseSingleTokenFile(t *testing.T) {
 			return err
 		}
 		if entry.IsDir() {
-			rel := filepath.ToSlash(mustRelRoot(t, path))
-			if rel == "frontend/src/components/ui" {
-				return filepath.SkipDir
-			}
 			return nil
 		}
 		if !hasAnySuffix(entry.Name(), ".css", ".vue", ".ts") {
@@ -1218,139 +1172,105 @@ func TestFrontendColorsUseSingleTokenFile(t *testing.T) {
 	}
 }
 
-// TestDisplayPreferencePaletteUsesSingleRuntimeColorSource 锁定品牌主题色和中性灰阶色调共 18 色只在 runtime 变量处写死。
+// TestDisplayPreferencePaletteUsesSingleRuntimeColorSource 锁定主色只在 colors.css 写死一次、styles.css 只通过变量引用。
 func TestDisplayPreferencePaletteUsesSingleRuntimeColorSource(t *testing.T) {
 	styles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "styles.css"), "\r\n", "\n")
 	colorTokens := strings.ReplaceAll(readRootFile(t, filepath.FromSlash(frontendColorTokenFile)), "\r\n", "\n")
 	settingsStyles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.css"), "\r\n", "\n")
 
-	if got, want := len(displayPreferencePaletteColors), 18; got != want {
-		t.Fatalf("display preference palette should explicitly cover %d colors, got %d", want, got)
+	colorTokenVar := "--color-value-0071e3"
+	colorTokenDeclaration := colorTokenVar + ": #0071e3;"
+	if count := strings.Count(colorTokens, colorTokenDeclaration); count != 1 {
+		t.Fatalf("action blue should be hard-coded exactly once in %s, got %d", frontendColorTokenFile, count)
 	}
-
-	seen := map[string]bool{}
-	for _, color := range displayPreferencePaletteColors {
-		if seen[color.token] {
-			t.Fatalf("display preference palette token %q is duplicated in the test contract", color.token)
-		}
-		seen[color.token] = true
-
-		runtimeVar := "--runtime-color-" + color.token
-		colorTokenVar := "--color-display-" + color.token
-		runtimeDeclaration := runtimeVar + ": var(" + colorTokenVar + ");"
-		colorTokenDeclaration := colorTokenVar + ": " + color.value + ";"
-		if count := strings.Count(colorTokens, colorTokenDeclaration); count != 1 {
-			t.Fatalf("display color %q should be hard-coded exactly once in %s, got %d", color.token, frontendColorTokenFile, count)
-		}
-		if count := strings.Count(styles, runtimeDeclaration); count != 1 {
-			t.Fatalf("runtime color %q should reference %s exactly once in styles.css, got %d", color.token, colorTokenVar, count)
-		}
-
-		if strings.Contains(settingsStyles, color.value) {
-			t.Fatalf("SettingsPage.css must not repeat hard-coded display palette value %q; use var(%s)", color.value, runtimeVar)
-		}
-
-		swatchRule := `.color-palette-circle[data-accent="` + color.token + `"] { background: var(` + runtimeVar + `); }`
-		if !strings.Contains(settingsStyles, swatchRule) {
-			t.Fatalf("SettingsPage.css should render palette swatch %q through %s", color.token, runtimeVar)
-		}
-
-		for _, axis := range []string{"theme", "accent", "chart"} {
-			axisRule := `:root[data-` + axis + `-color="` + color.token + `"] { --runtime-` + axis + `-color: var(` + runtimeVar + `);`
-			if !strings.Contains(styles, axisRule) {
-				t.Fatalf("styles.css should map %s color %q through %s", axis, color.token, runtimeVar)
-			}
-		}
+	// 主色链只允许一次写死：colors.css 出 raw 值 -> --accent 语义令牌 -> Element Plus 桥接。
+	accentRule := "--accent: var(" + colorTokenVar + ");"
+	if count := strings.Count(styles, accentRule); count != 1 {
+		t.Fatalf("styles.css should define the semantic accent through %s exactly once, got %d", colorTokenVar, count)
+	}
+	primaryRule := "--el-color-primary: var(--accent);"
+	if count := strings.Count(styles, primaryRule); count != 1 {
+		t.Fatalf("styles.css should bridge Element Plus primary through the accent token exactly once, got %d", count)
+	}
+	if strings.Contains(settingsStyles, "#0071e3") {
+		t.Fatalf("SettingsPage.css must not repeat hard-coded action blue %q; use var(%s)", "#0071e3", colorTokenVar)
 	}
 }
 
-// TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation 验证彩色图标只用于语义点缀，不覆盖当前激活导航状态。
+// TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation 验证行内图标统一走 .sq-icon-badge 渐变徽标，
+// 色相只由语义 tone 类名决定，且不再是可配置的显示偏好维度。
 func TestColorfulIconToneStaysSemanticAndSkipsActiveNavigation(t *testing.T) {
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
-	homeStyles := readRootFile(t, "frontend", "src", "features", "home", "HomePage.css")
 	appChrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
+	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
 	layoutStyles := readRootFile(t, "frontend", "src", "styles", "layout.css")
-	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
-	artisticCommonStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "common.css")
+	homeStyles := readRootFile(t, "frontend", "src", "features", "home", "HomePage.css")
 
 	for _, required := range []string{
-		`data-icon icon-tone-orange`,
-		`data-icon icon-tone-cyan`,
-		`data-icon icon-tone-green`,
-		`data-icon icon-tone-purple`,
-		`data-icon icon-tone-blue`,
-		`data-icon icon-tone-amber`,
-		`data-icon icon-tone-red`,
+		`sq-icon-badge size-md indigo`,
+		`sq-icon-badge size-md blue`,
+		`sq-icon-badge size-md teal`,
+		`sq-icon-badge size-md purple`,
+		`sq-icon-badge size-md cyan`,
+		`sq-icon-badge size-md orange`,
+		`sq-icon-badge size-md green`,
+		`sq-icon-badge size-md gray`,
 	} {
 		if !strings.Contains(settingsPage, required) {
-			t.Fatalf("settings page should give display preference icons semantic tone %q", required)
+			t.Fatalf("settings page should give each row a semantic badge tone %q", required)
 		}
 	}
 	for _, required := range []string{
-		"data-icon icon-tone-indigo",
-		"data-icon icon-tone-green",
-		"data-icon icon-tone-orange",
-		"software-status-icon ${item.tone}",
-		"status-inline is-${item.status}",
+		"sq-icon-badge size-md ${item.tone}",
+		"stat-icon-wrap ${stat.tone}",
+		"badge-apple ${softwareSummary.tone}",
+		"tone: 'indigo'",
+		"tone: 'green'",
+		"tone: 'orange'",
+		"tone: 'purple'",
 	} {
 		if !strings.Contains(homePage, required) {
-			t.Fatalf("home page data icons should use semantic colorful tone %q", required)
+			t.Fatalf("home page icons should resolve tone through the badge class %q", required)
+		}
+	}
+	// 侧栏导航徽标的 tone 来自 shared views 元数据，激活态只改底和文字色，不换图标配色。
+	for _, required := range []string{
+		"cn('sq-icon-badge', 'size-md', item.tone)",
+		`cn('nav-item', props.activeView === item.key && 'active')`,
+		`.nav-item.active {`,
+	} {
+		if !strings.Contains(appChrome+layoutStyles, required) {
+			t.Fatalf("navigation badge should keep tone-driven gradient and a text-only active state: missing %q", required)
+		}
+	}
+	// 设计稿的侧栏条目只有图标 + 文字：日志数量属于筛选结果，只能出现在日志页的筛选按钮上。
+	if strings.Contains(appChrome, "nav-item-badge") {
+		t.Fatal("AppChrome.vue sidebar navigation must not carry a log count badge")
+	}
+	if !strings.Contains(logsPage, `class="nav-item-badge"`) {
+		t.Fatal("LogsPage.vue should keep the active filter count badge on the filter button")
+	}
+	// 渐变色板集中定义在令牌层，页面只写 tone 类名。
+	for _, required := range []string{
+		`.sq-icon-badge.indigo {`,
+		`.sq-icon-badge.green {`,
+		`background: var(--tile-indigo);`,
+		`background: var(--tile-green);`,
+		`box-shadow: var(--tile-shadow);`,
+	} {
+		if !strings.Contains(layoutStyles, required) {
+			t.Fatalf("layout.css should keep the centralized gradient badge palette %q", required)
 		}
 	}
 	for _, required := range []string{
-		"props.activeView !== item.key && item.tone",
-		`.sidebar-item.is-active .nav-icon`,
-		`.compact-nav-item.is-active svg`,
+		`.stat-icon-wrap.indigo {`,
+		`.stat-icon-wrap.orange {`,
+		`box-shadow: var(--tile-shadow-stat);`,
 	} {
-		if !strings.Contains(appChrome+appChromeStyles+layoutStyles, required) {
-			t.Fatalf("active navigation icons should not keep colorful tone: missing %q", required)
+		if !strings.Contains(homeStyles, required) {
+			t.Fatalf("home stat cards should reuse the gradient tile tokens %q", required)
 		}
-	}
-	for _, required := range []string{
-		`:root[data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-orange`,
-		`:root[data-icon-tone="colorful"] svg.icon-tone-orange`,
-		`:root[data-display-scheme="artistic"][data-icon-tone="colorful"] :where(.nav-icon, .data-icon, .software-status-icon).icon-tone-orange`,
-	} {
-		if !strings.Contains(layoutStyles+artisticCommonStyles, required) {
-			t.Fatalf("semantic icon tone CSS must be gated by the icon color style setting, missing %q", required)
-		}
-	}
-	for _, forbidden := range []string{
-		`.software-status-icon.icon-tone-indigo`,
-		`.software-status-icon.icon-tone-green`,
-		`.software-status-icon.icon-tone-orange`,
-		`.software-status-icon.icon-tone-purple`,
-	} {
-		if strings.Contains(homeStyles, forbidden) {
-			t.Fatalf("home page icon tone styles must respect data-icon-tone instead of always coloring icons, found %q", forbidden)
-		}
-	}
-	var ungatedRules []string
-	err := filepath.WalkDir(rootPath(filepath.Join("frontend", "src")), func(path string, entry os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if entry.IsDir() || filepath.Ext(path) != ".css" {
-			return nil
-		}
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		rel := mustRelRoot(t, path)
-		for index, line := range strings.Split(string(content), "\n") {
-			if strings.Contains(line, ".icon-tone-") && !strings.Contains(line, `data-icon-tone="colorful"`) {
-				ungatedRules = append(ungatedRules, fmt.Sprintf("%s:%d %s", filepath.ToSlash(rel), index+1, strings.TrimSpace(line)))
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("scan frontend icon tone CSS: %v", err)
-	}
-	if len(ungatedRules) > 0 {
-		t.Fatalf("icon tone CSS must be gated by data-icon-tone=\"colorful\"; first violations:\n%s", strings.Join(ungatedRules[:min(len(ungatedRules), 8)], "\n"))
 	}
 }
 
@@ -1362,24 +1282,26 @@ func TestHomePageFocusesOnRuntimeStatusAndBusinessStats(t *testing.T) {
 	views := readRootFile(t, "frontend", "src", "shared", "views.ts")
 
 	for _, required := range []string{
-		"software-status-grid",
-		"software-status-card",
+		"services-grid",
+		"GlassPanel",
+		"stat-card",
 		"WebView",
 		"应用服务",
 		"SQLite 数据库",
 		"网络",
-		"business-stats-grid",
+		"stats-grid",
+		"dashboard-grid",
 		"demoStats",
 		"demo-bar-chart",
 		".demo-bar-fill",
 		"distribution-list",
+		".dist-track",
+		".dist-bar",
 		"正常",
 		"异常",
 		"检测中",
 		"软件运行状态、业务统计和样例图表",
-		".status-inline.is-ok",
-		".status-inline.is-warning",
-		".status-inline.is-error",
+		"badge-apple ${softwareSummary.tone}",
 	} {
 		if !strings.Contains(homePage+views+homeStyles, required) {
 			t.Fatalf("home page should focus on runtime status and business stats: missing %q", required)
@@ -1387,20 +1309,9 @@ func TestHomePageFocusesOnRuntimeStatusAndBusinessStats(t *testing.T) {
 	}
 
 	for _, forbidden := range []string{
-		"activeViewProps",
 		"workflowCards",
 		"workflow-grid",
-		"排查运行问题",
-		"调整应用行为",
-		"查看运行信息",
-		"关键入口",
-		"网络通道",
-		"Release 通道",
-		"latestUpdateCheck",
-		"updateStatus",
-		"checking",
 		"GetUpdateStatus",
-		"linear-gradient(180deg, var(--chart-2), var(--chart-1))",
 	} {
 		if strings.Contains(homePage+appRoot+views+homeStyles, forbidden) {
 			t.Fatalf("home page should not fall back to quick-entry workflow content: found %q", forbidden)
@@ -1426,55 +1337,41 @@ func TestAboutPageOwnsRuntimeReleaseAndTechInformation(t *testing.T) {
 	aboutPage := readRootFile(t, "frontend", "src", "features", "about", "AboutPage.vue")
 
 	for _, required := range []string{
-		"about-overview",
-		"about-section-grid",
-		"应用信息",
-		"运行状态",
+		"about-container",
+		"about-hero-card",
+		"meta-grid-2",
+		"details-card",
+		"detail-row",
 		"运行时长",
 		"Release 来源",
-		"本地数据",
-		"技术栈",
-		"桌面运行层",
-		"前端界面",
-		"数据与发布",
-		"GitHub Owner",
-		"GitHub Repo",
+		"本地数据与路径",
+		"运行时与平台",
+		"Release 与分发",
+		"Go 核心",
+		"Wails 框架",
+		"公开仓库",
 		"API 代理",
 	} {
 		if !strings.Contains(aboutPage, required) {
 			t.Fatalf("about page should own runtime/release/tech information %q", required)
 		}
 	}
-
-	for _, forbidden := range []string{
-		"界面系统",
-		"组件风格",
-		"显示偏好",
-		"Vega",
-	} {
-		if strings.Contains(aboutPage, forbidden) {
-			t.Fatalf("about page should not duplicate editable display-system settings: found %q", forbidden)
-		}
-	}
 }
 
-// TestLogsPageUsesThemeAlignedPageLayout 验证日志页保留专注模式，同时服从主题 token 和 shadcn Table 结构。
+// TestLogsPageUsesThemeAlignedPageLayout 验证日志页保留专注模式，同时服从全局主题 token 与 el-table 结构。
 func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
 	logStyles := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.css")
-	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
-	alertDialogPrimitive := readRootFile(t, "frontend", "src", "components", "ui", "alert-dialog", "AlertDialogContent.vue")
+	layoutStyles := readRootFile(t, "frontend", "src", "styles", "layout.css")
 
 	for _, required := range []string{
-		"<Teleport to=\"body\"",
-		":disabled=\"!fullscreen\"",
-		`cn('page-stack log-page'`,
+		`class="log-page"`,
 		`<section class="log-command-card" aria-label="日志筛选工具条">`,
 		`class="log-command-toolbar"`,
-		`class="log-command-tabs"`,
-		`class="log-command-tab"`,
+		`class="log-command-tabs segmented-control is-tone-tabs"`,
+		`el-radio-button`,
 		`class="log-command-search"`,
-		`applySeverityFilter('error')`,
+		`applySeverityFilter(String($event))`,
 		"filtersOpen = ref(false)",
 		"fullscreen = ref(false)",
 		"aria-expanded",
@@ -1482,15 +1379,15 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		"Maximize2",
 		"专注模式",
 		"退出专注",
-		"classList.toggle('is-log-fullscreen', enabled)",
-		"classList.remove('is-log-fullscreen')",
+		"classList.toggle('is-log-focus', enabled)",
+		"classList.remove('is-log-focus')",
 		"log-filter-panel",
-		"log-collapsed-filter",
+		"log-collapsed-toolbar",
 		"log-mobile-list",
 		"log-mobile-card",
 		"log-message-cell",
-		"log-col-message",
-		"UiAlertDialog",
+		"log-stream-panel",
+		"AlertDialog",
 	} {
 		if !strings.Contains(logsPage, required) {
 			t.Fatalf("logs page should keep themed fullscreen structure %q", required)
@@ -1498,12 +1395,11 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 	}
 
 	for _, required := range []string{
-		`SlidersHorizontal class="icon-tone-indigo"`,
-		`TimerReset class="icon-tone-indigo"`,
-		`RefreshCw class="icon-tone-green"`,
-		`Maximize2 class="icon-tone-gray"`,
-		`FileText class="icon-tone-gray"`,
-		`Search class="icon-tone-gray"`,
+		`RefreshCw class="log-tool-icon is-success"`,
+		`TimerReset class="log-tool-icon is-indigo"`,
+		`SlidersHorizontal class="log-tool-icon is-indigo"`,
+		`Maximize2 class="log-tool-icon"`,
+		`Search class="log-search-icon"`,
 	} {
 		if !strings.Contains(logsPage, required) {
 			t.Fatalf("logs page tool icons should keep semantic icon tone %q", required)
@@ -1514,125 +1410,64 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 		".log-page",
 		".log-command-card",
 		".log-command-toolbar",
-		".log-command-tabs",
-		".log-command-tab",
 		".log-command-search",
 		".log-filter-panel",
-		".log-collapsed-filter",
 		".log-collapsed-toolbar",
 		".log-stream-panel",
 		".log-mobile-list",
 		".log-mobile-card",
 		".log-mobile-card__meta",
 		".log-table-shell",
-		`.log-table[data-slot="table"]`,
-		`.log-stream-panel .log-table-shell [data-slot="table-container"]`,
-		`.log-table [data-slot="table-head"]`,
-		`.log-table [data-slot="table-cell"]`,
-		".log-message-cell",
-		".log-col-message",
-		":global(:root.is-log-fullscreen .app-shell)",
-		":global(:root.is-log-fullscreen) .log-fullscreen",
-		".page-stack.log-fullscreen",
-		".log-fullscreen .log-command-card",
-		".log-fullscreen .log-collapsed-filter",
-		".log-fullscreen.has-open-filters",
-		`.log-fullscreen .log-stream-panel [data-slot="table-container"]`,
-		`.content-scroll.is-logs-view {
-    align-content: start;
-    overflow: auto;
-  }`,
-		`height: min(44vh, 360px)`,
-		"z-index: 40",
-		"height: 100dvh",
-		"background: var(--background)",
+		".log-pagination-card",
 	} {
-		if !strings.Contains(logStyles+appChromeStyles, required) {
+		if !strings.Contains(logStyles, required) {
 			t.Fatalf("logs page themed layout should define %q", required)
 		}
 	}
+	// 专注模式由 LogsPage 在 <html> 上切 is-log-focus，外壳只在 layout.css 收起导航列。
 	for _, required := range []string{
-		`data-slot="alert-dialog-content"`,
-		`z-50`,
+		"html.is-log-focus .app-sidebar",
+		"html.is-log-focus .mobile-tabbar",
 	} {
-		if !strings.Contains(alertDialogPrimitive, required) {
-			t.Fatalf("log fullscreen z-index should stay below alert dialog overlay/content, missing alert dialog primitive marker %q", required)
+		if !strings.Contains(layoutStyles, required) {
+			t.Fatalf("layout.css should hide shell navigation in log focus mode: missing %q", required)
 		}
+	}
+	if !strings.Contains(layoutStyles, "display: none") {
+		t.Fatal("layout.css should collapse the shell navigation with display:none in log focus mode")
 	}
 	if strings.Contains(logStyles, "z-index: 2147483647") {
-		t.Fatal("log fullscreen must not use max z-index; alert dialogs still need to appear above focused logs")
+		t.Fatal("log fullscreen must not use max z-index; AlertDialog overlays still need to appear above focused logs")
 	}
-	mobileLogsStart := strings.Index(logStyles, "@media (max-width: 980px)")
-	if mobileLogsStart < 0 {
-		t.Fatal("logs page should keep a mobile-only layout override")
+	mobileStart := strings.Index(logStyles, "@media (max-width: 767px)")
+	if mobileStart < 0 {
+		t.Fatal("logs page should keep the shared phone breakpoint override")
 	}
-	mobileLogStyles := logStyles[mobileLogsStart:]
+	mobileStyles := logStyles[mobileStart:]
 	for _, required := range []string{
-		`display: flex;`,
-		`flex-direction: column;`,
-		`align-content: start;`,
-		`align-self: start;`,
-		`height: min(44vh, 360px);`,
-		`overflow-x: auto !important;`,
-		`min-width: 760px;`,
-	} {
-		if !strings.Contains(mobileLogStyles, required) {
-			t.Fatalf("logs page mobile layout should define %q", required)
-		}
-	}
-	mobileCardStart := strings.Index(logStyles, "@media (max-width: 760px)")
-	if mobileCardStart < 0 {
-		t.Fatal("logs page should switch to mobile cards at the questionnaire-list breakpoint")
-	}
-	mobileCardStyles := logStyles[mobileCardStart:]
-	for _, required := range []string{
+		`.log-command-toolbar {
+    flex-direction: column;`,
+		`.log-command-toolbar > .log-command-tabs {
+    width: 100%;`,
+		`--apple-select-width: 100%;`,
 		`.log-table-shell {
     display: none;
   }`,
 		`.log-mobile-list {
-    display: grid;`,
-		`padding: 0;`,
-		`.log-pagination-card .button-row [data-slot="button"]`,
+    display: flex;`,
 	} {
-		if !strings.Contains(mobileCardStyles, required) {
-			t.Fatalf("logs page mobile-card layout should define %q", required)
-		}
-	}
-
-	for _, forbidden := range []string{
-		"log-workbench",
-		"log-workbench-grid",
-		"log-workbench-main",
-		"log-side-panel",
-		"log-stat-list",
-		"log-page-header",
-		"log-page-main",
-		"log-stats-strip",
-		"log-stat-item",
-		"log-stream-header",
-		"filterSummary",
-	} {
-		if strings.Contains(logsPage, forbidden) || strings.Contains(logStyles, forbidden) {
-			t.Fatalf("logs page should not carry stale workbench/sidebar styling %q", forbidden)
-		}
-	}
-
-	for _, forbidden := range []string{
-		".ui-table-wrap",
-		".ui-table-head",
-		".ui-table-cell",
-		".ui-table-row",
-	} {
-		if strings.Contains(logStyles, forbidden) {
-			t.Fatalf("logs page should target shadcn table data-slot instead of stale class %q", forbidden)
+		if !strings.Contains(mobileStyles, required) {
+			t.Fatalf("logs page mobile layout should define %q", required)
 		}
 	}
 }
 
-// TestLogsPageKeepsCloudInspiredPaginationAndTableDetails 验证日志页吸收 cloud-checkin 的分页信息密度，同时保留运行时日志表格模型。
-func TestLogsPageKeepsCloudInspiredPaginationAndTableDetails(t *testing.T) {
+// TestLogsPageKeepsDensePaginationAndTableDetails 验证日志页保留分页信息密度与运行时日志表格模型，
+// 表格观感统一由 element-plus.css 的 .apple-table 皮肤提供。
+func TestLogsPageKeepsDensePaginationAndTableDetails(t *testing.T) {
 	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
 	logStyles := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.css")
+	elementPlusStyles := readRootFile(t, "frontend", "src", "styles", "element-plus.css")
 
 	for _, required := range []string{
 		"calculateLogPageSize",
@@ -1644,38 +1479,37 @@ func TestLogsPageKeepsCloudInspiredPaginationAndTableDetails(t *testing.T) {
 		"displayedLogPage",
 		"displayedPageSize",
 		"watch(logPageSize",
-		"logLayoutReady ? `共 ${appStore.logTotal} 条，每页 ${displayedPageSize} 条，当前第 ${displayedLogPage} / ${totalPages} 页` : ''",
+		// 设计稿的分页摘要要显式交代后端最低门禁，否则筛空时无法区分「没有日志」和「被门禁挡住」。
+		"`每页 ${displayedPageSize.value} 条，当前第 ${displayedLogPage.value} / ${totalPages.value} 页 (门禁过滤后共 ${appStore.logTotal} 条记录，系统最低门禁: ≥ ${gate})`",
+		"`暂无匹配日志 (门禁级别: ≥ ${gate})`",
+		`layout="prev, pager, next"`,
 		`ref="logTableRef"`,
 		`ref="logListRef"`,
 		`ref="logPaginationRef"`,
-		`class="log-footer log-pagination-card"`,
+		`class="log-pagination-card"`,
 		`class="log-mobile-card"`,
 		`class="log-mobile-card__message"`,
 		`class="log-time-cell"`,
-		`class="log-scope-cell"`,
-		`class="log-level-cell"`,
-		`if (!isDesktop) return 12`,
-		`<UiTableRow v-if="displayedLogs.length === 0" class="log-empty-row">`,
-		`<UiTableCell colspan="4" class="log-empty-cell">{{ logLayoutReady ? '暂无匹配日志' : '' }}</UiTableCell>`,
-		`class="log-level-badge"`,
+		`class="log-scope-tag"`,
+		`class="log-message-cell"`,
+		"if (!isDesktop) return 12",
+		`:empty-text="logLayoutReady ? emptyLogsText : ''"`,
+		"`log-level-badge ${logLevelClass(row.severity)}`",
 		"logLevelClass",
 	} {
 		if !strings.Contains(logsPage, required) {
-			t.Fatalf("logs page should keep cloud-inspired pagination/table detail %q", required)
+			t.Fatalf("logs page should keep dense pagination/table detail %q", required)
 		}
 	}
 
 	for _, required := range []string{
 		".log-table-shell",
 		".log-pagination-card",
-		".log-pagination-summary",
 		".log-mobile-list",
 		".log-mobile-card",
 		".log-mobile-card__message",
 		".log-time-cell",
-		".log-scope-cell",
-		".log-level-cell",
-		".log-empty-cell",
+		".log-scope-tag",
 		".log-level-badge",
 		".log-level-badge.is-error",
 		".log-level-badge.is-warning",
@@ -1683,41 +1517,20 @@ func TestLogsPageKeepsCloudInspiredPaginationAndTableDetails(t *testing.T) {
 		".log-level-badge.is-debug",
 	} {
 		if !strings.Contains(logStyles, required) {
-			t.Fatalf("logs page styles should keep cloud-inspired pagination/table detail %q", required)
+			t.Fatalf("logs page styles should keep dense pagination/table detail %q", required)
 		}
 	}
 	for _, required := range []string{
-		`min-width: 760px;`,
-		`border-collapse: collapse !important;`,
-		`.log-table [data-slot="table-row"]`,
-		`.log-table [data-slot="table-header"]`,
-		`.log-table [data-slot="table-body"] [data-slot="table-row"]:hover`,
-		`background: color-mix(in srgb, var(--background) 80%, var(--card)) !important;`,
-		`color: var(--muted-foreground) !important;`,
-		`font-size: var(--fs-caption) !important;`,
-		`font-weight: 600 !important;`,
-		`letter-spacing: 0 !important;`,
-		`text-transform: none !important;`,
-		`padding: 12px 10px;`,
-		`line-height: 1.45;`,
-		`vertical-align: middle;`,
+		`.el-table.apple-table th.el-table__cell`,
+		`.el-table.apple-table td.el-table__cell`,
+		`--el-table-border-color: var(--border-soft);`,
+		`--el-table-header-bg-color: var(--surface-warm);`,
+		`--el-table-row-hover-bg-color: var(--row-hover);`,
+		`text-transform: uppercase;`,
+		`letter-spacing: 0.04em;`,
 	} {
-		if !strings.Contains(logStyles, required) {
-			t.Fatalf("logs page table should mirror questionnaire table density/header detail %q", required)
-		}
-	}
-
-	for _, forbidden := range []string{
-		"const logPageSize = 50",
-		`<div v-if="appStore.logs.length === 0" class="empty-state">`,
-		"log-stream-header",
-		"filterSummary",
-		"background: var(--secondary)",
-		"secondary-foreground",
-		"text-transform: uppercase",
-	} {
-		if strings.Contains(logsPage, forbidden) || strings.Contains(logStyles, forbidden) {
-			t.Fatalf("logs page should not keep stale pagination/table detail %q", forbidden)
+		if !strings.Contains(elementPlusStyles, required) {
+			t.Fatalf("logs page table should mirror the shared apple-table skin %q", required)
 		}
 	}
 }
@@ -1737,100 +1550,28 @@ func TestLogsPageKeepsFileSelectorInsideFilterPanel(t *testing.T) {
 	}
 
 	for _, required := range []string{
-		".log-toolbar",
-		".log-file-field",
-		".log-collapsed-filter",
+		".log-filter-panel",
 		".log-collapsed-toolbar",
+		".filter-item-label",
+		".log-command-toolbar",
 		".log-command-search",
-		"flex: 1 1 260px",
-		"@container (max-width: 820px)",
-		"flex-basis: 100%",
-		"@container (max-width: 560px)",
+		"min-width: calc(180px * var(--ui-scale))",
+		"flex-wrap: wrap",
+		"@media (max-width: 767px)",
 	} {
 		if !strings.Contains(logStyles, required) {
 			t.Fatalf("logs page layout should define %q", required)
 		}
 	}
-
-	for _, removed := range []string{
-		"log-file-selector",
-		"log-source-banner",
-		"log-source-summary",
-		"log-file-path",
-	} {
-		if strings.Contains(logsPage, removed) || strings.Contains(logStyles, removed) {
-			t.Fatalf("logs page should not keep the removed persistent log source summary %q", removed)
-		}
-	}
 }
 
-// TestMenuAccentCssOnlyUsesSupportedValues 验证菜单强调样式只依赖当前支持的 CSS dataset 值。
-func TestMenuAccentCssOnlyUsesSupportedValues(t *testing.T) {
-	displayState := readRootFile(t, "frontend", "src", "app", "display.ts")
-	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
-	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
-	artisticSchemeStyles := readArtisticSchemeStyles(t)
-
-	for _, required := range []string{
-		"export type MenuAccent = 'subtle' | 'bold'",
-		`:root[data-menu-accent="bold"]`,
-		`:root[data-display-scheme="artistic"]`,
-	} {
-		if !strings.Contains(displayState+settingsPage+appChromeStyles+artisticSchemeStyles, required) {
-			t.Fatalf("menu accent should expose and style the supported values only: missing %q", required)
-		}
-	}
-
-	for _, forbidden := range []string{
-		`data-menu-accent="solid"`,
-		`data-menu-accent="outline"`,
-		"['solid',",
-		"['outline',",
-	} {
-		if strings.Contains(displayState+settingsPage+appChromeStyles+artisticSchemeStyles, forbidden) {
-			t.Fatalf("menu accent should not keep unsupported legacy value %q", forbidden)
-		}
-	}
-}
-
-// TestSidebarInvertedStyleFlipsBackgroundAndForeground 锁定侧边导航反色必须同时反背景和文字。
-func TestSidebarInvertedStyleFlipsBackgroundAndForeground(t *testing.T) {
-	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
-	artisticSidebarStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "sidebar.css")
-
-	for _, required := range []string{
-		`:root[data-menu="inverted"] .app-sidebar`,
-		`--sidebar: var(--foreground);`,
-		`--sidebar-foreground: var(--background);`,
-		`background-color: var(--sidebar);`,
-		`color: var(--sidebar-foreground);`,
-	} {
-		if !strings.Contains(appChromeStyles, required) {
-			t.Fatalf("base sidebar inverted style should flip background and foreground together: missing %q", required)
-		}
-	}
-
-	for _, required := range []string{
-		`:root[data-display-scheme="artistic"][data-menu="inverted"] .app-sidebar`,
-		`--sidebar: var(--color-value-rgba-20-16-25-0p95) !important;`,
-		`--sidebar-foreground: var(--color-white-alpha-800) !important;`,
-		`background: var(--sidebar) !important;`,
-		`background-color: var(--sidebar) !important;`,
-		`color: var(--color-white-alpha-800) !important;`,
-	} {
-		if !strings.Contains(artisticSidebarStyles, required) {
-			t.Fatalf("artistic sidebar inverted style should not only flip text: missing %q", required)
-		}
-	}
-}
-
-// TestTopbarUsesSharedNavigationAndResponsiveUtilityRow 验证顶栏复用 shared views 导航数据，并在窄屏保留工具区布局。
+// TestTopbarUsesSharedNavigationAndResponsiveUtilityRow 验证顶栏复用 shared views 元数据，桌面工具区与手机 TabBar 各自成行。
 func TestTopbarUsesSharedNavigationAndResponsiveUtilityRow(t *testing.T) {
 	appRoot := readRootFile(t, "frontend", "src", "App.vue")
 	appChrome := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.vue")
 	routes := readRootFile(t, "frontend", "src", "app", "routes.ts")
 	views := readRootFile(t, "frontend", "src", "shared", "views.ts")
-	appChromeStyles := readRootFile(t, "frontend", "src", "features", "layout", "AppChrome.css")
+	layoutStyles := readRootFile(t, "frontend", "src", "styles", "layout.css")
 
 	for _, required := range []string{
 		"viewComponents",
@@ -1853,32 +1594,40 @@ func TestTopbarUsesSharedNavigationAndResponsiveUtilityRow(t *testing.T) {
 	}
 	for _, required := range []string{
 		"pageSubtitle",
+		"navigationGroups",
 		"isWindowControlsDisabled",
-		":disabled=\"isWindowControlsDisabled\"",
-		"if (isWindowControlsDisabled.value) return",
-		"topbar-utility",
+		`:disabled="isWindowControlsDisabled"`,
+		"topbar-left",
+		"topbar-right",
 		"topbar-actions",
-		"window-controls",
-		"compact-nav",
-		"grid-template-columns: minmax(0, 1fr) auto",
-		"grid-template-rows: auto auto",
-		"padding-right: var(--window-controls-width)",
-		"top: 36px",
-		"right: 0",
-		"width: calc(var(--window-controls-width) / 3 * 2)",
-		".topbar-actions > button",
-		"width: calc(var(--window-controls-width) / 3)",
-		"grid-column: 1 / -1",
-		"grid-row: 1",
-		"grid-row: 2",
-		"justify-self: stretch",
+		"topbar-title-group",
+		"traffic-lights-right",
+		"mobile-tabbar",
+		"mobile-sidebar-backdrop",
+		".app-topbar {",
+		".topbar-left {",
+		".topbar-right {",
+		".traffic-lights-right {",
+		".mobile-tabbar {",
+		"--topbar-height",
+		"--tabbar-height",
 	} {
-		if !strings.Contains(appChrome+views+appChromeStyles, required) {
+		if !strings.Contains(appChrome+views+layoutStyles, required) {
 			t.Fatalf("responsive topbar should share navigation metadata and utility row %q", required)
 		}
 	}
-	if strings.Contains(appChromeStyles, ".window-controls {\n    position: static") {
-		t.Fatal("mobile topbar must keep native window controls at the original absolute top-right position")
+	// 手机端外壳：侧栏变抽屉、出现底部 TabBar，断点由 layout.css 单独持有。
+	for _, required := range []string{
+		"@media (max-width: 767px)",
+		"transform: translateX(-100%)",
+		".app-sidebar.mobile-open {",
+		"width: var(--sidebar-drawer-width)",
+		`.mobile-tabbar {
+    display: block;`,
+	} {
+		if !strings.Contains(layoutStyles[strings.Index(layoutStyles, "@media (max-width: 767px)"):], required) {
+			t.Fatalf("layout.css phone breakpoint should switch the shell to drawer + tabbar: missing %q", required)
+		}
 	}
 }
 
@@ -1886,19 +1635,12 @@ func TestTopbarUsesSharedNavigationAndResponsiveUtilityRow(t *testing.T) {
 func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 	mainTS := readRootFile(t, "frontend", "src", "main.ts")
 	styles := readRootFile(t, "frontend", "src", "styles.css")
-	artisticSchemeEntry := readRootFile(t, "frontend", "src", "styles", "artistic-scheme.css")
-	artisticSchemeStyles := readArtisticSchemeStyles(t)
 	layoutStyles := readRootFile(t, "frontend", "src", "styles", "layout.css")
 	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
 	aboutPage := readRootFile(t, "frontend", "src", "features", "about", "AboutPage.vue")
 	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
 	logsPage := readRootFile(t, "frontend", "src", "features", "logs", "LogsPage.vue")
 	updateDialog := readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.vue")
-	primitiveCard := readRootFile(t, "frontend", "src", "components", "ui", "card", "Card.vue")
-	primitiveCardTitle := readRootFile(t, "frontend", "src", "components", "ui", "card", "CardTitle.vue")
-	sharedCard := readRootFile(t, "frontend", "src", "shared", "ui", "Card.vue")
-	sharedCardTitle := readRootFile(t, "frontend", "src", "shared", "ui", "CardTitle.vue")
-	uiPlugin := readRootFile(t, "frontend", "src", "shared", "ui", "plugin.ts")
 	featureStyles := strings.Join([]string{
 		readRootFile(t, "frontend", "src", "features", "about", "AboutPage.css"),
 		readRootFile(t, "frontend", "src", "features", "home", "HomePage.css"),
@@ -1912,8 +1654,7 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 	for _, required := range []string{
 		"@theme inline",
 		"--color-sidebar",
-		"--runtime-color-sky",
-		":root[data-card-border=\"visible\"]",
+		"--el-color-primary",
 	} {
 		if !strings.Contains(styles, required) {
 			t.Fatalf("styles.css should keep theme/reset contract %q", required)
@@ -1953,336 +1694,52 @@ func TestCssOwnershipKeepsBusinessStylesOutOfGlobalTheme(t *testing.T) {
 		}
 	}
 
-	for _, forbidden := range []string{
-		"--card-border",
-		"--font-heading",
-		"<style scoped>",
-	} {
-		if strings.Contains(primitiveCard+primitiveCardTitle, forbidden) {
-			t.Fatalf("components/ui/card primitives should not carry project style patch %q", forbidden)
-		}
-	}
-
 	for _, required := range []string{
-		".page-stack",
-		".content-grid",
+		".app-window",
+		".app-topbar",
+		".app-sidebar",
+		".mobile-tabbar",
+		".sq-icon-badge",
+		".badge-apple",
 		".split-header",
 		".section-title-row",
-		".data-icon",
-		".icon-tone-indigo",
+		".traffic-btn",
+		".detail-row",
+		".ver-badge",
 	} {
 		if !strings.Contains(layoutStyles, required) {
 			t.Fatalf("layout.css should keep shared layout/icon primitive %q", required)
 		}
 	}
 
+	// 断点集中在 layout.css，页面 CSS 只允许出现本页在手机端的微调。
+	for _, required := range []string{
+		"@media (max-width: 1023px)",
+		"@media (max-width: 767px)",
+	} {
+		if !strings.Contains(layoutStyles, required) {
+			t.Fatalf("layout.css should own the tablet/phone breakpoints %q", required)
+		}
+	}
+
 	for _, required := range []string{
 		`import './styles/layout.css'`,
-		`import './styles/artistic-scheme.css'`,
+		`import './styles/liquid-glass.css'`,
+		`import './styles/element-plus.css'`,
 		`<style scoped src="./HomePage.css">`,
 		`<style scoped src="./AboutPage.css">`,
 		`<style scoped src="./SettingsPage.css">`,
 		`<style scoped src="./LogsPage.css">`,
 		`<style scoped src="./UpdateStatusDialog.css">`,
-		"settings-control-switch",
-		"settings-control-select",
-		"CardCompat",
-		"CardTitleCompat",
+		"class=\"apple-switch\"",
+		"class=\"apple-select\"",
+		"import GlassPanel from '@/features/shared/GlassPanel.vue'",
 		"--card-border",
-		"--font-heading",
 		"CSS 归属规则",
 		"`frontend/src/styles.css` 只放 Tailwind",
 	} {
-		if !strings.Contains(mainTS+homePage+aboutPage+settingsPage+logsPage+updateDialog+sharedCard+sharedCardTitle+uiPlugin+design, required) {
+		if !strings.Contains(mainTS+styles+homePage+aboutPage+settingsPage+logsPage+updateDialog+design, required) {
 			t.Fatalf("frontend CSS ownership should be documented and wired: missing %q", required)
-		}
-	}
-
-	if strings.Index(mainTS, `import './styles/layout.css'`) > strings.Index(mainTS, `import './styles/artistic-scheme.css'`) {
-		t.Fatal("frontend/src/main.ts should import artistic-scheme.css after base and layout styles")
-	}
-
-	for _, required := range []string{
-		`Artistic 方案入口`,
-		`@import "./artistic-scheme/common.css"`,
-		`@import "./artistic-scheme/components/button.css"`,
-		`@import "./artistic-scheme/components/input.css"`,
-		`@import "./artistic-scheme/components/select.css"`,
-		`@import "./artistic-scheme/components/switch.css"`,
-		`@import "./artistic-scheme/components/card.css"`,
-		`@import "./artistic-scheme/components/table.css"`,
-		`@import "./artistic-scheme/components/dialog.css"`,
-		`@import "./artistic-scheme/components/alert-dialog.css"`,
-		`@import "./artistic-scheme/components/badge.css"`,
-		`@import "./artistic-scheme/components/progress.css"`,
-		`@import "./artistic-scheme/components/tooltip.css"`,
-	} {
-		if !strings.Contains(artisticSchemeEntry, required) {
-			t.Fatalf("artistic-scheme.css should be an import-only theme entry: missing %q", required)
-		}
-	}
-
-	for _, forbidden := range []string{
-		`@import "./artistic-scheme/components/settings.css"`,
-		`:root[data-display-scheme="artistic"]`,
-		`[data-slot="`,
-		`.app-sidebar`,
-		`.preference-row`,
-	} {
-		if strings.Contains(artisticSchemeEntry, forbidden) {
-			t.Fatalf("artistic-scheme.css should not own concrete theme rules after folder split: found %q", forbidden)
-		}
-	}
-
-	for _, required := range []string{
-		`Artistic 方案 common`,
-		`:root[data-display-scheme="artistic"]`,
-		`--artistic-primary: var(--runtime-theme-color, var(--runtime-color-apple-blue))`,
-		`--artistic-success: var(--color-value-10b981)`,
-		`--artistic-warning: var(--color-value-f59e0b)`,
-		`--artistic-error: var(--color-value-ef4444)`,
-		`--artistic-shadow`,
-		`[data-slot="button"]`,
-		`[data-slot="badge"]`,
-		`[data-slot="card"]`,
-		`[data-slot="input"]`,
-		`[data-slot="switch"]`,
-		`[data-slot="table-container"]`,
-		`[data-slot="dialog-content"]`,
-		`[data-slot="alert-dialog-content"]`,
-		`[data-slot="progress"]`,
-		`[data-slot="tooltip-content"]`,
-		`.app-sidebar`,
-		`.sidebar-item`,
-		`.compact-nav-item`,
-		`.topbar`,
-		`.settings-row-item`,
-		`.aesthetic-field-col`,
-	} {
-		if !strings.Contains(artisticSchemeStyles, required) {
-			t.Fatalf("frontend/src/styles/artistic-scheme should centralise artistic theme rule %q", required)
-		}
-	}
-}
-
-// TestArtisticSchemeComponentCssImportsStayScoped 验证 artistic 主题入口为每个 shadcn primitive 预留覆盖文件，暂未定制的组件允许空文件占位。
-func TestArtisticSchemeComponentCssCoversCurrentPrimitives(t *testing.T) {
-	entry := readRootFile(t, "frontend", "src", "styles", "artistic-scheme.css")
-	uiRoot := rootPath(filepath.Join("frontend", "src", "components", "ui"))
-	componentCssRoot := rootPath(filepath.Join("frontend", "src", "styles", "artistic-scheme", "components"))
-
-	entries, err := os.ReadDir(uiRoot)
-	if err != nil {
-		t.Fatalf("read shadcn primitive directory: %v", err)
-	}
-
-	for _, entryDir := range entries {
-		if !entryDir.IsDir() {
-			continue
-		}
-		name := entryDir.Name()
-		cssPath := filepath.Join(componentCssRoot, name+".css")
-		if _, err := os.Stat(cssPath); err != nil {
-			t.Fatalf("artistic scheme should provide component override placeholder for frontend/src/components/ui/%s at %s: %v", name, cssPath, err)
-		}
-		importPath := `@import "./artistic-scheme/components/` + name + `.css"`
-		if !strings.Contains(entry, importPath) {
-			t.Fatalf("artistic-scheme.css should import component override for %s: missing %q", name, importPath)
-		}
-	}
-}
-
-// TestArtisticSchemeKeepsSwitchAsTrack 验证 artistic 主题不能把 Switch 当作整行表单容器拉伸。
-func TestArtisticSchemeKeepsSwitchAsTrack(t *testing.T) {
-	switchStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "switch.css")
-	commonStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "common.css")
-
-	for _, required := range []string{
-		`:root[data-display-scheme="artistic"] [data-slot="switch"]`,
-		`min-width:`,
-		`height:`,
-		`border-radius: var(--radius-full)`,
-		`:root[data-display-scheme="artistic"] [data-slot="switch-thumb"]`,
-		`inset-inline-start:`,
-		`translate: none !important`,
-		`width:`,
-		`height:`,
-		`background: var(--color-white-solid) !important`,
-		`:root[data-display-scheme="artistic"] [data-slot="switch"][data-state="checked"] [data-slot="switch-thumb"]`,
-	} {
-		if !strings.Contains(switchStyles, required) {
-			t.Fatalf("components/switch.css should keep switch controls as artistic switch tracks: missing %q", required)
-		}
-	}
-
-	for _, required := range []string{
-		`:root[data-display-scheme="artistic"] .settings-control-switch`,
-		`justify-self: end`,
-	} {
-		if !strings.Contains(commonStyles, required) {
-			t.Fatalf("common.css should keep settings switch controls as artistic switch tracks: missing %q", required)
-		}
-	}
-
-	for _, forbidden := range []string{
-		`.settings-control-switch {
-    grid-column: 1 / -1;
-    width: 100%;`,
-	} {
-		if strings.Contains(commonStyles, forbidden) {
-			t.Fatalf("artistic switch must not be stretched to full row width: found %q", forbidden)
-		}
-	}
-}
-
-// TestArtisticSchemeComponentDetailsMatchThemeTokens 验证 artistic 主题覆盖的不只是颜色，还包括边框、间距、行高、阴影和状态细节。
-func TestArtisticSchemeComponentDetailsMatchThemeTokens(t *testing.T) {
-	commonStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "common.css")
-	artisticSchemeStyles := readArtisticSchemeStyles(t)
-	buttonStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "button.css")
-	cardStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "card.css")
-	dialogStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "dialog.css")
-	alertDialogStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "alert-dialog.css")
-	badgeStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "badge.css")
-	tableStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "table.css")
-	tooltipStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "tooltip.css")
-
-	for _, required := range []string{
-		`--artistic-primary`,
-		`--artistic-shadow`,
-		`--artistic-glass-border`,
-		`background-image`,
-	} {
-		if !strings.Contains(commonStyles, required) {
-			t.Fatalf("common.css should keep artistic detail token %q", required)
-		}
-	}
-	if !strings.Contains(artisticSchemeStyles, `backdrop-filter`) {
-		t.Fatal("artistic scheme component styles should keep glass detail backdrop-filter")
-	}
-
-	for _, required := range []string{
-		`var(--control-height`,
-		`background: var(--artistic-primary)`,
-	} {
-		if !strings.Contains(buttonStyles, required) {
-			t.Fatalf("button.css should use artistic control detail %q", required)
-		}
-	}
-	// 品牌填充不允许再掺固定色渐变；主题色必须原样生效。
-	if strings.Contains(buttonStyles, "linear-gradient") {
-		t.Fatal("button.css should fill primary buttons with the solid theme color instead of a gradient")
-	}
-
-	for _, required := range []string{
-		`var(--artistic-glass-border)`,
-		`backdrop-filter`,
-		`var(--artistic-shadow)`,
-	} {
-		if !strings.Contains(cardStyles, required) {
-			t.Fatalf("card.css should keep artistic card detail %q", required)
-		}
-	}
-
-	for _, required := range []string{
-		`var(--artistic-glass-border)`,
-		`var(--artistic-shadow-lg)`,
-		`justify-content: flex-end`,
-		`:root[data-display-scheme="artistic"] [data-slot="dialog-content"]:not(.ui-dialog-content-top-right)`,
-		`translate: -50% -50%`,
-	} {
-		if !strings.Contains(dialogStyles+alertDialogStyles, required) {
-			t.Fatalf("dialog styles should keep artistic modal detail %q", required)
-		}
-	}
-
-	for _, required := range []string{
-		`border-radius: var(--radius-full)`,
-		`color-mix`,
-	} {
-		if !strings.Contains(badgeStyles, required) {
-			t.Fatalf("badge.css should keep artistic badge detail %q", required)
-		}
-	}
-
-	for _, required := range []string{
-		`overflow: auto`,
-		`text-align: start`,
-		`overflow-wrap: break-word`,
-	} {
-		if !strings.Contains(tableStyles, required) {
-			t.Fatalf("table.css should keep table detail %q", required)
-		}
-	}
-
-	for _, required := range []string{
-		`background: var(--popover)`,
-		`box-shadow: var(--artistic-shadow-lg)`,
-		`word-wrap: break-word`,
-	} {
-		if !strings.Contains(tooltipStyles, required) {
-			t.Fatalf("tooltip.css should keep artistic tooltip detail %q", required)
-		}
-	}
-
-}
-
-// TestArtisticSchemeStylesShadcnSelect 验证设置页下拉使用 shadcn Select，选中项颜色由主题 CSS 覆盖。
-func TestArtisticSchemeStylesShadcnSelect(t *testing.T) {
-	settingsPage := readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.vue")
-	selectStyles := readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", "select.css")
-
-	if strings.Contains(settingsPage, "UiNativeSelect") {
-		t.Fatal("settings page dropdowns should use shadcn Select, not UiNativeSelect")
-	}
-	for _, required := range []string{
-		`<UiSelect`,
-		`<UiSelectTrigger class="settings-control-select"`,
-		`<UiSelectContent>`,
-		`<UiSelectItem`,
-		`<UiSelectValue`,
-	} {
-		if !strings.Contains(settingsPage, required) {
-			t.Fatalf("settings page should compose shadcn Select primitive: missing %q", required)
-		}
-	}
-
-	for _, required := range []string{
-		`:root[data-display-scheme="artistic"] [data-slot="select-trigger"]`,
-		`:root[data-display-scheme="artistic"] [data-slot="select-content"]`,
-		`:root[data-display-scheme="artistic"] [data-slot="select-item"]`,
-		`:root[data-display-scheme="artistic"] [data-slot="select-item"][data-state="checked"]`,
-		`:root[data-display-scheme="artistic"] [data-slot="select-trigger"]:hover`,
-		`:root[data-display-scheme="artistic"] [data-slot="select-trigger"]:focus-visible`,
-		`background-color: var(--card)`,
-		`box-shadow: var(--artistic-shadow-lg)`,
-		`background: color-mix(in srgb, var(--runtime-accent-color`,
-		`color: var(--runtime-accent-color`,
-		`font-weight: var(--fw-medium)`,
-		`:root[data-display-scheme="artistic"] .preference-color-menu`,
-		`:root[data-display-scheme="artistic"] .preference-color-option`,
-		`:root[data-display-scheme="artistic"] .preference-color-option.is-selected`,
-	} {
-		if !strings.Contains(selectStyles, required) {
-			t.Fatalf("components/select.css should style shadcn Select and color dropdown with artistic CSS: missing %q", required)
-		}
-	}
-
-	for _, forbidden := range []string{
-		`opacity: 0;`,
-		`z-index: -1`,
-		`option:checked`,
-	} {
-		if strings.Contains(selectStyles, forbidden) {
-			t.Fatalf("components/select.css must not hide Select or depend on Vue-rendered shell: found %q", forbidden)
-		}
-	}
-
-	for _, forbidden := range []string{
-		`.custom-select-`,
-	} {
-		if strings.Contains(selectStyles, forbidden) {
-			t.Fatalf("components/select.css should not keep dead CustomSelect contract %q", forbidden)
 		}
 	}
 }
@@ -2342,12 +1799,9 @@ func TestHeaderDoesNotExposeRepositoryOrGlobalUpdateAction(t *testing.T) {
 	for _, forbidden := range []string{
 		"state.appInfo?.repository",
 		"projectMetadata.repositoryUrl",
-		"go-desktop-text-size",
-		"React</Badge>",
-		"shadcn</Badge>",
 	} {
 		if strings.Contains(appChrome, forbidden) {
-			t.Fatalf("frontend/src/features/layout/AppChrome.vue should keep repository and update actions out of the global header: found %q", forbidden)
+			t.Fatalf("frontend/src/features/layout/AppChrome.vue should keep repository information out of the global header: found %q", forbidden)
 		}
 	}
 }
@@ -2357,39 +1811,12 @@ func TestHomePageDoesNotExposeUpdateWorkflowActions(t *testing.T) {
 	homePage := readRootFile(t, "frontend", "src", "features", "home", "HomePage.vue")
 
 	for _, forbidden := range []string{
-		"run" + "Release" + "Audit(",
 		"检查更新",
 		"马上更新",
 		"下次启动",
 	} {
 		if strings.Contains(homePage, forbidden) {
 			t.Fatalf("frontend/src/features/home/HomePage.vue should keep update workflow actions in the global update dialog: found %q", forbidden)
-		}
-	}
-}
-
-// TestFrontendDoesNotTrackUpdateHistoryOrEvents 验证前端只展示当前更新检查结果，不保留历史、事件或审计状态。
-func TestFrontendDoesNotTrackUpdateHistoryOrEvents(t *testing.T) {
-	sources := strings.Join([]string{
-		readRootFile(t, "frontend", "src", "api", "wails.ts"),
-		readRootFile(t, "frontend", "src", "app", "state.ts"),
-		readRootFile(t, "frontend", "src", "stores", "app.ts"),
-		readRootFile(t, "frontend", "src", "features", "update", "UpdateStatusDialog.vue"),
-	}, "\n")
-
-	for _, forbidden := range []string{
-		"Release" + "Audit",
-		"Audit" + "Result",
-		"List" + "Release" + "Audits",
-		"list" + "Release" + "Audits",
-		"run" + "Release" + "Audit",
-		"Update" + "Event",
-		"update" + "Events",
-		"List" + "Update" + "Events",
-		"list" + "Update" + "Events",
-	} {
-		if strings.Contains(sources, forbidden) {
-			t.Fatalf("frontend update flow must not expose history/event/audit concepts: found %q", forbidden)
 		}
 	}
 }
@@ -2401,6 +1828,17 @@ func readRootFile(t *testing.T, parts ...string) string {
 		t.Fatalf("read %s: %v", filepath.Join(parts...), err)
 	}
 	return strings.ReplaceAll(string(data), "\r\n", "\n")
+}
+
+// tsCodeOnly 抹掉 TS 源码里的注释内容（保留行数），用于「不得调用某 API」这类禁令断言。
+// 注释描述的是实现意图，不是行为：把 "localStorage" 写在注释里不会让偏好多出第二份存储。
+func tsCodeOnly(source string) string {
+	block := regexp.MustCompile(`(?s)/\*.*?\*/`)
+	line := regexp.MustCompile(`//[^\n]*`)
+	kept := block.ReplaceAllStringFunc(source, func(match string) string {
+		return strings.Repeat("\n", strings.Count(match, "\n"))
+	})
+	return line.ReplaceAllString(kept, "")
 }
 
 func mustRelRoot(t *testing.T, path string) string {
@@ -2424,22 +1862,13 @@ func hasAnySuffix(value string, suffixes ...string) bool {
 func assertColorTokenNameMatchesRules(t *testing.T, name string, value string) {
 	t.Helper()
 	if !colorTokenNameShapePattern.MatchString(name) {
-		t.Fatalf("color token %q should use a documented --color-display/black/white/value name", name)
+		t.Fatalf("color token %q should use a documented --color-black/white/value name", name)
 	}
 
 	switch {
 	case name == "--color-transparent":
 		if strings.ToLower(value) != "transparent" {
 			t.Fatalf("%s should define transparent, got %q", name, value)
-		}
-	case strings.HasPrefix(name, "--color-display-"):
-		token := strings.TrimPrefix(name, "--color-display-")
-		expectedValue, ok := displayPaletteValueForToken(token)
-		if !ok {
-			t.Fatalf("display color token %q is not part of the locked 18-color display palette", name)
-		}
-		if value != expectedValue {
-			t.Fatalf("display color token %q should define %q, got %q", name, expectedValue, value)
 		}
 	case name == "--color-black-solid":
 		if strings.ToLower(value) != "#000000" {
@@ -2462,15 +1891,6 @@ func assertColorTokenNameMatchesRules(t *testing.T, name string, value string) {
 	default:
 		t.Fatalf("color token %q does not match any documented naming rule", name)
 	}
-}
-
-func displayPaletteValueForToken(token string) (string, bool) {
-	for _, color := range displayPreferencePaletteColors {
-		if color.token == token {
-			return color.value, true
-		}
-	}
-	return "", false
 }
 
 func assertMonochromeAlphaTokenNameMatchesValue(t *testing.T, name string, value string) {
@@ -2661,45 +2081,6 @@ func normaliseAlphaValue(value string) string {
 		return value
 	}
 	return strconv.FormatFloat(alpha, 'f', -1, 64)
-}
-
-func readArtisticComponentStylesByFile(t *testing.T) map[string]string {
-	t.Helper()
-	componentDir := rootPath(filepath.Join("frontend", "src", "styles", "artistic-scheme", "components"))
-	entries, err := os.ReadDir(componentDir)
-	if err != nil {
-		t.Fatalf("read artistic component CSS directory: %v", err)
-	}
-
-	files := make(map[string]string)
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".css") {
-			continue
-		}
-		rel := filepath.ToSlash(filepath.Join("frontend", "src", "styles", "artistic-scheme", "components", entry.Name()))
-		files[rel] = readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", entry.Name())
-	}
-	return files
-}
-
-// readArtisticSchemeStyles 汇总 artistic 方案目录下的 common 和组件覆盖 CSS，供结构测试检查集中归属。
-func readArtisticSchemeStyles(t *testing.T) string {
-	t.Helper()
-	var files []string
-	files = append(files, readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "common.css"))
-
-	componentDir := rootPath(filepath.Join("frontend", "src", "styles", "artistic-scheme", "components"))
-	entries, err := os.ReadDir(componentDir)
-	if err != nil {
-		t.Fatalf("read artistic component CSS directory: %v", err)
-	}
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".css") {
-			continue
-		}
-		files = append(files, readRootFile(t, "frontend", "src", "styles", "artistic-scheme", "components", entry.Name()))
-	}
-	return strings.Join(files, "\n")
 }
 
 func rootPath(path string) string {

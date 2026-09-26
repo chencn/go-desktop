@@ -1,11 +1,13 @@
 <!--
   文件职责：渲染更新状态弹窗并驱动检查、下载、安装动作。
   边界：打开弹窗只读取当前状态；安装只能由用户点击主按钮显式触发。
+  布局对应设计稿 .update-dialog：页头（图标标题 + 红绿灯关闭）/ 页身（版本横幅 + 状态说明 + 进度）/ 页脚（两枚按钮）。
+  更新状态只讲「当前能不能升级、进度如何」，不渲染 Release 正文。
 -->
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { Download, Loader2, RefreshCw, X } from '@lucide/vue'
+import { Info, Loader2, RefreshCw } from '@lucide/vue'
 import { type UpdateStatus } from '@/api/wails'
 import { useAppStore } from '@/stores/app'
 import { formatBytes } from '@/shared/format'
@@ -33,7 +35,10 @@ const canInstall = computed(() => Boolean(appStore.updateStatus?.verified && app
 // message 优先用生命周期状态消息，其次用最近一次检查消息，最后才给空状态提示。
 const message = computed(() => displayMessage(appStore.updateStatus?.message ?? appStore.latestUpdateCheck?.message ?? '尚未执行更新检查。'))
 const currentVersion = computed(() => appStore.latestUpdateCheck?.currentVersion ?? appStore.appInfo?.version ?? projectMetadata.defaultVersion)
-const latestVersion = computed(() => appStore.latestUpdateCheck?.latestVersion ?? appStore.updateStatus?.version ?? '未获取')
+const latestVersion = computed(() => appStore.latestUpdateCheck?.latestVersion ?? appStore.updateStatus?.version ?? '')
+// hasLatest 决定版本横幅里要不要画「→ 最新版本」这一段：只有服务端版本严格更高才算有更新，
+// 版本相同或更低时后端已经回 no_update，横幅不能再摆出一个像是待升级的目标版本。
+const hasLatest = computed(() => isVersionAhead(latestVersion.value, currentVersion.value))
 const showProgress = computed(() => appStore.checking || isTransferState(status.value) || status.value === 'installing')
 const description = computed(() => userStatusDescription())
 // openRevision 用来丢弃过期的打开刷新结果，避免快速开关弹窗后旧请求覆盖错误状态。
@@ -77,6 +82,30 @@ function isTransferState(status?: string) {
   return status === 'downloading' || status === 'verifying'
 }
 
+// versionParts 按后端 semver 包的口径解析 v?N(.N){0,2}：缺段补 0，出现非数字段即判为非法版本。
+function versionParts(value: string) {
+  const core = value.trim().replace(/^[vV]/, '')
+  if (core === '') return null
+  const segments = core.split('.')
+  if (segments.length > 3) return null
+  const numbers = segments.map((segment) => (/^\d+$/.test(segment) ? Number(segment) : Number.NaN))
+  if (numbers.some((item) => Number.isNaN(item))) return null
+  while (numbers.length < 3) numbers.push(0)
+  return numbers
+}
+
+// isVersionAhead 判断服务端版本是否严格高于本地版本：版本相同或更低都不算有更新。
+// 兜底方向与后端 semver.Compare 一致（非法版本低于合法版本），保证前端横幅不会比后端多喊一次「可更新」。
+function isVersionAhead(candidate: string, baseline: string) {
+  const left = versionParts(candidate)
+  const right = versionParts(baseline)
+  if (!left || !right) return Boolean(left)
+  for (let index = 0; index < 3; index += 1) {
+    if (left[index] !== right[index]) return left[index] > right[index]
+  }
+  return false
+}
+
 // progressText 在没有百分比时回退到阶段文案，避免 0% 被误读为下载失败。
 function progressText(status: UpdateStatus | undefined, progress: number) {
   if (appStore.checking) return '正在检查'
@@ -108,38 +137,22 @@ function updateStatusLabel(status?: string) {
   return labels[String(status ?? '')] ?? '未检查'
 }
 
-function userStatusTitle() {
-  if (appStore.checking) return '正在检查更新'
-  if (status.value === 'downloading') return '正在下载更新'
-  if (status.value === 'verifying') return '正在校验更新包'
-  if (status.value === 'installing') return '正在启动安装'
-  if (canInstall.value) return '更新包已准备好'
-  if (status.value === 'install_started') return '安装器已启动'
-  if (status.value === 'no_update') return '当前已是最新版本'
-  if (status.value === 'update_available') return latestVersion.value === '未获取' ? '发现新版本' : `发现新版本 ${latestVersion.value}`
-  if (status.value === 'error') return '更新失败'
-  if (status.value === 'skipped' || status.value === 'ignored') return '本次检查已跳过'
-  return '尚未检查更新'
-}
-
 function userStatusDescription() {
-  if (canInstall.value) return ''
+  if (canInstall.value) return '安装包已下载并通过 SHA-256 校验，可以立即安装。'
   if (status.value === 'no_update') return '当前版本已经是最新，无需操作。'
-  if (status.value === 'update_available') return message.value
+  // 服务端版本更高才走这条分支（后端已按 semver 严格比较），文案直接给出目标版本和下一步动作。
+  if (status.value === 'update_available') return `发现新版本 v${latestVersion.value}，点击「立即更新」开始下载并校验。`
   if (status.value === 'error') return message.value || '更新过程中遇到问题，请稍后重试。'
   if (status.value === 'install_started') return '安装器已经打开，请按安装器提示完成更新。'
   if (showProgress.value) return message.value
-  return '点击检查更新，应用会自动确认是否有新版本。'
-}
-
-function versionLine() {
-  if (latestVersion.value === '未获取') return `当前版本 ${currentVersion.value}`
-  return `当前版本 ${currentVersion.value} · 最新版本 ${latestVersion.value}`
+  return '点击「检查更新」，应用会自动确认是否有新版本。'
 }
 
 function primaryActionLabel() {
-  if (canInstall.value) return '马上更新'
+  if (canInstall.value) return '立即下载并安装'
   if (status.value === 'error') return '重新检查'
+  // 已知有更高版本时不能再喊「检查更新」，否则用户以为要点两次才知道有更新。
+  if (status.value === 'update_available') return '立即更新'
   return '检查更新'
 }
 
@@ -151,47 +164,76 @@ async function runPrimaryAction() {
   await checkAndDownload()
 }
 
-function primaryActionIcon() {
-  if (isBusy.value) return Loader2
-  if (canInstall.value) return Download
-  return RefreshCw
+// secondaryActionLabel 把设计稿的「稍后处理」让位给真实分支：包已就绪时这一格用来延后安装。
+function secondaryActionLabel() {
+  return canInstall.value ? '下次启动再更新' : '稍后处理'
+}
+
+async function runSecondaryAction() {
+  if (canInstall.value) {
+    await scheduleOnStartup()
+    return
+  }
+  closeDialog()
 }
 </script>
 
 <template>
-  <UiDialog :open="props.open" label="更新状态" placement="top-right" @close="closeDialog">
-      <header class="dialog-header" :class="{ 'is-no-update': status === 'no_update' }">
-        <div>
-          <h2>{{ userStatusTitle() }}</h2>
-          <p v-if="description">{{ description }}</p>
-        </div>
-        <div class="dialog-header-actions">
-          <UiButton aria-label="关闭更新弹窗" size="icon-sm" variant="ghost" @click="closeDialog">
-            <X :size="17" />
-          </UiButton>
-        </div>
-      </header>
+  <!-- 外部点击不关闭弹窗（close-on-click-modal=false），Esc 仍可关闭，与项目级弹窗策略一致。 -->
+  <!-- 不传 width：480px 的弹窗宽度由 styles/element-plus.css 的 --dialog-width 决定。 -->
+  <el-dialog
+    :model-value="props.open"
+    align-center
+    :close-on-click-modal="false"
+    :show-close="false"
+    class="apple-dialog update-status-dialog"
+    aria-label="应用更新状态"
+    @close="closeDialog"
+  >
+    <template #header>
+      <span class="dialog-title">
+        <RefreshCw :size="18" aria-hidden="true" />
+        应用更新状态
+      </span>
+      <button type="button" class="traffic-btn close" title="关闭" aria-label="关闭更新弹窗" @click="closeDialog"></button>
+    </template>
 
-      <p class="user-version-line">{{ versionLine() }}</p>
-
-      <div v-if="showProgress" class="progress-block">
-        <div>
-          <span>{{ updateStatusLabel(status) }}</span>
-          <strong>{{ progressText(appStore.updateStatus, progress) }}</strong>
-        </div>
-        <UiProgress :value="Math.max(appStore.checking ? 12 : 4, progress)" />
+    <div class="update-info-banner">
+      <Info :size="24" :stroke-width="2" aria-hidden="true" />
+      <div class="update-versions">
+        <span>当前版本 <strong class="ver-badge">v{{ currentVersion }}</strong></span>
+        <template v-if="hasLatest">
+          <span aria-hidden="true">→</span>
+          <span>最新版本 <strong class="ver-badge ok">v{{ latestVersion }}</strong></span>
+        </template>
       </div>
+    </div>
 
-      <div class="dialog-actions">
-        <UiButton :disabled="isBusy" @click="runPrimaryAction">
-          <component :is="primaryActionIcon()" :class="{ 'animate-spin': isBusy }" :size="18" />
-          {{ primaryActionLabel() }}
-        </UiButton>
-        <UiButton v-if="canInstall" variant="secondary" @click="scheduleOnStartup">
-          下次启动再更新
-        </UiButton>
+    <p v-if="description" class="update-message">{{ description }}</p>
+
+    <div v-if="showProgress" class="update-progress">
+      <!-- EP 把 stroke-width 和填充色写进行内样式，只能走 props：色值传 CSS 变量以跟随亮暗模式 -->
+      <el-progress
+        class="apple-progress"
+        color="var(--accent)"
+        :percentage="Math.min(100, Math.max(appStore.checking ? 12 : 4, progress))"
+        :show-text="false"
+        :stroke-width="8"
+      />
+      <div class="progress-meta">
+        <span>{{ updateStatusLabel(status) }}</span>
+        <span>{{ progressText(appStore.updateStatus, progress) }}</span>
       </div>
-  </UiDialog>
+    </div>
+
+    <template #footer>
+      <el-button class="btn-apple" @click="runSecondaryAction">{{ secondaryActionLabel() }}</el-button>
+      <el-button class="btn-apple" type="primary" :disabled="isBusy" @click="runPrimaryAction">
+        <Loader2 v-if="isBusy" class="animate-spin" :size="15" aria-hidden="true" />
+        {{ primaryActionLabel() }}
+      </el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <style scoped src="./UpdateStatusDialog.css"></style>

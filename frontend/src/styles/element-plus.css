@@ -1,0 +1,1059 @@
+/*
+  Element Plus 皮肤层（唯一允许触碰 EP 内部 DOM 选择器的文件）。
+  设计稿用原生元素表达控件（.btn-apple / .apple-switch / .segmented-control / .ios-select-trigger /
+  .apple-table / .page-btn / .apple-progress-* / .apple-toast / .update-dialog / .apple-alert-dialog），
+  本项目全部由 Element Plus 组件承担，因此这里把设计稿的每一条观感规则映射到对应 EP DOM。
+  数值一律引用 styles.css 的令牌；raw 色值只允许出现在 colors.css。
+  加载顺序：main.ts 里本文件排在最后，确保覆盖按需引入的 EP 组件默认样式。
+*/
+
+/* ==========================================================================
+   1. 按钮（设计稿 §10 .btn-apple）
+   ========================================================================== */
+.el-button.btn-apple {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-6);
+  height: auto;
+  padding: var(--sp-7) var(--sp-15);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: var(--fs-13);
+  font-weight: 500;
+  line-height: 1.2;
+  border: 1px solid var(--color-transparent);
+  backdrop-filter: blur(var(--sp-16));
+  -webkit-backdrop-filter: blur(var(--sp-16));
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.el-button.btn-apple > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-6);
+}
+
+.el-button.btn-apple:active {
+  transform: scale(0.97);
+}
+
+/* 主按钮：Action Blue 三段渐变 + 内高光 + 外投影 */
+.el-button.btn-apple.el-button--primary {
+  background: var(--btn-primary-fill);
+  color: var(--accent-on);
+  box-shadow: var(--btn-primary-shadow);
+  border-color: var(--color-transparent);
+}
+
+.el-button.btn-apple.el-button--primary:hover,
+.el-button.btn-apple.el-button--primary:focus-visible {
+  background: var(--btn-primary-fill-hover);
+  box-shadow: var(--btn-primary-shadow-hover);
+  color: var(--accent-on);
+  border-color: var(--color-transparent);
+}
+
+/* 次级按钮：白玻璃 + 细描边；EP 的 default 型与显式 .secondary 共用同一份 */
+.el-button.btn-apple:not(.el-button--primary):not(.el-button--danger):not(.el-button--warning):not(.el-button--success),
+.el-button.btn-apple.secondary {
+  background: var(--btn-secondary-fill);
+  border: 1px solid var(--btn-secondary-edge);
+  color: var(--fg);
+  box-shadow: var(--btn-secondary-shadow);
+}
+
+.el-button.btn-apple:not(.el-button--primary):not(.el-button--danger):not(.el-button--warning):not(.el-button--success):hover,
+.el-button.btn-apple.secondary:hover,
+.el-button.btn-apple:not(.el-button--primary):not(.el-button--danger):not(.el-button--warning):not(.el-button--success):focus-visible,
+.el-button.btn-apple.secondary:focus-visible {
+  background: var(--btn-secondary-fill-hover);
+  border-color: var(--btn-secondary-edge-hover);
+  color: var(--accent);
+  box-shadow: var(--btn-secondary-shadow-hover);
+  transform: translateY(-0.5px);
+}
+
+.el-button.btn-apple:not(.el-button--primary):not(.el-button--danger):not(.el-button--warning):not(.el-button--success):active,
+.el-button.btn-apple.secondary:active {
+  background: var(--btn-secondary-fill-active);
+  border-color: var(--btn-secondary-edge-active);
+  box-shadow: var(--btn-secondary-shadow-active);
+  transform: scale(0.97) translateY(0);
+}
+
+/* 危险按钮：红色三段渐变 */
+.el-button.btn-apple.el-button--danger,
+.el-button.btn-apple.el-button--warning {
+  background: var(--btn-danger-fill);
+  color: var(--color-white-solid);
+  border-color: var(--color-transparent);
+  box-shadow: var(--btn-danger-shadow);
+}
+
+.el-button.btn-apple.el-button--danger:hover,
+.el-button.btn-apple.el-button--danger:focus-visible,
+.el-button.btn-apple.el-button--warning:hover,
+.el-button.btn-apple.el-button--warning:focus-visible {
+  background: var(--btn-danger-fill-hover);
+  color: var(--color-white-solid);
+  border-color: var(--color-transparent);
+  box-shadow: var(--btn-danger-shadow-hover);
+}
+
+/* EP 的 text/link 型会清掉底色，玻璃质感需要保留 */
+.el-button.btn-apple.is-link,
+.el-button.btn-apple.is-text {
+  background: var(--btn-secondary-fill);
+  border: 1px solid var(--btn-secondary-edge);
+  color: var(--fg);
+  box-shadow: var(--btn-secondary-shadow);
+}
+
+.el-button.btn-apple.is-disabled,
+.el-button.btn-apple:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 紧凑档：分组标题右侧的「恢复默认」等次级操作（设计稿行内 font-size 12 / padding 4 10） */
+.el-button.btn-apple.is-compact {
+  padding: var(--sp-4) var(--sp-10);
+  font-size: var(--fs-12);
+}
+
+/* 警告弹窗的等宽按钮行：设计稿 .alert-actions-row button */
+.el-button.btn-apple.is-alert-action {
+  flex: 1;
+  justify-content: center;
+  padding: var(--sp-9) var(--sp-16);
+  font-size: var(--fs-14);
+  font-weight: 500;
+}
+
+/* 设计稿 .append-copy-btn：组合输入的按钮端，浅底右半圆角，悬浮只换底色不位移 */
+.el-button.btn-apple.is-append {
+  flex-shrink: 0;
+  padding: 0 var(--sp-14);
+  border: 1px solid var(--border);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--surface-warm);
+  color: var(--fg-2);
+  font-size: var(--fs-12);
+  box-shadow: none;
+}
+
+.el-button.btn-apple.is-append:hover,
+.el-button.btn-apple.is-append:focus-visible {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--accent);
+  box-shadow: none;
+  transform: none;
+}
+
+/* ==========================================================================
+   2. iOS 液态阻尼开关（设计稿 §8 .apple-switch：44×26 轨道 + 22px 旋钮）
+   ========================================================================== */
+.el-switch.apple-switch {
+  width: var(--sp-44);
+  height: var(--sp-26);
+  --el-switch-on-color: var(--color-transparent);
+  --el-switch-off-color: var(--color-transparent);
+}
+
+.el-switch.apple-switch .el-switch__core {
+  width: var(--sp-44);
+  height: var(--sp-26);
+  border-radius: var(--radius-pill);
+  background: var(--switch-off-track);
+  border-color: var(--color-transparent);
+  backdrop-filter: blur(var(--sp-8));
+  -webkit-backdrop-filter: blur(var(--sp-8));
+  box-shadow: var(--switch-off-shadow);
+  transition: background-color var(--duration-base) var(--ease-apple), box-shadow var(--duration-base) var(--ease-apple);
+}
+
+.el-switch.apple-switch.is-checked .el-switch__core {
+  background: var(--switch-on-track);
+  box-shadow: var(--switch-on-shadow);
+}
+
+.el-switch.apple-switch .el-switch__action {
+  width: var(--sp-22);
+  height: var(--sp-22);
+  left: var(--sp-2);
+  background: var(--switch-knob);
+  box-shadow: var(--switch-knob-shadow);
+  transition: transform var(--duration-base) var(--ease-apple), box-shadow 0.2s ease;
+}
+
+.el-switch.apple-switch.is-checked .el-switch__action {
+  left: var(--sp-2);
+  transform: translateX(var(--sp-18));
+  box-shadow: var(--switch-knob-shadow-checked);
+}
+
+/* 设计稿的开关不显示文字图标 */
+.el-switch.apple-switch .el-switch__inner {
+  display: none;
+}
+
+.el-switch.apple-switch.is-disabled {
+  opacity: 0.55;
+}
+
+/* ==========================================================================
+   3. 分段选择器（设计稿 §8 .segmented-control + .segment-btn）
+   外观设置的主题 / 尺寸 / 玻璃风格三行都用它。
+   ========================================================================== */
+.el-radio-group.segmented-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background: var(--segment-track);
+  backdrop-filter: var(--segment-blur);
+  -webkit-backdrop-filter: var(--segment-blur);
+  padding: var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--segment-track-inset);
+}
+
+/* EP 把选中态配色写成 .el-radio-button 自己的组件变量（主色实心胶囊 + 白字 + 1px 分隔阴影），
+   继承链上层的同名变量压不住它，必须在同一个元素上改写才能得到设计稿的白色滑块。 */
+.segmented-control .el-radio-button {
+  --el-radio-button-checked-bg-color: var(--bg);
+  --el-radio-button-checked-text-color: var(--fg);
+  --el-radio-button-checked-border-color: var(--color-transparent);
+  --el-radio-button-disabled-checked-fill: var(--bg);
+}
+
+/* EP 的分段钮自带 outline 描边、白底与 line-height 1，必须先全部退成设计稿的透明凹槽内衬 */
+.segmented-control .el-radio-button .el-radio-button__inner {
+  padding: var(--sp-5) var(--sp-14);
+  border: none;
+  border-radius: var(--radius-segment-knob);
+  outline: none;
+  background: var(--color-transparent);
+  box-shadow: none;
+  color: var(--fg-2);
+  font-size: var(--fs-12);
+  font-weight: 500;
+  line-height: normal;
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.segmented-control .el-radio-button .el-radio-button__inner:hover {
+  color: var(--fg);
+}
+
+/* 选中滑块凸起投影：EP 对首个分段写了 box-shadow:none!important，只能同级别声明才能压住 */
+.el-radio-group.segmented-control .el-radio-button.is-active .el-radio-button__inner {
+  box-shadow: var(--segment-knob-shadow) !important;
+  font-weight: 600;
+}
+
+/* 显示偏好 hydrate 完成前分段器短暂禁用：只降透明度，保持玻璃凹槽通透 */
+.el-radio-group.segmented-control .el-radio-button.is-disabled .el-radio-button__inner {
+  background: var(--color-transparent);
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 手机端：分段器通栏等分，触控高度抬到 38px（设计稿 §11C） */
+@media (max-width: 767px) {
+  .segmented-control {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    padding: var(--sp-3);
+    border-radius: 9px;
+  }
+
+  .segmented-control .el-radio-button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .segmented-control .el-radio-button .el-radio-button__inner {
+    display: inline-flex;
+    width: 100%;
+    min-height: var(--control-height-touch);
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-7) var(--sp-6);
+    border-radius: 7px;
+    font-size: var(--fs-13);
+    white-space: nowrap;
+  }
+}
+
+/* ==========================================================================
+   4. 日志级别页签（设计稿 §7 .log-command-tabs + .log-tab-btn）
+   同一套分段器，但轨道换成扁平 --surface，页签右侧挂数量胶囊。
+   ========================================================================== */
+.segmented-control.is-tone-tabs {
+  gap: 0;
+  padding: var(--sp-2);
+  background: var(--surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* 页签激活后文字换主色；底色沿用分段器的白底滑块，各级别在下方按组件变量覆写文字色 */
+.segmented-control.is-tone-tabs .el-radio-button {
+  --el-radio-button-checked-text-color: var(--accent);
+}
+
+.segmented-control.is-tone-tabs .el-radio-button .el-radio-button__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: var(--sp-5) var(--sp-10);
+  white-space: nowrap;
+}
+
+/* 数量胶囊徽标：16px 高的中性底座，文字色继承所在页签 */
+.segmented-control.is-tone-tabs .el-radio-button .el-radio-button__inner strong {
+  display: inline-flex;
+  min-width: var(--sp-16);
+  height: var(--sp-16);
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--sp-2);
+  padding: 0 var(--sp-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-black-alpha-060);
+  font-size: var(--fs-11);
+  font-weight: 600;
+  line-height: 1;
+}
+
+html.dark .segmented-control.is-tone-tabs .el-radio-button .el-radio-button__inner strong {
+  background: var(--color-white-alpha-120);
+}
+
+/* 设计稿 .log-tab-btn.active 的投影比设置页分段器更浅，只压 1px 贴边阴影 */
+.el-radio-group.segmented-control.is-tone-tabs .el-radio-button.is-active .el-radio-button__inner {
+  box-shadow: 0 var(--sp-1) var(--sp-3) var(--color-black-alpha-080) !important;
+}
+
+.el-radio-group.segmented-control.is-tone-tabs .el-radio-button.is-active .el-radio-button__inner strong {
+  background: var(--accent);
+  color: var(--color-white-solid);
+}
+
+/* 级别只影响激活页签的文字色：debug 灰、warning 橙、error 红，底座与徽标始终主色 */
+.segmented-control.is-tone-tabs .el-radio-button.is-debug {
+  --el-radio-button-checked-text-color: var(--info);
+}
+
+.segmented-control.is-tone-tabs .el-radio-button.is-warning {
+  --el-radio-button-checked-text-color: var(--warn);
+}
+
+.segmented-control.is-tone-tabs .el-radio-button.is-error {
+  --el-radio-button-checked-text-color: var(--danger);
+}
+
+/* 未激活页签悬浮：整块换成中性底，文字回到正文色（设计稿 .log-tab-btn:hover:not(.active)） */
+.segmented-control.is-tone-tabs .el-radio-button:not(.is-active) .el-radio-button__inner:hover {
+  background: var(--color-black-alpha-060);
+  color: var(--fg);
+}
+
+html.dark .segmented-control.is-tone-tabs .el-radio-button:not(.is-active) .el-radio-button__inner:hover {
+  background: var(--color-white-alpha-100);
+  color: var(--color-white-solid);
+}
+
+/* 手机端：页签横向滚动不换行，最小触控高度 36px（设计稿 §11C） */
+@media (max-width: 767px) {
+  .segmented-control.is-tone-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+  }
+
+  .segmented-control.is-tone-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .segmented-control.is-tone-tabs .el-radio-button {
+    flex: 1 0 auto;
+  }
+
+  .segmented-control.is-tone-tabs .el-radio-button .el-radio-button__inner {
+    min-width: fit-content;
+    min-height: var(--sp-36);
+    justify-content: center;
+    padding: var(--sp-6) var(--sp-11);
+    border-radius: 7px;
+    font-size: var(--fs-13);
+  }
+}
+
+/* ==========================================================================
+   5. 单选圆钮（设计稿 §8.2：18×18 微透底座 + Action Blue 选中 + 8px 白点）
+   ========================================================================== */
+.el-radio-group.apple-radio-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-16);
+  flex-wrap: wrap;
+}
+
+.el-radio.apple-radio,
+.el-radio.apple-radio .el-radio__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-8);
+  font-size: var(--fs-13);
+  font-weight: 500;
+  color: var(--fg);
+  margin: 0;
+}
+
+.el-radio.apple-radio .el-radio__inner {
+  width: var(--sp-18);
+  height: var(--sp-18);
+  border-radius: 50%;
+  border: 1.5px solid var(--radio-edge);
+  background: var(--radio-base);
+  box-shadow: var(--radio-shadow);
+  backdrop-filter: blur(var(--sp-12));
+  -webkit-backdrop-filter: blur(var(--sp-12));
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.el-radio.apple-radio .el-radio__inner::after {
+  width: var(--sp-8);
+  height: var(--sp-8);
+  background: var(--color-white-solid);
+  box-shadow: 0 1px 2px var(--color-black-alpha-200);
+}
+
+.el-radio.apple-radio.is-checked .el-radio__inner {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: var(--radio-checked-shadow);
+}
+
+.el-radio.apple-radio:hover:not(.is-disabled) .el-radio__inner {
+  border-color: var(--accent);
+  background: var(--color-white-alpha-050);
+}
+
+/* 手机端无障碍热区：整行最小 44px（设计稿 §11C） */
+@media (max-width: 767px) {
+  .el-radio.apple-radio {
+    min-height: var(--sp-44);
+    padding: var(--sp-6) 0;
+  }
+}
+
+/* ==========================================================================
+   6. iOS 玻璃下拉选择器（设计稿 .ios-select-trigger / .ios-select-popover）
+   ========================================================================== */
+.el-select.apple-select {
+  width: var(--apple-select-width, auto);
+  min-width: var(--sp-140);
+}
+
+.el-select.apple-select .el-select__wrapper {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
+  min-width: var(--sp-140);
+  height: var(--control-height);
+  padding: 0 var(--sp-10) 0 var(--sp-12);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--select-edge);
+  background: var(--select-fill);
+  box-shadow: var(--select-shadow);
+  backdrop-filter: var(--select-blur);
+  -webkit-backdrop-filter: var(--select-blur);
+  font-size: var(--fs-13);
+  font-weight: 500;
+  color: var(--fg);
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.el-select.apple-select .el-select__wrapper:hover {
+  border-color: var(--select-edge-hover);
+  background: var(--select-fill-hover);
+  box-shadow: var(--select-shadow-hover);
+}
+
+.el-select.apple-select .el-select__wrapper.is-focused,
+.el-select.apple-select .el-select__wrapper.is-hovering:not(.is-focused) {
+  border-color: var(--accent);
+  box-shadow: var(--focus-halo);
+}
+
+/* 设计稿的 .ios-select-trigger:active 有 scale(0.98)，这里不能照搬：
+   EP 的下拉浮层按触发框的实时盒子定位，按下时的缩放会让浮层和触发框错位漂移。 */
+.el-select.apple-select .el-select__wrapper.is-disabled {
+  opacity: 0.55;
+  background: var(--surface);
+}
+
+.el-select.apple-select .el-select__selected-item,
+.el-select.apple-select .el-select__placeholder {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* 文案量宽默认 220px（设计稿 .ios-select-label），页面可用 --apple-select-label-width
+     改成 100%：让触发框跟着选中文字向左扩张，只在盒子真放不下时才截断。 */
+  max-width: var(--apple-select-label-width, var(--sp-220));
+  color: var(--fg);
+  font-size: var(--fs-13);
+}
+
+/* 未选中时的占位文字退回次级色 */
+.el-select.apple-select .el-select__placeholder.is-transparent {
+  color: var(--meta);
+}
+
+.el-select.apple-select .el-select__caret {
+  width: var(--sp-14);
+  height: var(--sp-14);
+  color: var(--meta);
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-apple);
+}
+
+/* 浮层：设计稿的 popover 有 28px 折射、5px 内衬与 6px 选项圆角 */
+.el-popper.ios-select-popover {
+  border-radius: var(--radius-md);
+  background: var(--popover-fill);
+  border: 1px solid var(--popover-edge);
+  box-shadow: var(--popover-shadow);
+  backdrop-filter: var(--popover-blur);
+  -webkit-backdrop-filter: var(--popover-blur);
+  padding: 0;
+  overflow: hidden;
+}
+
+.el-popper.ios-select-popover .el-popper__arrow {
+  display: none;
+}
+
+.el-select-dropdown.ios-select-popover {
+  padding: var(--sp-5);
+  max-height: var(--sp-280);
+}
+
+.el-select-dropdown__list {
+  padding: 0;
+  margin: 0;
+}
+
+.el-select-dropdown__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  height: auto;
+  padding: var(--sp-7) var(--sp-10);
+  margin: 0;
+  border-radius: var(--radius-badge-sm);
+  font-size: var(--fs-13);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--fg);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.el-select-dropdown__item.is-hovering,
+.el-select-dropdown__item:hover {
+  background: var(--accent);
+  color: var(--color-white-solid);
+}
+
+.el-select-dropdown__item.is-selected {
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--color-transparent);
+}
+
+.el-select-dropdown__item.is-selected.is-hovering,
+.el-select-dropdown__item.is-selected:hover {
+  color: var(--color-white-solid);
+  background: var(--accent);
+}
+
+.el-select-dropdown__empty {
+  padding: var(--sp-12);
+  font-size: var(--fs-12);
+  color: var(--meta);
+}
+
+/* 手机端触发器与浮层通栏（设计稿 §11C） */
+@media (max-width: 767px) {
+  .el-select.apple-select {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .el-select.apple-select .el-select__wrapper {
+    width: 100%;
+    min-height: var(--control-height-touch);
+    height: var(--control-height-touch);
+    padding: 0 var(--sp-12);
+    font-size: var(--fs-13);
+  }
+}
+
+/* ==========================================================================
+   7. 输入框（设计稿 .log-command-search input / .el-select-apple 输入态）
+   ========================================================================== */
+.el-input.apple-field {
+  width: var(--apple-field-width, 100%);
+}
+
+.el-input.apple-field .el-input__wrapper {
+  height: var(--control-height);
+  padding: 0 var(--sp-12);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: none;
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.el-input.apple-field .el-input__wrapper:hover {
+  border-color: var(--accent);
+}
+
+.el-input.apple-field .el-input__wrapper.is-focus {
+  border-color: var(--accent);
+  box-shadow: var(--focus-halo);
+}
+
+.el-input.apple-field .el-input__inner {
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--fs-13);
+}
+
+.el-input.apple-field .el-input__inner::placeholder {
+  color: var(--meta);
+}
+
+.el-input.apple-field.is-disabled .el-input__wrapper {
+  background: var(--surface);
+  opacity: 0.7;
+}
+
+/* 带前导图标的搜索框：图标绝对定位在左 10px，文字起点让开一档 */
+.el-input.apple-field.has-leading-icon .el-input__wrapper {
+  padding-left: var(--sp-32);
+}
+
+/* 设计稿 .input-with-append input：36px 加高档，等宽字体 */
+.el-input.apple-field.is-tall .el-input__wrapper {
+  height: var(--control-height-lg);
+}
+
+.el-input.apple-field.is-mono .el-input__inner {
+  font-family: var(--font-mono);
+}
+
+/* 组合输入的输入端：与后缀按钮拼成一颗圆角矩形，右半圆角与描边交给 .is-append 收口 */
+.el-input.apple-field.is-appended {
+  min-width: 0;
+  flex: 1;
+}
+
+.el-input.apple-field.is-appended .el-input__wrapper {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  border: 1px solid var(--border);
+  border-right: none;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+/* 组合框整体才是一条描边，悬浮/聚焦的光晕由后缀按钮承担，输入端保持静止 */
+.el-input.apple-field.is-appended .el-input__wrapper:hover,
+.el-input.apple-field.is-appended .el-input__wrapper.is-focus {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+/* 设计稿 .license-textarea：多行授权码走等宽 13px、10/12 内衬、聚焦主色光晕 */
+.el-textarea.apple-field.is-mono .el-textarea__inner {
+  padding: var(--sp-10) var(--sp-12);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  line-height: normal;
+  box-shadow: none;
+  resize: vertical;
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.el-textarea.apple-field.is-mono .el-textarea__inner:focus {
+  border-color: var(--accent);
+  box-shadow: var(--focus-halo);
+}
+
+@media (max-width: 767px) {
+  .el-input.apple-field {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   8. 表格（设计稿 §7 .apple-table：吸顶表头 + 11px 大写栏目 + 行悬停主色底）
+   ========================================================================== */
+.el-table.apple-table {
+  --el-table-border-color: var(--border-soft);
+  --el-table-header-bg-color: var(--surface-warm);
+  --el-table-header-text-color: var(--meta);
+  --el-table-text-color: var(--fg);
+  --el-table-row-hover-bg-color: var(--row-hover);
+  --el-table-bg-color: var(--bg);
+  --el-table-tr-bg-color: var(--bg);
+  background: var(--bg);
+  font-size: var(--fs-13);
+}
+
+.el-table.apple-table th.el-table__cell {
+  background: var(--surface-warm);
+  color: var(--meta);
+  font-weight: 600;
+  font-size: var(--fs-11);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--sp-10) 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.el-table.apple-table td.el-table__cell {
+  padding: var(--sp-11) 0;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.el-table.apple-table .cell {
+  padding: 0 var(--sp-16);
+  line-height: normal;
+  font-weight: 400;
+}
+
+.el-table.apple-table tr:hover > td.el-table__cell {
+  background: var(--row-hover);
+}
+
+.el-table.apple-table .empty-text {
+  color: var(--meta);
+  font-size: var(--fs-12);
+}
+
+/* ==========================================================================
+   9. 分页（设计稿 .page-btn 28×28 白玻璃方键）
+   ========================================================================== */
+.el-pagination.apple-pagination {
+  --el-pagination-button-width: var(--sp-28);
+  --el-pagination-button-height: var(--sp-28);
+  --el-pagination-button-bg-color: var(--color-white-solid);
+  --el-pagination-hover-color: var(--accent);
+  --el-pagination-font-size: var(--fs-12);
+  font-size: var(--fs-12);
+  color: var(--meta);
+  gap: var(--sp-6);
+}
+
+.apple-pagination .el-pager li,
+.apple-pagination .btn-prev,
+.apple-pagination .btn-next {
+  min-width: var(--sp-28);
+  width: var(--sp-28);
+  height: var(--sp-28);
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-black-alpha-140);
+  background: var(--btn-secondary-fill);
+  color: var(--fg);
+  font-weight: 500;
+  box-shadow: 0 1px 2px var(--color-black-alpha-040);
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.apple-pagination .el-pager li:hover:not(.is-active),
+.apple-pagination .btn-prev:hover:not(:disabled),
+.apple-pagination .btn-next:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--btn-secondary-edge-hover);
+  box-shadow: var(--btn-secondary-shadow-hover);
+}
+
+.apple-pagination .el-pager li.is-active {
+  background: var(--bg);
+  color: var(--accent);
+  border-color: var(--btn-secondary-edge-hover);
+  font-weight: 600;
+}
+
+.apple-pagination .btn-prev:disabled,
+.apple-pagination .btn-next:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   10. 进度条（设计稿 .apple-progress-track 8px 药丸 + 主色填充）
+   ========================================================================== */
+.el-progress.apple-progress {
+  --el-color-primary: var(--accent);
+  align-items: center;
+}
+
+.el-progress.apple-progress .el-progress-bar__outer {
+  height: var(--sp-8);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.el-progress.apple-progress .el-progress-bar__inner {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.el-progress.apple-progress .el-progress__text {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11) !important;
+  color: var(--meta);
+}
+
+/* ==========================================================================
+   11. 弹窗（设计稿 §10 .update-dialog 480px 玻璃面板 + header/body/footer）
+   ========================================================================== */
+.el-overlay:has(.apple-dialog) {
+  background: var(--overlay-fill);
+  backdrop-filter: blur(var(--sp-8));
+  -webkit-backdrop-filter: blur(var(--sp-8));
+}
+
+/* 设计稿 .modal-overlay 用 flex 把弹窗垂直+水平居中；EP 的 .el-overlay-dialog 只是定高滚动容器，
+   不补 flex 的话弹窗永远贴在 --el-dialog-margin-top（15vh）处。 */
+.el-overlay-dialog:has(.apple-dialog) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.el-dialog.apple-dialog {
+  --el-dialog-bg-color: var(--glass-bg);
+  --el-dialog-title-font-size: var(--fs-16);
+  --el-dialog-padding-primary: 0;
+  width: var(--dialog-width, calc(480px * var(--ui-scale)));
+  max-width: 90%;
+  margin: var(--sp-24) auto;
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg);
+  border: 1px solid var(--dialog-edge);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  overflow: hidden;
+  padding: 0;
+  animation: dialog-drop var(--duration-base) var(--ease-apple);
+}
+
+/* 设计稿 .dialog-header：标题与红绿灯关闭钮两端对齐，缺 flex 会让关闭钮贴着标题文字漂移 */
+.el-dialog.apple-dialog .el-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-warm);
+}
+
+.el-dialog.apple-dialog .el-dialog__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-16);
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: normal;
+  line-height: 1.3;
+}
+
+.el-dialog.apple-dialog .el-dialog__body {
+  padding: var(--sp-20);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  color: var(--fg-2);
+  font-size: var(--fs-13);
+  line-height: 1.5;
+}
+
+/* 设计稿 .dialog-footer：右对齐按钮行 + 10px 间距；EP 默认页脚只是 text-align: right，
+   两枚按钮会挤在一起，所以这里补 flex，并清掉 EP 给相邻按钮的 margin-left，间距统一由 gap 决定。 */
+.el-dialog.apple-dialog .el-dialog__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-10);
+  padding: var(--sp-14) var(--sp-20);
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-warm);
+}
+
+.el-dialog.apple-dialog .el-dialog__footer .el-button + .el-button {
+  margin-left: 0;
+}
+
+@keyframes dialog-drop {
+  from {
+    transform: scale(0.95) translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 手机端弹窗贴边全屏宽（设计稿 §11C 的移动端习惯） */
+@media (max-width: 767px) {
+  .el-dialog.apple-dialog {
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-xl);
+    margin: var(--sp-16) auto;
+  }
+}
+
+/* ==========================================================================
+   12. 警告二次确认弹窗（设计稿 .apple-alert-dialog：420px 居中图文 + 等宽按钮）
+   ========================================================================== */
+.el-dialog.apple-dialog.is-alert {
+  --dialog-width: calc(420px * var(--ui-scale));
+
+  padding: var(--sp-24);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-color: var(--color-white-alpha-500);
+}
+
+html.dark .el-dialog.apple-dialog.is-alert {
+  border-color: var(--color-white-alpha-140);
+  box-shadow: 0 20px 48px var(--color-black-alpha-600), inset 0 1px 1px var(--color-white-alpha-150);
+}
+
+/* 无 EP 默认 header/footer：内容与按钮都由组件自己渲染 */
+.el-dialog.apple-dialog.is-alert .el-dialog__header,
+.el-dialog.apple-dialog.is-alert .el-dialog__footer {
+  display: none;
+}
+
+.el-dialog.apple-dialog.is-alert .el-dialog__body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-16);
+  width: 100%;
+}
+
+/* ==========================================================================
+   13. 提示条与浮层
+   ========================================================================== */
+.el-alert.apple-alert {
+  --el-alert-padding-primary: var(--sp-12);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  font-size: var(--fs-12);
+  line-height: 1.5;
+}
+
+.el-alert.apple-alert .el-alert__title {
+  font-size: var(--fs-13);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.el-alert.apple-alert .el-alert__description {
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+/* Toast：设计稿 .apple-toast 是底部居中的深色玻璃药丸 */
+.el-message.apple-toast {
+  --el-bg-color: var(--toast-bg);
+  min-width: 0;
+  left: 50%;
+  bottom: var(--sp-24);
+  top: auto !important;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-10) var(--sp-22);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--toast-edge);
+  background: var(--toast-bg);
+  box-shadow: var(--toast-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  color: var(--color-white-solid);
+  font-size: var(--fs-13);
+  font-weight: 500;
+}
+
+.el-message.apple-toast .el-message__content {
+  color: var(--color-white-solid) !important;
+  font-size: var(--fs-13);
+  margin: 0;
+}
+
+/* 设计稿的 Toast 前缀是一枚 16px 勾形图标，EP 的成功态圆形勾选尺寸对齐它 */
+.el-message.apple-toast .el-message__icon {
+  display: inline-flex;
+  width: var(--sp-16);
+  height: var(--sp-16);
+  font-size: var(--fs-16);
+  color: var(--color-white-solid);
+}
+
+.el-message.apple-toast .el-message__closeBtn {
+  color: var(--color-white-alpha-600);
+}
+
+/* EP 亮色 popper 与 tooltip 默认纯白描边，改成同一块玻璃 */
+.el-popper.is-light {
+  border: 1px solid var(--popover-edge);
+  background: var(--popover-fill);
+  box-shadow: var(--popover-shadow);
+  backdrop-filter: var(--popover-blur);
+  -webkit-backdrop-filter: var(--popover-blur);
+  color: var(--fg);
+  font-size: var(--fs-12);
+}
+
+.el-popper.is-light .el-popper__arrow::before {
+  border: 1px solid var(--popover-edge);
+  background: var(--popover-fill);
+}

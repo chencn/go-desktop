@@ -85,7 +85,7 @@ cd D:\app\go\go-desktop\frontend
 npm run build
 ```
 
-前端构建入口；日常优先使用 Wails Taskfile 包装命令。
+前端构建入口；日常优先使用 Wails Taskfile 包装命令。`frontend/src/components.d.ts` 由 `unplugin-vue-components` 在 vite 运行时生成且不入库，所以新克隆要先跑一次 `npm install && npm run build`（或 `npm run dev`）才能做 `vue-tsc` 类型检查。
 
 ## 前端入口
 

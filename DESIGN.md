@@ -4,20 +4,23 @@
 
 ## 1. 当前结论
 
-`go-desktop` 是一个基于 Wails3、Vue 3、TypeScript、Tailwind v4 和 shadcn-vue 源码组件的中文桌面工具项目。
+`go-desktop` 是一个基于 Wails3、Vue 3、TypeScript、Tailwind v4 和 Element Plus 组件库的中文桌面工具项目。
+
+界面基线是 Apple macOS Sequoia / iOS 18 HIG：单一一份设计令牌，桌面、平板、手机三端共用同一套外壳与原子，像素级对齐 `OpenDesign` 设计稿（mock 入口 `index.html`）。
 
 界面目标：
 
-- 桌面优先，信息密度高，布局克制。
+- 桌面优先，信息密度高，布局克制；窄屏只换排布，不换观感令牌。
 - 保留中文产品体验，不做营销页式首屏。
-- 主题、色彩、字号、密度和菜单风格可配置。
-- 更新、日志、设置、关于各自职责清楚，不互相塞功能。
+- 主题（亮暗模式）、全局控件尺寸和液态玻璃光学（极光舞台 / 折射风格 / 光强）可配置。
+- 更新、日志、设置、关于、授权各自职责清楚，不互相塞功能。
+- 所有间距/字号令牌以 `--sp-N` / `--fs-N` 命名，`N` 即默认档像素值，便于与设计稿逐条比对。
 
 工程目标：
 
-- shadcn-vue primitive first。
-- 业务页面组合组件，不重造基础控件。
-- 设置持久化走后端 SQLite KV。
+- Element Plus 组件优先，按需自动引入，观感由统一皮肤层改皮，不重造基础控件。
+- 业务页面组合组件，不各自手写按钮、表格、弹窗、分段控件。
+- 设置与显示偏好（含液态玻璃光学）统一持久化走后端 SQLite KV，前端不再保存第二份副本。
 - 日志写每日 JSONL 文件，SQLite 不保存日志。
 - 更新状态只保存当前生命周期，不保存历史事件。
 
@@ -30,39 +33,24 @@
 | 桌面运行时 | Wails3 |
 | 后端 | Go |
 | 前端 | Vue 3 + TypeScript + Vite |
-| 样式 | Tailwind v4 + CSS variables |
-| UI primitive | shadcn-vue + reka-ui |
+| 样式 | Tailwind v4 + CSS variables（Apple HIG 令牌层 + Element Plus 皮肤层 + 液态玻璃材质层） |
+| UI 组件库 | Element Plus（按需注册） |
 | 图标 | `@lucide/vue` |
 | 配置存储 | SQLite KV，表语义为 `config_items` |
 | 日志 | 每日 JSONL 文件 + 内存 ring buffer |
 | 更新 | GitHub Release 或本地静态 manifest |
 
-shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准：
-
-```json
-{
-  "$schema": "https://shadcn-vue.com/schema.json",
-  "style": "new-york",
-  "typescript": true,
-  "tailwind": {
-    "config": "",
-    "css": "src/styles.css",
-    "baseColor": "neutral",
-    "cssVariables": true
-  },
-  "iconLibrary": "lucide"
-}
-```
+Element Plus 通过 `unplugin-vue-components` + `ElementPlusResolver` 按需注册：模板里的 `el-*` 组件自动带样式引入，命令式组件（`ElMessage`）的样式在 `frontend/src/main.ts` 手动引入。中文 locale 和全局尺寸由 `App.vue` 顶层的 `el-config-provider` 统一下发。
 
 规则：
 
-- `frontend/src/components/ui/` 只放 shadcn-vue CLI 生成的官方 primitive。
-- `frontend/src/shared/ui/` 放项目兼容 wrapper、全局 `Ui*` 注册和少量跨页面 UI 适配。
 - `frontend/src/features/**` 放业务页面、页面私有组件和页面私有 CSS。
+- `frontend/src/features/shared/` 放跨页复用的项目自有组件（`GlassPanel.vue`、`AlertDialog.vue`），由业务页直接 `import`，不做全局注册。
+- `frontend/src/app/` 放应用级状态模块：`display.ts` 显示偏好、`glass.ts` 液态玻璃光学、`routes.ts` 视图映射、`state.ts` 启动门禁。
 - `frontend/src/lib/utils.ts` 是 `cn()` 唯一来源。
-- `frontend/src/main.ts` 必须注册 `shared/ui/plugin.ts`。
-- 本项目采用 shadcn-vue skill / CLI / docs 工作流：进入 UI 改造前先检查 `components.json`，再执行 `shadcn-vue info --json` 获取项目配置和已安装组件；新增或覆盖 primitive 前先用 `shadcn-vue docs <component>` 查询官方文档，再用 `shadcn-vue add <component>` 写入源码组件。
-- 全局 Ui* 只在 `frontend/src/shared/ui/plugin.ts` 注册，业务页默认组合全局 `UiButton`、`UiCard`、`UiDialog`、`UiTooltip` 等 primitive，不在页面里重复造基础控件。
+- 全局 `Ui*` 注册已退役：`frontend/src/shared/ui/plugin.ts` 和 `frontend/src/components/ui/` 保持删除状态，基础控件一律直接使用 `el-*` 组件加皮肤类。
+- Element Plus 观感改造只允许写在 `frontend/src/styles/element-plus.css` 的皮肤层，页面只挂 `.btn-apple` / `.apple-switch` / `.apple-select` / `.apple-field` / `.apple-table` / `.apple-pagination` / `.apple-dialog` / `.segmented-control` 等语义类，不在页面里重写 EP 内部结构。
+- 本项目使用 element-plus-mcp 工作流：进入 UI 改造前先用 element-plus-mcp 查询当前项目实装版本的组件 API 和示例（`get_api` / `get_example`），再在页面里组合 `el-*` 组件。
 
 ## 3. 信息架构
 
@@ -70,19 +58,19 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 
 | 页面 | 职责 | 禁止 |
 | --- | --- | --- |
-| 概览 | 应用名称、版本、启动时间、日志健康摘要、主要入口 | 放更新主操作 |
+| 概览 | 应用服务 / 数据库 / 网络 / WebView 运行状态卡、业务统计卡、样例图表 | 放更新主操作、快捷入口 |
 | 日志 | 日志文件、筛选、统计、表格、分页、清理当前筛选范围 | 放设置项、更新策略 |
 | 设置 | 可修改的业务设置和显示偏好 | 放只读信息、技术栈、路径、策略说明 |
-| 关于 | 应用元数据、Release 来源、运行环境、本地路径、技术栈、显示偏好摘要 | 放可编辑控件 |
+| 关于 | 应用元数据、Release 来源、运行环境、本地路径、授权卡片 | 放可编辑控件 |
 | 更新弹窗 | 检查、下载、校验、立即安装、下次启动安装、诊断 | 成为独立页面或导航项 |
 
 导航规则：
 
-- 侧边栏和窄屏导航只包含 `概览 / 日志 / 设置 / 关于`。
-- 右上角保留日夜切换按钮和更新状态按钮。
-- 更新状态按钮按状态显示 busy / ready / danger 视觉态。
-- 主窗口使用 Wails frameless 模式隐藏系统标题栏和系统最小化/最大化/关闭按钮，由 `AppChrome` 顶栏右上角固定渲染自定义窗口控制。
-- 夜间切换和更新状态按钮固定在窗口控制按钮左侧，和最小化/最大化/关闭组成同一条右上控制带。
+- 侧栏导航数据只在 `frontend/src/shared/views.ts` 维护一份（`navigationGroups` / `navigation` / `pageTitle` / `pageSubtitle`），桌面侧栏、手机底部 TabBar 和顶栏标题都从那里取。
+- 侧栏按 `核心功能 / 配置与系统` 分组，每项配 `.sq-icon-badge` 渐变徽标，只有图标 + 文案（不放日志数量角标）；`≥1024` 全宽、`768–1023` 收成图标导轨、`≤767` 变成抽屉。
+- 右上角是一条控制带：日夜切换 + 极光舞台 + 更新状态三枚 `.action-icon-btn`，分隔线，然后是苹果红绿灯，DOM 顺序与视觉顺序都是最小化→最大化→关闭（关闭在最右）。
+- 更新状态按钮按状态显示 busy（图标自转）/ ready（状态点脉冲）/ danger（红色脉冲）视觉态。
+- `≤767` 隐藏红绿灯与侧栏，改用底部 `mobile-tabbar`，侧栏由顶栏汉堡键经遮罩层唤出。
 - 顶栏标题区域是窗口拖拽热区，所有按钮、导航和弹窗触发区域必须显式保持 no-drag。
 - 自定义关闭按钮仍调用 Wails 窗口关闭链路，继续服从 `minimizeToTray` 的关闭到托盘规则；最小化按钮不进入托盘。
 - Windows 主窗口使用 Wails frameless 原生装饰，`DisableFramelessWindowDecorations` 必须保持 `false`，由 Go 层 `CustomTheme.WindowTheme.BorderColour` 提供系统窗口外框色；前端 CSS 只负责 WebView 内部界面，不能承担操作系统外框。
@@ -110,96 +98,77 @@ shadcn-vue 配置以 [frontend/components.json](frontend/components.json) 为准
 
 业务设置页规则：
 
-- 每一行只有一个可编辑控件。
-- `launchHiddenToTray` 仅在 `autoLaunch` 开启时可编辑。
+- 每一行只有一个可编辑控件；设计稿把所有行都当常驻设置，行与行之间不再互相隐藏或禁用（`launchHiddenToTray` 独立可编辑，只在开机自启时才生效）。
 - `minimizeToTray` 只影响点击关闭按钮；点击最小化仍进入任务栏。
 - `alwaysOnTop` 只影响窗口显示态；隐藏到托盘和自启隐藏策略保持独立。
 - GitHub Release 的 owner/repo 来自项目元数据，不作为业务设置保存或修改。
-- `githubProxyBase` 只影响 GitHub Release API、安装资产和 `.sha256` 下载；`local` 更新源不使用该代理。
+- `githubProxyBase` 只影响 GitHub Release API、安装资产和 `.sha256` 下载；`local` 更新源不使用该代理。空串是合法取值（直连官方 API），后端按配置项是否存在回退默认值，因此清空代理的选择可以跨重启保留，不会被默认代理地址悄悄改回。
 - 写配置失败必须返回错误，前端展示保存失败。
 - 保存开机自启和桌面快捷方式时，同步 Windows 系统集成；系统集成失败要回滚内存和 SQLite 配置。
 
 ### 4.2 显示偏好
 
-显示偏好来自 `frontend/src/app/display.ts` 和后端 `display.preferences.v2` JSON 配置项。它们控制 DOM token，不写入后端业务 `Settings` 结构。
+显示偏好由五个轴组成，前端集中在 `frontend/src/app/display.ts`（光学三项委托给 `frontend/src/app/glass.ts`），后端落在 `display.preferences.v3` JSON 配置项。它们不写入后端业务 `Settings` 结构。
 
-| 轴 | 值 | DOM |
+| 轴 | 值 | 生效方式 |
 | --- | --- | --- |
-| Display Scheme | `shadcn / artistic` | `data-display-scheme` |
-| Mode | `light / dark` | `.dark`、`data-theme="day|night"` |
-| UI Style | `reka / vega / nova / maia / lyra / mira / luma / sera` | `data-style` |
-| Base Color | `neutral / stone / zinc / mauve / olive / mist / taupe` | `data-base-color` |
-| Theme Color | 品牌色集合 | `data-theme-color` |
-| Accent Color | 品牌色集合，设置页托管跟随 Theme Color | `data-accent-color` |
-| Chart Color | 18 色集合 | `data-chart-color` |
-| Icon Tone | `default / colorful` | `data-icon-tone` |
-| Menu | 持久化支持 `default / inverted / default-translucent / inverted-translucent`；设置页只暴露 `default / inverted` | `data-menu` |
-| Menu Accent | `subtle / bold`，设置页显示为侧边导航强调 | `data-menu-accent` |
-| Radius | `default / none / small / medium / large` | `data-radius` + `--radius` |
-| Density | `compact / comfortable` | `data-density` |
-| Text Size | `small / normal / medium / large` | `data-text-size` |
-| Card Border | `visible / soft / hidden` | `data-card-border` |
+| Mode | `light / dark` | `html.dark`，同时驱动 Element Plus 暗色变量和 Tailwind `dark:` 变体 |
+| Size | `large / default / small` | `el-config-provider :size` 全局下发 |
+| backdrop | `true / false`（默认 `false`） | `<html class="has-backdrop">` 点亮极光流光舞台并放开卡片折射 |
+| lgStyle | `fresnel / frosted / sheen`（默认 `fresnel`） | `<html data-lg-style>` 切换折射风格 |
+| lgIntensity | `30–100`（默认 `75`） | `<html style="--lg-intensity-factor">` 乘进 blur / alpha |
 
-品牌色集合：
+主色固定为 Apple Action Blue（`#0071e3`，暗色 `#0a84ff`），raw 值只在 `frontend/src/colors.css` 以 `--color-value-0071e3` 写死一次；`styles.css` 先把它收进语义令牌 `--accent`，再用 `--el-color-primary: var(--accent)` 桥接给 Element Plus，light-3/5/7/8/9 与 dark-2 色阶用 `color-mix` 派生（亮色向白底相调、暗色向 `#1c1c1e` 相调），明暗两态自动跟随。主题色方案（多色板切换）作为后续扩展预留。行内图标不再是偏好维度，一律走 `.sq-icon-badge` 语义渐变徽标。
 
-`neutral`、`amber`、`apple-blue`、`blue`、`cyan`、`emerald`、`indigo`、`orange`、`pink`、`rose`、`sky`、`teal`。
+五个轴是同一条链路，没有「前端专属」偏好：
 
-18 色 token 兼容集合：
-
-`neutral`、`stone`、`zinc`、`mauve`、`olive`、`mist`、`taupe`、`amber`、`apple-blue`、`blue`、`cyan`、`emerald`、`indigo`、`orange`、`pink`、`rose`、`sky`、`teal`。
-
-两套显示方案默认 profile：
-
-| 字段 | shadcn 默认 | artistic 默认 |
-| --- | --- | --- |
-| 界面风格 (uiStyle) | 极简 Vega (`vega`) | 极简 Vega (`vega`) |
-| 基础色调 (baseColor) | 灰阶 (`neutral`) | 灰阶 (`neutral`) |
-| 品牌主题色 (themeColor) | 灰阶 (`neutral`) | Apple 蓝 (`apple-blue`) |
-| 品牌辅助色 (accentColor) | 灰阶 (`neutral`) | Apple 蓝 (`apple-blue`) |
-| 图表颜色 (chartColor) | 灰阶 (`neutral`) | Apple 蓝 (`apple-blue`) |
-| 图标色调 (iconTone) | 默认颜色 (`default`) | 彩色图标 (`colorful`) |
-| 侧边导航风格 (menu) | 默认 (`default`) | 默认 (`default`) |
-| 侧边导航强调 (menuAccent) | 轻强调 (`subtle`) | 强强调 (`bold`) |
-| 圆角大小 (radius) | 中 (`medium`) | 中 (`medium`) |
-| 界面密度 (density) | 舒展 (`comfortable`) | 舒展 (`comfortable`) |
-| 字号 (textSize) | 正常 (`normal`) | 正常 (`normal`) |
-| 卡片边框 (cardBorder) | 清晰 (`visible`) | 清晰 (`visible`) |
-
-当前前端类型契约：
-
-```ts
-export type BaseColor = "neutral" | "stone" | "zinc" | "mauve" | "olive" | "mist" | "taupe"
+```go
+// internal/desktopapp/display/preferences.go
+type PreferencesV3 struct {
+    Version   int    `json:"version"`
+    ThemeMode string `json:"themeMode"`
+    Size      string `json:"size"`
+    Backdrop  bool   `json:"backdrop"`
+    LgStyle   string `json:"lgStyle"`
+    LgIntensity int  `json:"lgIntensity"`
+}
 ```
 
-Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控制主强调，Accent 控制辅助强调，Chart Color 只控制统计图表 token。设置页品牌主题色只展示品牌色集合；中性灰阶色调里除 `neutral` 外，`stone`、`zinc`、`mauve`、`olive`、`mist`、`taupe` 只属于 Base Color，不出现在品牌主题色里。设置页品牌辅助色显示为 disabled 托管项，跟随品牌主题色，视觉使用同色系浅一号，不提供独立选择入口。Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
+```ts
+export type ThemeMode = "light" | "dark"
+export type DisplaySize = "large" | "default" | "small"
+export type DisplayPreferences = {
+  backdrop: boolean
+  lgIntensity: number
+  lgStyle: GlassStyle
+  size: DisplaySize
+  themeMode: ThemeMode
+}
+```
+
+后端 `NormalizeV3` 是权威校验：`lgStyle` 只接受 `fresnel / frosted / sheen`，`lgIntensity` 只接受 `30–100`（老数据缺字段读到的 `0` 同样越界），每个轴独立回自己的默认值，不会因光学项非法而牵连主题与尺寸；只有 `version != 3` 或 JSON 解析失败才整体回落 `DefaultV3()`。前端 `hydrateGlassPreferences` 在注入时逐项再校验一次，只为兼容旧 SQLite 数据缺字段。
 
 显示偏好规则：
 
-- 显示偏好持久化使用 `display.preferences.v2` JSON。
-- `displayScheme=shadcn` 使用 `profiles.shadcn`，设置页当前不提供品牌辅助色独立选择入口。
-- `displayScheme=artistic` 使用 `profiles.artistic` 并叠加温暖落日毛玻璃主题覆盖；覆盖范围包括常用控件和应用骨架，不只是颜色。
-- Artistic 下使用同一套显示偏好 token；主题层通过 `frontend/src/styles/artistic-scheme/**` 解释这些 token，不在业务页面里重造控件。
-- 切换显示方案只切换当前方案，不把一个方案的 profile 写进另一个方案；切回原方案必须恢复该方案之前的偏好。
+- 显示偏好持久化使用 `display.preferences.v3` JSON；旧版本 key（v1/v2）不再读取，解析失败或版本不匹配回退默认值。
 - 显示偏好不使用拆分 `display.*` KV。
-- 切换后立即更新 DOM，再异步保存到 SQLite 配置项。
-- 保存失败时显示错误，但不阻塞即时预览。
+- 光学三项不允许再写浏览器本地存储：`glass.ts` 只保留状态与 DOM 同步，导出 `exportGlassPreferences()` 交给 `display.ts` 合成快照，后端是唯一的持久化出口。
+- 切换后立即更新 DOM / provider，再异步保存到 SQLite 配置项。
+- 保存失败时显示错误，并把已乐观切换的控件回滚到原值（顶栏极光开关、主题切换同此规则）。
 - 切换不允许触发页面 reload。
-- `themeColor` 控制主按钮、选中态、焦点环和关键进度。
-- `accentColor` 控制次级强调和 hover / focus 辅助强调；设置页由 `themeColor` 托管，当前只显示 disabled 的品牌辅助色浅色盘。
-- `chartColor` 只服务图表和统计色，不偷用 Theme 或 Accent。
-- Icon Library 暂不作为设置项，未接入多图标包渲染前固定使用 Lucide。
+- 主色控制 `el-*` 组件主色、选中态、焦点环和关键进度。
+- 行内图标语义色固定，以 `.sq-icon-badge`（侧栏、分组标题、设置行、服务卡）和 `.stat-icon-wrap`（统计卡）两类渐变徽标提供，色板 token 为 `--tile-*`，维护在 `frontend/src/styles.css` 与 `frontend/src/styles/layout.css`。
+- 五个偏好轴切换都必须立即改变实际渲染效果，不允许出现只记录不改观感的假设置。
 - 禁止远程字体加载，字体族固定系统字体。
-- Artistic 主题的外观范围包括按钮、输入、shadcn Select、原生 select 兜底、开关、卡片、表格、弹窗、Badge、菜单、顶栏、focus、hover、active 和暗色状态。
-- Artistic 主题默认主色和图表色为 Apple 蓝，基础色调为 Neutral，并叠加毛玻璃面板；具体变量以 `frontend/src/styles/artistic-scheme/common.css` 为准。
 
 ### 4.3 首屏启动底板
 
-刷新或冷启动时，Vue 挂载会接管并短暂替换 `#app` 内的静态 loading；在路由门禁、显示偏好、页面 chunk 和 `AppChrome` 完成渲染前，会出现极短的 Vue 挂载空窗期。这个阶段的黑边不是 shadcn Card、表格、侧栏或内部组件边框，而是 WebView 最外层露出了默认背景。
+刷新或冷启动时，Vue 挂载会接管并短暂替换 `#app` 内的静态 loading；在路由门禁、显示偏好、页面 chunk 和 `AppChrome` 完成渲染前，会出现极短的 Vue 挂载空窗期。这个阶段的黑边不是卡片、表格、侧栏或内部组件边框，而是 WebView 最外层露出了默认背景。
 
 规则：
 
 - `frontend/index.html` 必须内联 `body::before`，用 `position: fixed`、`inset: 0` 和 `background: var(--boot-background)` 作为独立于 Vue 生命周期的固定满屏底板。
-- `html`、`body`、`#app` 和首屏 `.app-shell` 必须在内联启动 CSS 中提前声明 `width: 100%`、`min-width: 0`、`background: var(--boot-background)`，并清掉边框、轮廓和阴影。
+- `html`、`body`、`#app` 必须在内联启动 CSS 中提前声明 `width: 100%`、`min-width: 0`、`background: var(--boot-background)`，并清掉边框、轮廓和阴影；启动期占位用 `.boot-loading` / `.boot-spinner`，配色与字体栈沿用 Apple HIG 底板，不引入额外组件样式。
 - `frontend/src/styles.css` 必须在运行期继续给 `html`、`body`、`#app` 声明根级背景、尺寸和外层兜底，不能只依赖页面组件铺满视口。
 - 启动底色不跟随 `prefers-color-scheme`，因为项目显示偏好由持久化配置接管；在配置加载前先使用日间默认底板，避免系统暗色导致刷新瞬间黑底。
 
@@ -207,16 +176,26 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 
 `frontend/src/styles.css` 只放 Tailwind import、主题 token、全局 reset、focus 和根级媒体变量，只允许承载：
 
-- Tailwind v4 import。
-- `@theme inline` token 映射。
-- shadcn-vue CSS variables。
-- `:root`、`.dark`、显示偏好 token。
-- 全局 reset、focus、reduced motion。
+- Tailwind v4 import 和 `@custom-variant dark`。
+- `@theme inline` token 映射（Tailwind 只读别名）。
+- Apple HIG 语义令牌：三层表面阶梯、玻璃材质、极光舞台、按钮填充、前景/边框/主色/语义色/图表色、圆角、深度、动效、间距 `--sp-N`、字号 `--fs-N`、外壳几何。
+- 旧语义别名到 HIG 令牌的桥接（`--background: var(--bg)` 等），只为兼容 Tailwind 工具类。
+- `--el-*` Element Plus 变量映射与 `color-mix` 色阶派生（含 `html.dark` 暗色重算）。
+- `:root`、`html.dark`、显示尺寸 `html[data-display-size]`。
+- 全局 reset、focus、滚动条、reduced motion。
 
 `frontend/src/styles/layout.css` 只允许承载：
 
-- 跨页面布局 primitive，例如 `.page-stack`、`.content-grid`、`.split-header`。
-- 跨页面图标语义工具，例如 `.nav-icon`、`.data-icon`、`.icon-tone-*`。
+- 窗口骨架：`.app-window`、`.app-topbar`、`.app-body`、`.app-sidebar`、`.app-main-viewport`、`.view-content`。
+- 顶栏原子：`.topbar-left`、`.topbar-right`、`.topbar-actions`、`.action-icon-btn`、`.topbar-divider`、`.traffic-lights-right`、`.traffic-btn`。
+- 移动端外壳：`.mobile-tabbar`、`.tabbar-item`、`.mobile-sidebar-backdrop`。
+- 跨页面布局 primitive，例如 `.split-header`、`.section-title-row`、`.topbar-title-line`、`.detail-row`、`.view-content--fill`。
+- 跨页面图标与徽标原子，例如 `.sq-icon-badge` 用到的 `--tile-*` 渐变色板、`.badge-apple`、`.ver-badge`、`.nav-item-badge`（`.nav-item-badge` 只属于日志页筛选按钮的命中数角标，侧栏导航不放日志数量）。
+- 全部三端断点。
+
+`frontend/src/styles/liquid-glass.css` 承载材质层：`.lg` / `.lg-surface` / `.lg-light` / `.lg-sheen` / `.lg-content` 三层光学基元、极光流光舞台 `.stage-backdrop`，以及指针随动高光所需的变量解释。
+
+`frontend/src/styles/element-plus.css` 承载 Element Plus 皮肤层：把 `el-*` 组件捏成设计稿观感的语义类（`.btn-apple`、`.apple-switch`、`.apple-select`、`.apple-field`、`.apple-table`、`.apple-pagination`、`.apple-dialog`、`.apple-alert`、`.apple-progress`、`.segmented-control`）。它必须在 `main.ts` 里排在最后引入，以便覆盖按需引入的 EP 组件样式。
 
 页面私有 CSS 必须放在 `frontend/src/features/**` 相邻文件中，例如：
 
@@ -225,59 +204,54 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 - `frontend/src/features/settings/SettingsPage.css`
 - `frontend/src/features/update/UpdateStatusDialog.css`
 
-主题/组件覆盖必须放在 `frontend/src/styles/artistic-scheme/**`，例如：
-
-- `[data-slot]` primitive 覆盖放到对应 `components/*.css`。
-- shadcn Select 的 `[data-slot="select-*"]` 外观、选中项和原生 select 兜底放到 `components/select.css`；禁止在主题外重写下拉视觉。
-- `.settings-*`、`.app-sidebar`、`.topbar` 等非 shadcn primitive 的 artistic 项目级覆盖放到 `common.css`；页面布局仍保留在 `features/settings/SettingsPage.css`。
+页面私有 CSS 只写本页结构、宽度与栅格，控件观感一律挂皮肤类；`raw` 色值只能出现在 `frontend/src/colors.css`，其它文件通过 `var(--color-*)` 或语义令牌引用。
 
 禁止项：
 
 - 页面前缀样式进入 `styles.css`，例如 `.settings-*`、`.log-*`、`.about-*`。
-- 组件选择器进入 `styles.css`，例如页面私有下拉选择器、`[data-slot]`。
+- 组件选择器进入 `styles.css`，例如页面私有下拉选择器。
 - 在业务页面手写一套普通按钮、表格、弹窗、分段控件。
+- 在页面 CSS 重写 `.el-*` 内部结构，需要改皮时改 `styles/element-plus.css`。
 - 卡片嵌套卡片。
 - 远程字体 `@import url(...)`。
-- 布局依赖负 letter spacing，`letter-spacing` 保持 `0`。
+- 布局依赖负 letter spacing；表头字距只允许 `.apple-table` 皮肤层的 `0.04em`。
 
 ## 6. 组件规则
 
 优先级：
 
-1. 已有 `frontend/src/components/ui/*` primitive。
-2. shadcn-vue 官方组件，通过 CLI 添加或覆盖。
-3. `frontend/src/shared/ui/*` 组合官方 primitive 做项目 wrapper。
-4. 页面私有特殊组件放 `frontend/src/features/**`。
+1. Element Plus `el-*` 组件（按需自动引入）+ `styles/element-plus.css` 皮肤类，设计稿的每一个控件观感都在皮肤层落地。
+2. `frontend/src/features/shared/*` 项目自有组件（`GlassPanel.vue` 玻璃卡片容器、`AlertDialog.vue` 二次确认弹窗），由页面直接 import。
+3. 页面私有特殊组件放 `frontend/src/features/**`。
 
 当前主要组件：
 
 | 组件 | 位置 | 用途 |
 | --- | --- | --- |
-| `UiButton` | `shared/ui` 全局注册 | 主操作、次操作、图标按钮 |
-| `UiCard` | `shared/ui` / `components/ui/card` | 页面内容分组 |
-| `UiBadge` | `components/ui/badge` | 状态、版本、计数 |
-| `UiSwitch` | `components/ui/switch` | 二元设置 |
-| `UiSelect` / `UiSelectTrigger` / `UiSelectContent` / `UiSelectItem` | `components/ui/select` | 设置页和常规下拉 |
-| `UiNativeSelect` | `shared/ui/NativeSelect.vue` | 原生 select 兼容兜底 |
-| 设置页色盘按钮 | `features/settings/SettingsPage.vue` | 平铺 swatch 选择主题色和图表色 |
-| `UiDialog` | `components/ui/dialog` | 更新状态弹窗 |
-| `UiAlertDialog` | `components/ui/alert-dialog` | 清空日志、危险确认 |
-| `UiTooltip` | `components/ui/tooltip` | 顶栏图标按钮解释 |
-| `UiTable` | `components/ui/table` | 日志表 |
-| `UiProgress` | `components/ui/progress` | 下载和校验进度 |
+| `el-button` + `.btn-apple` | Element Plus + 皮肤层 | 主/次/危险按钮，弹窗等宽按钮用 `.is-alert-action` |
+| `el-switch` + `.apple-switch` | Element Plus + 皮肤层 | 44×26 iOS 阻尼开关 |
+| `el-radio-group` + `.segmented-control` | Element Plus + 皮肤层 | iOS 分段器（主题、尺寸、玻璃风格）与日志级别页签 `.is-tone-tabs` |
+| `el-select` + `.apple-select` | Element Plus + 皮肤层 | iOS 玻璃下拉，浮层用 `.ios-select-popover` |
+| `el-input` / `el-textarea` + `.apple-field` | Element Plus + 皮肤层 | 文本输入、带图标搜索、授权码多行等宽输入 |
+| `el-table` + `.apple-table` | Element Plus + 皮肤层 | 日志表（吸顶表头、行悬停主色底） |
+| `el-pagination` + `.apple-pagination` | Element Plus + 皮肤层 | 28×28 方键分页 |
+| `el-progress` + `.apple-progress` | Element Plus + 皮肤层 | 8px 药丸下载进度 |
+| `el-dialog` + `.apple-dialog` | Element Plus + 皮肤层 | 更新状态弹窗与二次确认弹窗 |
+| `el-alert` + `.apple-alert` | Element Plus + 皮肤层 | 错误横幅 |
+| `ElMessage` / `.apple-toast` | Element Plus 命令式 | 设置与观感变更的即时反馈 |
+| `GlassPanel` | `features/shared/GlassPanel.vue` | 首页服务卡 / 指标卡的液态玻璃容器 |
+| `AlertDialog` | `features/shared/AlertDialog.vue` | 清空日志等危险确认（替代 `ElMessageBox`） |
 
 组件规则：
 
-- shadcn primitive 不 import store。
-- `shared/ui` wrapper 只做项目 API 适配，不承载业务流程。
-- 页面业务组件可以局部 import 图标和私有小组件。
-- 普通命令按钮优先 `UiButton`。
-- 危险确认使用 `AlertDialog`，禁止 `window.confirm`。
-- 表格型数据使用 `Table` primitive。
-- 简单选择器优先使用 shadcn Select；只有必须保留浏览器原生行为时才使用 `UiNativeSelect` 兜底。
-- 图标默认 `16-20px`。
-- 按钮默认高度 `36px`，紧凑按钮 `32px`，图标按钮宽高一致。
-- `displayScheme=artistic` 时，常用控件按 artistic 主题覆盖：按钮、输入、shadcn Select、原生 select 兜底、开关、卡片、表格、弹窗、Badge、菜单、顶栏和暗色状态都在 `frontend/src/styles/artistic-scheme/**` 内维护。
+- `el-*` 组件与 `features/shared` 组件不 import store，状态由页面下发。
+- 危险确认使用 `AlertDialog` 组件，禁止 `window.confirm` 与命令式 `ElMessageBox`。
+- 表格型数据一律 `el-table`，日志页同样走 `.apple-table`；行高测量依赖 `el-table` 的 DOM，不再手写 `<table>`。
+- 顶栏图标按钮用原生 `title` 提示，不包 `el-tooltip`（设计稿的顶栏按钮没有 tooltip 包装层）。
+- 图标默认 `13-18px`，固定使用 Lucide。
+- 控件高度由令牌给出：默认 `--control-height`（32px）、加高 `--control-height-lg`（36px）、手机触控 `--control-height-touch`（38px），图标按钮宽高一致。
+- Element Plus 自带的组件级 CSS 变量（例如分段器的 `--el-radio-button-checked-*`）声明在组件自身元素上，皮肤要改这些配色时必须落在同一个元素，靠上层容器覆写会被组件自身声明盖掉。
+- 皮肤层禁止使用会改变盒子尺寸的 `:active` 位移/缩放于任何承载浮层定位的触发框（下拉框已因此出现浮层错位），按钮等非浮层锚点不受此限制。
 
 ## 7. 更新链路
 
@@ -308,6 +282,7 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 - 安装前必须重新计算 SHA256。
 - SHA256 不匹配时删除本地安装包并清理 pending / verified 状态。
 - 更新入口不出现在侧边栏和窄屏导航。
+- 更新弹窗只讲当前版本、最新版本、状态说明和下载进度；不渲染 Release 变更日志列表（`releaseNotes` 不参与弹窗展示）。
 
 ## 8. 日志模型
 
@@ -320,13 +295,15 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 
 日志页规则：
 
-- 支持来源、级别、关键词、日志文件筛选。
-- 支持统计摘要、动态 pageSize 分页和当前筛选范围清理；分页条显示总数、每页条数和当前页/总页。
-- 表格时间、来源、级别列固定宽度，内容列占满剩余宽度并允许换行；级别列使用 `UiBadge` 表达状态。
+- 支持来源、级别、关键词、日志文件筛选；筛选面板默认折叠，命中条件数显示在筛选按钮的 `.nav-item-badge` 角标上。
+- 级别页签是 `.segmented-control.is-tone-tabs` 分段器，页签右侧挂该级别的数量胶囊；激活页签只按级别换文字色（debug 灰 / warning 橙 / error 红），滑块和胶囊保持主色底。
+- 分页摘要必须交代后端最低门禁：`每页 N 条，当前第 P / T 页 (门禁过滤后共 X 条记录，系统最低门禁: ≥ LEVEL)`，空态同理写成 `暂无匹配日志 (门禁级别: ≥ LEVEL)`，让用户能区分「没有日志」和「被门禁挡住」。
+- 表格用 `el-table` + `.apple-table`：表头吸顶、11px 大写、`letter-spacing: 0.04em`、行悬停主色底；级别列用 `.log-level-badge`、模块列用 `.log-scope-tag`，时间列 `.log-time-cell` 等宽。
+- 手机端表格换成 `.log-mobile-card` 卡片列表，`.log-table-shell` 隐藏。
 - 空态放在表格 body 内，不在表格外额外拆一块空状态。
 - 路径、日志内容、版本号必须 `min-width: 0` 和 `overflow-wrap: anywhere`。
-- 清空日志必须使用 `AlertDialog`。
-- 自动刷新、手动刷新和专注模式属于日志页顶层工具。
+- 清空日志必须使用 `AlertDialog` 组件二次确认。
+- 自动刷新、手动刷新、筛选和专注模式属于日志页工具条；专注模式在 `<html>` 上切 `is-log-focus`，由 `styles/layout.css` 收起侧栏与底部 TabBar，组件卸载时必须移除该类。
 
 ## 9. 数据和路径
 
@@ -351,23 +328,25 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 
 ## 10. 布局和响应式
 
-桌面优先，窄屏只保证可用。
+外壳几何来自设计稿，但按真实窗口（可最大化、可缩放）而非假窗口定尺：
 
-| 宽度 | 规则 |
+| 区域 | 规则 |
 | --- | --- |
-| `>= 1600px` | sidebar 约 `280px`，页面最大宽度可扩到 `1560px` |
-| `1280-1599px` | sidebar 约 `256px`，内容区不能居中过窄 |
-| `1100-1279px` | sidebar 可收窄，复杂页面单列 |
-| `980-1099px` | 内容必须单列 |
-| `< 980px` | 隐藏 sidebar，显示顶部 compact nav |
+| 顶栏 | 高 `--topbar-height`（52px），液态玻璃材质，红绿灯在右端，顺序为最小化→最大化→关闭 |
+| 侧栏 | `--sidebar-width: clamp(196px, 232px + (100vw - 1360px) * 0.12, 300px)`，1360px 视口正好等于设计稿 232px，更宽才向右扩张，窄屏不低于 196px；折叠态 `--sidebar-collapsed-width`（68px） |
+| 内容视口 | `.app-main-viewport` 唯一滚动容器，栏距 `--page-gutter-y/x`（24px / 28px） |
+| 平板 `<= 1023px` | 侧栏收成 70px 图标栏，隐藏文字与页脚文案，栅格降为两列 |
+| 手机 `<= 767px` | 侧栏变 260px 抽屉（`translateX(-100%)` 收起）+ 底部 TabBar，视口栏距改 `16px 14px calc(tabbar+20px)` |
 
 规则：
 
-- `.app-shell` 固定两列：sidebar + content。
-- `.content-scroll` 是唯一页面滚动容器。
-- 所有 grid 子项必须 `min-width: 0`。
-- 日志表、路径和长文本可以内部横滚或换行，但不能撑破 app shell。
+- `.app-window` 固定两列：sidebar + content；`.app-main-viewport` 是唯一页面滚动容器。
+- 所有 grid / flex 子项必须 `min-width: 0`。
+- 四个页面共用同一套视口栏距：概览、日志、设置、关于全部通栏铺开。设计稿把设置与关于限宽 880px 并居中，那属于 1400px 假窗口，真实最大化窗口下会缩成居中小票，因此这两页不再 `max-width` / `margin: 0 auto`。
+- 弹窗由 `.el-overlay-dialog:has(.apple-dialog)` 用 flex 真正垂直+水平居中；更新弹窗页头的关闭钮是设计稿的红色红绿灯圆点，靠 `.el-dialog__header` 的 `space-between` 钉在右端，不允许用绝对定位的默认 `headerbtn`（会随标题长度漂移）。
+- 日志表、路径和长文本可以内部横滚或换行，但不能撑破 `.app-window`。
 - 五个主要交互区域不能出现横向溢出：概览、日志、设置、关于、更新弹窗。
+- 视觉验证必须覆盖 `1440×900`、最大化宽屏、平板 `768-1023px`、手机 `<= 767px`，且亮/暗与清爽/极光四种组合。
 
 ## 11. 工程硬约束
 
@@ -400,11 +379,11 @@ Theme / Accent / Chart Color 是持久化模型中的三条显示轴：Theme 控
 
 代码验收：
 
-- `frontend/components.json` 存在并可被 shadcn-vue CLI 读取。
-- `components/ui` 保持 CLI primitive 专属。
-- `shared/ui/plugin.ts` 注册全局 `Ui*`。
-- 设置页业务设置和显示偏好边界清楚。
-- 更新入口只在右上角弹窗。
+- Element Plus 通过 `unplugin-vue-components` 按需注册，`frontend/src/components/ui` 保持移除状态。
+- 全局 `Ui*` 注册保持退役：`shared/ui/plugin.ts` 不存在，项目自有组件由页面直接 import。
+- 控件观感只写在 `styles/element-plus.css`，页面 CSS 不出现 `.el-*` 内部选择器。
+- 设置页业务设置和显示偏好边界清楚，后端只存业务设置与 `display.preferences.v3`。
+- 更新入口只在右上角图标和弹窗。
 - SQLite 只保存配置项。
 - 日志文件写入 `data/logs/`。
 - pending 更新写入 `data/updates/pending.json`。

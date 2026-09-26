@@ -1,9 +1,11 @@
-// 文件职责：配置 Vue、Tailwind、Wails 绑定目录和源码路径别名。
+// 文件职责：配置 Vue、Tailwind、Element Plus 按需注册、Wails 绑定目录和源码路径别名。
 
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import wails from "@wailsio/runtime/plugins/vite";
 import tailwindcss from "@tailwindcss/vite";
+import Components from "unplugin-vue-components/vite";
+import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
 
 // Wails Vite 插件要求传入可跨平台识别的 bindings 目录，Windows 下去掉 URL pathname 的前导斜杠。
 const bindingsRoot = new URL("./bindings", import.meta.url).pathname
@@ -16,7 +18,13 @@ const srcRoot = new URL("./src", import.meta.url).pathname
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue(), tailwindcss(), wails(bindingsRoot)],
+  plugins: [
+    vue(),
+    tailwindcss(),
+    // Element Plus 按需注册：模板里的 el-* 自动带样式引入；命令式组件样式在 main.ts 手动补齐。
+    Components({ dts: "src/components.d.ts", resolvers: [ElementPlusResolver()] }),
+    wails(bindingsRoot),
+  ],
   resolve: {
     alias: {
       "@": srcRoot,

@@ -5,14 +5,18 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { viewComponents } from '@/app/routes'
 import { isDisplayPreferencesReadyForShell } from '@/app/state'
+import { useDisplayPreferences } from '@/app/display'
 import { useAppStore } from './stores/app'
 import AppChrome from './features/layout/AppChrome.vue'
 import LicensePage from './features/license/LicensePage.vue'
 import type { ViewKey } from './shared/views'
 
 const appStore = useAppStore()
+// display 提供全局控件尺寸，经由 el-config-provider 下发给所有 Element Plus 组件。
+const display = useDisplayPreferences()
 // activeView 保存当前前端页面；桌面端不走 URL 路由，避免刷新时依赖浏览器历史。
 const activeView = ref<ViewKey>('home')
 // activeViewComponent 从集中路由表取组件，让 App.vue 不再维护页面 import/switch。
@@ -40,8 +44,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <LicensePage v-if="appStore.licenseStatus?.required && !appStore.licenseStatus?.authorized" />
-  <AppChrome v-else-if="mainShellReady" :active-view="activeView" @navigate="navigate">
-    <component :is="activeViewComponent" />
-  </AppChrome>
+  <!-- el-config-provider 统一下发 Element Plus 中文 locale 与全局尺寸。 -->
+  <el-config-provider :locale="zhCn" :size="display.size.value">
+    <LicensePage v-if="appStore.licenseStatus?.required && !appStore.licenseStatus?.authorized" />
+    <AppChrome v-else-if="mainShellReady" :active-view="activeView" @navigate="navigate">
+      <component :is="activeViewComponent" />
+    </AppChrome>
+  </el-config-provider>
 </template>

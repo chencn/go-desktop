@@ -5,21 +5,28 @@
     <link rel="icon" type="image/svg+xml" href="/wails.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>go-desktop</title>
+    <!--
+      启动底板：Vue 挂载前 WebView 只能渲染这段内联样式，因此这里复刻 Apple HIG 的底色与字体栈，
+      避免首帧闪白/闪黑。主题档位由 app/display.ts 在挂载后写入 html.dark，二者互不依赖。
+    -->
     <style>
       :root {
         color-scheme: light;
-        --boot-background: oklch(0.985 0 0);
-        --boot-foreground: oklch(0.145 0 0);
-        --boot-muted-foreground: oklch(0.48 0 0);
-        --boot-primary: #1890ff;
+        --boot-background: #f5f5f7;
+        --boot-foreground: #1d1d1f;
+        --boot-muted-foreground: #86868b;
+        --boot-primary: #0071e3;
+        --boot-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC",
+          "Microsoft YaHei", sans-serif;
       }
 
       html,
       body,
       #app {
+        width: 100%;
+        height: 100%;
         min-height: 100vh;
         margin: 0;
-        width: 100%;
         min-width: 0;
         border: 0 !important;
         outline: 0 !important;
@@ -27,20 +34,21 @@
         background: var(--boot-background);
       }
 
-      html {
+      html,
+      body {
         overflow: hidden;
       }
 
       body {
-        overflow: hidden;
-        background: var(--boot-background);
         color: var(--boot-foreground);
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: var(--boot-font);
         -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
+        user-select: none;
       }
 
-      /* Vue 挂载会短暂接管并清空 #app，独立满屏底板避免 WebView 最外层露出默认黑底。 */
+      /* #app 被 Vue 接管的瞬间，独立满屏底板保证 WebView 最外层不会露出默认黑底。 */
       body::before {
         content: "";
         position: fixed;
@@ -51,94 +59,41 @@
         pointer-events: none;
       }
 
-      #app,
-      .app-shell {
-        min-height: 100vh;
-        width: 100%;
-        min-width: 0;
-        border: 0 !important;
-        outline: 0 !important;
-        box-shadow: none !important;
-        background: var(--boot-background);
-      }
-
       .boot-loading {
         position: fixed;
         inset: 0;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 14px;
         background: var(--boot-background);
       }
 
-      .ant-spin {
-        display: inline-flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        color: var(--boot-primary);
-        text-align: center;
+      .boot-spinner {
+        width: 26px;
+        height: 26px;
+        border: 2.5px solid rgba(0, 113, 227, 0.18);
+        border-top-color: var(--boot-primary);
+        border-radius: 50%;
+        animation: boot-spin 0.9s linear infinite;
       }
 
-      .ant-spin-dot {
-        position: relative;
-        display: inline-block;
-        width: 32px;
-        height: 32px;
-        animation: ant-spin-rotate 1.2s linear infinite;
-      }
-
-      .ant-spin-dot-item {
-        position: absolute;
-        display: block;
-        width: 14px;
-        height: 14px;
-        border-radius: 100%;
-        background-color: currentColor;
-        opacity: 0.3;
-        animation: ant-spin-move 1s linear infinite alternate;
-      }
-
-      .ant-spin-dot-item:nth-child(1) {
-        top: 0;
-        left: 0;
-      }
-
-      .ant-spin-dot-item:nth-child(2) {
-        top: 0;
-        right: 0;
-        animation-delay: 0.4s;
-      }
-
-      .ant-spin-dot-item:nth-child(3) {
-        right: 0;
-        bottom: 0;
-        animation-delay: 0.8s;
-      }
-
-      .ant-spin-dot-item:nth-child(4) {
-        bottom: 0;
-        left: 0;
-        animation-delay: 1.2s;
-      }
-
-      .ant-spin-text {
+      .boot-loading-text {
         color: var(--boot-muted-foreground);
-        font-size: 14px;
-        line-height: 1.5715;
-        letter-spacing: 0;
+        font-size: 13px;
+        letter-spacing: -0.01em;
       }
 
-      @keyframes ant-spin-rotate {
+      @keyframes boot-spin {
         to {
           transform: rotate(360deg);
         }
       }
 
-      @keyframes ant-spin-move {
-        to {
-          opacity: 1;
-          transform: scale(1);
+      @media (prefers-reduced-motion: reduce) {
+        .boot-spinner {
+          animation-duration: 2.4s;
         }
       }
     </style>
@@ -146,15 +101,8 @@
   <body>
     <div id="app">
       <div class="boot-loading" role="status" aria-live="polite">
-        <div class="ant-spin ant-spin-lg" aria-label="正在加载">
-          <span class="ant-spin-dot" aria-hidden="true">
-            <i class="ant-spin-dot-item"></i>
-            <i class="ant-spin-dot-item"></i>
-            <i class="ant-spin-dot-item"></i>
-            <i class="ant-spin-dot-item"></i>
-          </span>
-          <span class="ant-spin-text">正在加载</span>
-        </div>
+        <span class="boot-spinner" aria-hidden="true"></span>
+        <span class="boot-loading-text">正在加载</span>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

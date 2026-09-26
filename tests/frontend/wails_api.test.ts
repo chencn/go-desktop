@@ -88,56 +88,29 @@ describe('wails api fallback boundaries', () => {
 
     await saveDisplayPreferences({
       ...defaultDisplayPreferences,
-      displayScheme: 'artistic',
       themeMode: 'dark',
-      profiles: {
-        ...defaultDisplayPreferences.profiles,
-        artistic: {
-          ...defaultDisplayPreferences.profiles.artistic,
-          menu: 'inverted',
-        },
-      },
+      size: 'small',
     })
 
     await expect(getDisplayPreferences()).resolves.toMatchObject({
-      displayScheme: 'artistic',
       themeMode: 'dark',
-      profiles: {
-        artistic: {
-          menu: 'inverted',
-        },
-      },
+      size: 'small',
     })
   })
 
-  it('normalizes preview display profiles without legacy scheme aliases', async () => {
+  it('normalizes preview display preferences without legacy fields', async () => {
     vi.stubEnv('VITE_PREVIEW', 'true')
     window.localStorage.setItem('go-desktop.preview.displayPreferences', JSON.stringify({
-      displayScheme: 'artistic',
       themeMode: 'dark',
-      profiles: {
-        shadcn: {
-          themeColor: 'rose',
-        },
-        artistic: {
-          menu: 'inverted',
-        },
-      },
+      size: 'large',
+      displayScheme: 'artistic',
+      profiles: { shadcn: { themeColor: 'rose' } },
     }))
     const { getDisplayPreferences } = await import('../../frontend/src/api/wails')
 
     await expect(getDisplayPreferences()).resolves.toMatchObject({
-      displayScheme: 'artistic',
       themeMode: 'dark',
-      profiles: {
-        shadcn: {
-          themeColor: 'rose',
-        },
-        artistic: {
-          themeColor: 'apple-blue',
-          menu: 'inverted',
-        },
-      },
+      size: 'large',
     })
   })
 

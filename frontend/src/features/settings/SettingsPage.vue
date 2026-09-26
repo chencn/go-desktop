@@ -1,19 +1,41 @@
 <!--
   文件职责：渲染设置表单并把用户输入提交给应用状态 store。
-  业务设置保存到后端 Settings；显示偏好保存到独立 DisplayPreferences。
-  界面重构：采用温暖灿烂的暖日玻璃质感设计，将参数平铺与可视化选择融合。
+  业务设置保存到后端 Settings；显示偏好（亮暗模式、全局尺寸）保存到独立 DisplayPreferences。
 -->
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Archive, CalendarClock, CloudDownload, EyeOff, ListFilter, MonitorUp, Palette, PanelBottomClose, Pin, Rocket, RotateCcw, Sun, Moon, Wrench } from '@lucide/vue'
-import { exportDisplayPreferences, useDisplayPreferences, type AccentColor, type BaseColor, type CardBorder, type ChartColor, type Density, type DisplayScheme, type IconTone, type Menu as MenuPreference, type MenuAccent, type Radius, type TextSize, type ThemeColor, type ThemeMode, type UIStyle } from '@/app/display'
+import { Window } from '@wailsio/runtime'
+import {
+  Calendar,
+  Clock,
+  DollarSign,
+  Download,
+  EyeOff,
+  Globe,
+  Maximize2,
+  Monitor,
+  Palette,
+  Pin,
+  Power,
+  Rocket,
+  SquareArrowDown,
+  Star,
+  Sun,
+  Terminal,
+  Wrench,
+} from '@lucide/vue'
+import { exportDisplayPreferences, useDisplayPreferences, type DisplaySize, type ThemeMode } from '@/app/display'
+import { glassIntensityMax, glassIntensityMin, useGlassPreferences, type GlassStyle } from '@/app/glass'
 import { useAppStore } from '@/stores/app'
 import { defaultRuntimeSettings, type LogLevel, type Settings, type UpdateSource } from '@/api/wails'
+import AlertDialog from '../shared/AlertDialog.vue'
 
 const appStore = useAppStore()
 // display 是全局显示偏好的响应式 facade，实际持久化仍通过 appStore.persistDisplayPreferences。
 const display = useDisplayPreferences()
+// glass 是液态玻璃材质偏好（极光背景 / 折射风格 / 光强），与主题、尺寸共用后端 display.preferences.v3。
+const glass = useGlassPreferences()
 const settingsReady = computed(() => Boolean(appStore.settings))
 const displayReady = computed(() => Boolean(appStore.displayPreferences))
 // draft 是业务设置表单草稿；保存成功后以后端返回值为准重新覆盖。
@@ -32,117 +54,35 @@ let displaySaveRevision = 0
 let displaySaveQueue = Promise.resolve()
 // displaySaveTimer 保存显示偏好防抖计时器；浏览器 window.setTimeout 返回 number。
 let displaySaveTimer: number | undefined
-// resetDisplayDialogOpen 控制恢复当前显示方案默认值的二次确认弹窗。
-const resetDisplayDialogOpen = ref(false)
 
-// styleOptions 对应 shadcn-vue create 的 style，artistic 方案通过主题样式扩展同一组 token。
-const styleOptions: Array<[UIStyle, string]> = [
-  ['reka', '标准 Reka'],
-  ['vega', '极简 Vega'],
-  ['nova', '开阔 Nova'],
-  ['maia', '紧凑 Maia'],
-  ['lyra', '雅致 Lyra'],
-  ['mira', '柔和 Mira'],
-  ['luma', '大气 Luma'],
-  ['sera', '轻盈 Sera']
-]
-// themeOptions 控制全局亮暗模式，和具体显示方案的 profile 分开保存。
-const themeOptions: Array<[ThemeMode, string]> = [['light', '亮色'], ['dark', '暗色']]
-type DisplayColorKind = 'neutral' | 'base' | 'brand'
-type DisplayColorOption<T extends AccentColor = AccentColor> = {
-  value: T
-  label: string
-  kind: DisplayColorKind
-  baseLabel?: string
-}
-// displayColorOptions 是设置页 18 色唯一 token 真源；base/theme/chart 选项都从这里派生。
-const displayColorOptions: DisplayColorOption[] = [
-  { value: 'neutral', label: 'Neutral (灰阶)', kind: 'neutral' },
-  { value: 'stone', label: '石灰色 (Stone)', kind: 'base', baseLabel: 'Stone (石灰)' },
-  { value: 'zinc', label: '质感锌 (Zinc Gray)', kind: 'base', baseLabel: 'Zinc (锌灰)' },
-  { value: 'mauve', label: '淡紫灰 (Mauve)', kind: 'base', baseLabel: 'Mauve (淡紫灰)' },
-  { value: 'olive', label: '橄榄灰 (Olive)', kind: 'base', baseLabel: 'Olive (橄榄绿)' },
-  { value: 'mist', label: '雾蓝灰 (Mist)', kind: 'base', baseLabel: 'Mist (雾蓝)' },
-  { value: 'taupe', label: '褐灰色 (Taupe)', kind: 'base', baseLabel: 'Taupe (褐灰)' },
-  { value: 'orange', label: '落日橘 (Sunset Orange)', kind: 'brand' },
-  { value: 'rose', label: '玫瑰红 (Coral Rose)', kind: 'brand' },
-  { value: 'pink', label: '樱花粉 (Sakura Pink)', kind: 'brand' },
-  { value: 'amber', label: '琥珀黄 (Amber Gold)', kind: 'brand' },
-  { value: 'emerald', label: '薄荷绿 (Emerald)', kind: 'brand' },
-  { value: 'teal', label: '松石绿 (Teal Forest)', kind: 'brand' },
-  { value: 'cyan', label: '晴空蓝 (Sky Cyan)', kind: 'brand' },
-  { value: 'apple-blue', label: 'Apple Blue (苹果蓝)', kind: 'brand' },
-  { value: 'blue', label: 'AntD Blue(AntD 蓝)', kind: 'brand' },
-  { value: 'indigo', label: '靛蓝色 (Indigo Night)', kind: 'brand' },
-  { value: 'sky', label: '天际蓝 (Sky)', kind: 'brand' },
-]
-function toColorOption<T extends AccentColor>(option: DisplayColorOption<T>): [T, string] {
-  return [option.value, option.label]
-}
-
-function isBaseColorOption(option: DisplayColorOption): option is DisplayColorOption<BaseColor> {
-  return option.kind === 'neutral' || option.kind === 'base'
-}
-
-function isBrandColorOption(option: DisplayColorOption): option is DisplayColorOption<ThemeColor> {
-  return option.kind === 'neutral' || option.kind === 'brand'
-}
-
-function toBaseColorOption(option: DisplayColorOption<BaseColor>): [BaseColor, string] {
-  return [option.value, option.baseLabel ?? option.label]
-}
-
-const colorOptions: Array<[AccentColor, string]> = displayColorOptions.map(toColorOption)
-const baseOptions: Array<[BaseColor, string]> = displayColorOptions
-  .filter(isBaseColorOption)
-  .map(toBaseColorOption)
-const brandColorOptions: Array<[ThemeColor, string]> = displayColorOptions.filter(isBrandColorOption).map(toColorOption)
-const themeColorOptions: Array<[ThemeColor, string]> = brandColorOptions
-const chartOptions: Array<[ChartColor, string]> = colorOptions
-// iconToneOptions 只影响语义图标是否彩色，不改变 lucide 图标本身。
-const iconToneOptions: Array<[IconTone, string]> = [['default', '默认颜色'], ['colorful', '彩色图标']]
-// menuOptions 包含当前主题层支持的侧边栏变体。
-const menuOptions: Array<[MenuPreference, string]> = [
-  ['default', '默认 (Default)'],
-  ['inverted', '反色 (Inverted)']
-]
-const menuAccentOptions: Array<[MenuAccent, string]> = [['subtle', '轻强调'], ['bold', '强强调']]
-// textOptions 写入 DOM dataset，由 CSS token 层统一响应。
-const textOptions: Array<[TextSize, string]> = [['small', '小'], ['normal', '正常'], ['medium', '中'], ['large', '大']]
-// radiusOptions 写入 --radius，具体边界由主题样式解释。
-const radiusOptions: Array<[Radius, string]> = [['default', '默认'], ['none', '无'], ['small', '小'], ['medium', '中'], ['large', '大']]
-// densityOptions 控制页面和控件密度 token。
-const densityOptions: Array<[Density, string]> = [['compact', '紧凑'], ['comfortable', '舒展']]
-// cardBorderOptions 控制容器边框强度，不影响业务设置字段。
-const cardBorderOptions: Array<[CardBorder, string]> = [['visible', '清晰'], ['soft', '柔和'], ['hidden', '隐藏']]
 // updateIntervalOptions 必须和后端允许的检查间隔保持一致；非法值会回退默认值。
 const updateIntervalOptions = [1, 3, 6, 12]
-const updateSourceOptions: Array<[UpdateSource, string]> = [['github', 'GitHub Release'], ['local', '本地静态服务']]
+const updateSourceOptions: Array<[UpdateSource, string]> = [
+  ['github', 'GitHub Release (官方公网发布)'],
+  ['local', '本地静态服务 (企业自建内网)']
+]
 const logRetentionOptions: Array<[number, string]> = [
   [7, '7 天'],
   [30, '30 天'],
-  [60, '60 天'],
   [90, '90 天'],
-  [180, '180 天'],
   [365, '365 天'],
   [-1, '永不清理']
 ]
-const logLevelOptions: Array<[LogLevel, string]> = [['debug', 'debug'], ['info', 'info'], ['warning', 'warning'], ['error', 'error']]
-
-// 显示方案卡片信息定义，附带特色色彩发光类
-const schemeCardOptions: Array<[DisplayScheme, string, string, string]> = [
-  ['artistic', 'Artistic', '清爽柔和的品牌主题', 'glow-artistic'],
-  ['shadcn', 'shadcn', '经典灵活的自由配置', 'glow-shadcn']
+const logLevelOptions: Array<[LogLevel, string]> = [
+  ['debug', 'debug (调试记录)'],
+  ['info', 'info (默认信息)'],
+  ['warning', 'warning (警告级别)'],
+  ['error', 'error (仅记录错误)']
 ]
-
-// 辅助函数：快速获取色名对应标签
-function getThemeColorLabel(val: string) {
-  return colorOptions.find(([v]) => v === val)?.[1] ?? val
-}
-
-function getBaseColorLabel(val: string) {
-  return baseOptions.find(([v]) => v === val)?.[1] ?? val
-}
+// themeOptions/sizeOptions 是外观偏好当前仅有的两项；主题色方案后续再开放。
+const themeOptions: Array<[ThemeMode, string]> = [['light', '亮色'], ['dark', '暗色']]
+const sizeOptions: Array<[DisplaySize, string]> = [['large', '大'], ['default', '中'], ['small', '小']]
+// 液态玻璃折射风格三档，顺序与设计稿 #lgStyleSegmentGroup 一致。
+const glassStyleOptions: Array<[GlassStyle, string]> = [
+  ['fresnel', '自然高透'],
+  ['frosted', '晶莹磨砂'],
+  ['sheen', '双层反射'],
+]
 
 // 后端设置变化时重建草稿；归一化保证旧配置或异常值不会进入控件。
 watch(() => appStore.settings, (settings) => {
@@ -229,101 +169,59 @@ function ensureDisplayReady() {
   return false
 }
 
-function asDisplayScheme(value: string) {
-  if (!ensureDisplayReady()) return
-  const scheme = value as DisplayScheme
-  display.setDisplayScheme(scheme)
-  persistDisplayPreferences({ immediate: true })
-}
-
-// asStyle 只更新当前显示方案的 uiStyle，随后防抖保存完整 DisplayPreferences。
-function asStyle(value: string) {
-  if (!ensureDisplayReady()) return
-  display.setUiStyle(value as UIStyle)
-  persistDisplayPreferences()
-}
-
-// asThemeMode 切换全局亮暗模式；该值不随 shadcn/artistic profile 分离。
+// asThemeMode 切换全局亮暗模式；写 display facade 后防抖保存完整偏好快照。
 function asThemeMode(value: string) {
   if (!ensureDisplayReady()) return
   display.setThemeMode(value as ThemeMode)
   persistDisplayPreferences()
 }
 
-// 下面这些 as* 方法都是控件边界：先写 display facade，再持久化完整偏好快照。
-function asBaseColor(value: string) {
+// asSize 切换 Element Plus 全局组件尺寸（el-config-provider size）。
+function asSize(value: string) {
   if (!ensureDisplayReady()) return
-  display.setBaseColor(value as BaseColor)
+  display.setSize(value as DisplaySize)
   persistDisplayPreferences()
 }
 
-function asThemeColor(value: string) {
+// asGlassStyle 切换折射风格；app/glass.ts 的 watch 负责写 <html data-lg-style>，偏好与主题同一链路落后端。
+function asGlassStyle(value: string) {
   if (!ensureDisplayReady()) return
-  display.setThemeColor(value as ThemeColor)
+  glass.setStyle(value as GlassStyle)
   persistDisplayPreferences()
 }
 
-function asChartColor(value: string) {
+// asGlassIntensity 读取原生 range 的数值。空值时 valueAsNumber 为 NaN，由 setIntensity 直接丢弃。
+function asGlassIntensity(event: Event) {
   if (!ensureDisplayReady()) return
-  display.setChartColor(value as ChartColor)
+  glass.setIntensity((event.target as HTMLInputElement).valueAsNumber)
   persistDisplayPreferences()
 }
 
-function asIconTone(value: string) {
+// asGlassBackdrop 切换极光折射流光背景。
+function asGlassBackdrop(value: boolean) {
   if (!ensureDisplayReady()) return
-  display.setIconTone(value as IconTone)
+  glass.setBackdrop(value)
   persistDisplayPreferences()
 }
 
-function asMenu(value: string) {
-  if (!ensureDisplayReady()) return
-  display.setMenu(value as MenuPreference)
-  persistDisplayPreferences()
-}
+// resetDialogOpen 控制「恢复默认外观」二次确认弹窗（设计稿 .apple-alert-dialog）。
+const resetDialogOpen = ref(false)
 
-function asMenuAccent(value: string) {
-  if (!ensureDisplayReady()) return
-  display.setMenuAccent(value as MenuAccent)
-  persistDisplayPreferences()
-}
-
-function asRadius(value: string) {
-  if (!ensureDisplayReady()) return
-  display.setRadius(value as Radius)
-  persistDisplayPreferences()
-}
-
-function asDensity(value: string) {
-  if (!ensureDisplayReady()) return
-  display.setDensity(value as Density)
-  persistDisplayPreferences()
-}
-
-function asTextSize(value: string) {
-  if (!ensureDisplayReady()) return
-  display.setTextSize(value as TextSize)
-  persistDisplayPreferences()
-}
-
-function asCardBorder(value: string) {
-  if (!ensureDisplayReady()) return
-  display.setCardBorder(value as CardBorder)
-  persistDisplayPreferences()
-}
-
-// resetDisplayPreferencesAndPersist 只恢复当前显示方案默认值，保留另一套方案和亮暗模式。
-function resetDisplayPreferencesAndPersist() {
-  if (!ensureDisplayReady()) return
-  display.resetDisplayPreferencesForCurrentScheme()
-  persistDisplayPreferences()
-}
-
+// confirmResetDisplayPreferences 打开确认弹窗，实际恢复交给 runResetDisplayPreferences。
 function confirmResetDisplayPreferences() {
-  resetDisplayDialogOpen.value = false
-  resetDisplayPreferencesAndPersist()
+  if (!ensureDisplayReady()) return
+  resetDialogOpen.value = true
 }
 
-// persistDisplayPreferences 保存 exportDisplayPreferences 的完整快照；切换显示方案需要 immediate 避免旧方案覆盖。
+// runResetDisplayPreferences 恢复亮暗模式、全局尺寸与液态玻璃光学的默认值并立即落盘（display facade 一次覆盖五轴）。
+function runResetDisplayPreferences() {
+  resetDialogOpen.value = false
+  if (!ensureDisplayReady()) return
+  display.resetDisplayPreferences()
+  persistDisplayPreferences({ immediate: true })
+}
+
+// persistDisplayPreferences 保存 exportDisplayPreferences 的完整快照。
 function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
   if (!ensureDisplayReady()) {
     return displaySaveQueue
@@ -361,460 +259,258 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
 
   return displaySaveQueue
 }
+// applyAlwaysOnTopToWindow 把「窗口置顶」设置真正落到 Wails 窗口；浏览器预览没有窗口运行时会静默跳过。
+async function applyAlwaysOnTopToWindow(enabled: boolean) {
+  try {
+    await Window.SetAlwaysOnTop(enabled)
+  } catch {
+    // 预览模式或平台不支持时，设置仍然会持久化，只丢失即时效果。
+  }
+}
+
+watch(() => draft.value.alwaysOnTop, (enabled) => {
+  void applyAlwaysOnTopToWindow(enabled)
+})
 </script>
 
 <template>
-  <div class="page-stack">
-    <section class="settings-section" aria-label="应用与业务设置">
-
-      <!-- 应用基础与业务设置 -->
-      <div class="split-header settings-section-heading">
-        <div class="section-title-row">
-          <span class="data-icon icon-tone-orange" aria-hidden="true"><Wrench :size="17" /></span>
-          <div>
-            <h3>应用与业务设置</h3>
-            <p>控制窗口托盘行为、开机自启策略、自动更新周期及每日日志的清理策略。</p>
-          </div>
+  <div class="settings-stack">
+    <!-- 业务设置 -->
+    <div class="settings-group-card">
+      <div class="settings-group-header">
+        <div>
+          <h3 class="settings-group-title">
+            <span class="sq-icon-badge size-sm blue" aria-hidden="true"><Wrench :size="13" :stroke-width="2.2" /></span>
+            应用基础与业务设置
+          </h3>
+          <p class="settings-group-desc">控制窗口托盘行为、开机自启策略、自动更新周期及每日日志清理策略。</p>
         </div>
       </div>
-      <div class="settings-control-list">
 
-          <div class="settings-row-item">
-            <span class="data-icon icon-tone-cyan" aria-hidden="true"><PanelBottomClose :size="17" /></span>
-            <div class="row-copy">
-              <strong>关闭到系统托盘</strong>
-              <small>点击关闭按钮时隐藏窗口至后台，点击最小化仍进入任务栏。</small>
-            </div>
-            <UiSwitch class="settings-control-switch" :checked="draft.minimizeToTray" :disabled="!settingsReady" aria-label="关闭到系统托盘" @update:checked="persistSettingsPatch({ minimizeToTray: $event })" />
-          </div>
-
-          <div class="settings-row-item">
-            <span class="data-icon icon-tone-blue" aria-hidden="true"><Pin :size="17" /></span>
-            <div class="row-copy">
-              <strong>窗口置顶</strong>
-              <small>窗口显示时保持在其他窗口上方，隐藏到托盘和自启隐藏策略保持独立。</small>
-            </div>
-            <UiSwitch class="settings-control-switch" :checked="draft.alwaysOnTop" :disabled="!settingsReady" aria-label="窗口置顶" @update:checked="persistSettingsPatch({ alwaysOnTop: $event })" />
-          </div>
-
-          <div class="settings-row-item">
-            <span class="data-icon icon-tone-green" aria-hidden="true"><Rocket :size="17" /></span>
-            <div class="row-copy">
-              <strong>开机自启</strong>
-              <small>系统完成引导并登录 Windows 后自动运行该应用。</small>
-            </div>
-            <UiSwitch class="settings-control-switch" :checked="draft.autoLaunch" :disabled="!settingsReady" aria-label="开机自启" @update:checked="persistSettingsPatch({ autoLaunch: $event })" />
-          </div>
-
-          <div class="settings-row-item">
-            <span class="data-icon icon-tone-purple" aria-hidden="true"><EyeOff :size="17" /></span>
-            <div class="row-copy">
-              <strong>自启时隐藏到系统托盘</strong>
-              <small>仅自启生效，前台不展示应用窗口。手动双击启动仍正常显示。</small>
-            </div>
-            <UiSwitch class="settings-control-switch" :checked="draft.launchHiddenToTray" :disabled="!draft.autoLaunch" aria-label="开机自启时隐藏到托盘" @update:checked="persistSettingsPatch({ launchHiddenToTray: $event })" />
-          </div>
-
-          <div class="settings-row-item">
-            <span class="data-icon icon-tone-blue" aria-hidden="true"><MonitorUp :size="17" /></span>
-            <div class="row-copy">
-              <strong>创建桌面快捷图标</strong>
-              <small>在当前登录用户的桌面生成指向本程序的快捷启动图标。</small>
-            </div>
-            <UiSwitch class="settings-control-switch" :checked="draft.createDesktopShortcut" :disabled="!settingsReady" aria-label="创建桌面快捷图标" @update:checked="persistSettingsPatch({ createDesktopShortcut: $event })" />
-          </div>
-
-          <div class="settings-row-item is-select-row">
-            <span class="data-icon icon-tone-blue" aria-hidden="true"><CloudDownload :size="17" /></span>
-            <div class="row-copy">
-              <strong>系统更新源</strong>
-              <small>选择系统更新源</small>
-            </div>
-            <UiSelect :model-value="draft.updateSource" :disabled="!settingsReady" @update:model-value="persistSettingsPatch({ updateSource: normaliseUpdateSource(String($event)) })">
-              <UiSelectTrigger class="settings-control-select" aria-label="更新源">
-                <UiSelectValue placeholder="更新源" />
-              </UiSelectTrigger>
-              <UiSelectContent>
-                <UiSelectItem v-for="[value, label] in updateSourceOptions" :key="value" :value="value">{{ label }}</UiSelectItem>
-              </UiSelectContent>
-            </UiSelect>
-          </div>
-
-          <div v-if="draft.updateSource === 'github'" class="settings-row-item is-input-row">
-            <span class="data-icon icon-tone-cyan" aria-hidden="true"><CloudDownload :size="17" /></span>
-            <div class="row-copy">
-              <strong>GitHub 更新代理</strong>
-              <small>GitHub 更新国内代理加速；</small>
-            </div>
-            <UiInput
-              class="settings-control-input"
-              :model-value="draft.githubProxyBase"
-              :disabled="!settingsReady"
-              aria-label="GitHub 更新代理"
-              placeholder="https://gh-proxy.com"
-              @update:model-value="persistSettingsPatch({ githubProxyBase: String($event) })"
-            />
-          </div>
-
-          <div class="settings-row-item is-select-row">
-            <span class="data-icon icon-tone-amber" aria-hidden="true"><CalendarClock :size="17" /></span>
-            <div class="row-copy">
-              <strong>自动更新检查间隔</strong>
-              <small>后台自动轮询线上新版本发布的时间跨度。</small>
-            </div>
-            <UiSelect :model-value="draft.updateCheckIntervalHours" :disabled="!settingsReady" @update:model-value="persistSettingsPatch({ updateCheckIntervalHours: Number($event) })">
-              <UiSelectTrigger class="settings-control-select" aria-label="检查间隔">
-                <UiSelectValue placeholder="检查间隔" />
-              </UiSelectTrigger>
-              <UiSelectContent>
-                <UiSelectItem v-for="hours in updateIntervalOptions" :key="hours" :value="hours">{{ hours }} 小时</UiSelectItem>
-              </UiSelectContent>
-            </UiSelect>
-          </div>
-
-          <div class="settings-row-item is-select-row">
-            <span class="data-icon icon-tone-orange" aria-hidden="true"><Archive :size="17" /></span>
-            <div class="row-copy">
-              <strong>日志保留周期</strong>
-              <small>日志保留的最大天数</small>
-            </div>
-            <UiSelect :model-value="draft.logRetentionDays" :disabled="!settingsReady" @update:model-value="persistSettingsPatch({ logRetentionDays: Number($event) })">
-              <UiSelectTrigger class="settings-control-select" aria-label="保留周期">
-                <UiSelectValue placeholder="保留周期" />
-              </UiSelectTrigger>
-              <UiSelectContent>
-                <UiSelectItem v-for="[value, label] in logRetentionOptions" :key="value" :value="value">{{ label }}</UiSelectItem>
-              </UiSelectContent>
-            </UiSelect>
-          </div>
-
-          <div class="settings-row-item is-select-row">
-            <span class="data-icon icon-tone-red" aria-hidden="true"><ListFilter :size="17" /></span>
-            <div class="row-copy">
-              <strong>控制台日志级别</strong>
-              <small>根据不同场景选择不同的日志级别</small>
-            </div>
-            <UiSelect :model-value="draft.logLevel" :disabled="!settingsReady" @update:model-value="persistSettingsPatch({ logLevel: normaliseLogLevel(String($event)) })">
-              <UiSelectTrigger class="settings-control-select" aria-label="日志级别">
-                <UiSelectValue placeholder="日志级别" />
-              </UiSelectTrigger>
-              <UiSelectContent>
-                <UiSelectItem v-for="[value, label] in logLevelOptions" :key="value" :value="value">{{ label }}</UiSelectItem>
-              </UiSelectContent>
-            </UiSelect>
-          </div>
-
-      </div>
-    </section>
-
-    <section class="settings-section" aria-label="外观与个性化">
-      <!-- 外观与个性化艺术主题设置 -->
-      <div class="split-header settings-section-heading aesthetic-section-heading">
-        <div class="section-title-row">
-          <span class="data-icon icon-tone-purple" aria-hidden="true"><Palette :size="17" /></span>
-          <div>
-            <h3>外观与个性化</h3>
-            <p>选择显示方案、调配主题与圆角，配置仅即时反馈至您的桌面偏好中。</p>
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md blue" aria-hidden="true"><SquareArrowDown :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">关闭到系统托盘</span>
+            <span class="settings-row-helper">点击关闭按钮时隐藏窗口至后台托盘，最小化仍进入任务栏。</span>
           </div>
         </div>
-        <UiButton class="aesthetic-reset-btn" variant="outline" size="sm" :disabled="!displayReady" @click="resetDisplayDialogOpen = true">
-          <RotateCcw :size="14" /> 恢复默认预设
-        </UiButton>
-      </div>
-      <div class="aesthetic-content-stack">
-
-          <!-- 显示方案选择卡片组 -->
-          <div class="aesthetic-field-col scheme-field-container">
-            <label class="aesthetic-field-title">主题显示方案</label>
-            <div class="scheme-cards-row">
-              <button
-                v-for="[value, label, desc, glowClass] in schemeCardOptions"
-                :key="value"
-                type="button"
-                class="scheme-card-box"
-                :class="[{ 'is-active': display.displayScheme.value === value }, glowClass]"
-                :disabled="!displayReady"
-                @click="asDisplayScheme(value)"
-              >
-                <strong class="scheme-title-text">{{ label }}</strong>
-                <span class="scheme-desc-text">{{ desc }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 全局主色彩模式 -->
-          <div class="aesthetic-field-col">
-            <label class="aesthetic-field-title">主色彩模式</label>
-            <div class="visual-segmented-control select-mode-control">
-              <button
-                v-for="[value, label] in themeOptions"
-                :key="value"
-                type="button"
-                class="visual-segment-btn"
-                :class="{ 'is-active': display.themeMode.value === value }"
-                :disabled="!displayReady"
-                @click="asThemeMode(value)"
-              >
-                <Sun v-if="value === 'light'" :size="15" />
-                <Moon v-else :size="15" />
-                <span>{{ label }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 中性色盘色调 -->
-          <div class="aesthetic-field-col">
-            <div class="flex justify-between items-center mb-1">
-              <label class="aesthetic-field-title">中性灰阶色调 (Base Color)</label>
-              <span class="active-badge">{{ getBaseColorLabel(display.baseColor.value) }}</span>
-            </div>
-            <p class="field-desc-para">影响亮色和暗色模式下的全局灰色基底与背景偏色。</p>
-            <div class="color-dot-palette base-palette" :class="{ 'is-disabled-grid': !displayReady }">
-              <button
-                v-for="[value, label] in baseOptions"
-                :key="value"
-                type="button"
-                class="color-dot-btn"
-                :class="{ 'is-selected': display.baseColor.value === value }"
-                :disabled="!displayReady"
-                :title="label"
-                @click="asBaseColor(value)"
-              >
-                <span class="color-palette-circle" :data-accent="value" />
-              </button>
-            </div>
-          </div>
-
-          <!-- 品牌主题色 - 平铺圆形色块 -->
-          <div class="aesthetic-field-col">
-            <div class="flex justify-between items-center mb-1">
-              <label class="aesthetic-field-title">品牌主题色 (Theme Color)</label>
-              <span class="active-badge">{{ getThemeColorLabel(display.themeColor.value) }}</span>
-            </div>
-            <p class="field-desc-para">控制主操作按钮、关键激活项、输入焦点环和进度指示条的配色。</p>
-            <div class="color-dot-palette" :class="{ 'is-disabled-grid': !displayReady }">
-              <button
-                v-for="[value, label] in themeColorOptions"
-                :key="value"
-                type="button"
-                class="color-dot-btn"
-                :class="{ 'is-selected': display.themeColor.value === value }"
-                :disabled="!displayReady"
-                :title="label"
-                @click="asThemeColor(value)"
-              >
-                <span class="color-palette-circle" :data-accent="value" />
-              </button>
-            </div>
-          </div>
-
-          <!-- 品牌辅助色由主题托管，展示同一品牌色的浅一号状态，不提供独立编辑入口。 -->
-          <div class="aesthetic-field-col is-managed-field" aria-disabled="true">
-            <div class="flex justify-between items-center mb-1">
-              <label class="aesthetic-field-title">品牌辅助色 (Accent Color)</label>
-              <span class="active-badge managed-badge">{{ getThemeColorLabel(display.themeColor.value) }}</span>
-            </div>
-            <p class="field-desc-para">跟随品牌主题色，用于下拉选中项、辅助强调和轻量交互状态。</p>
-            <div class="color-dot-palette is-managed-palette" :class="{ 'is-disabled-grid': !displayReady }">
-              <button
-                v-for="[value, label] in themeColorOptions"
-                :key="value"
-                type="button"
-                class="color-dot-btn"
-                :class="{ 'is-selected': display.themeColor.value === value, 'is-managed-selected': display.themeColor.value === value }"
-                disabled
-                :title="label"
-              >
-                <span class="color-palette-circle" :data-accent="value" />
-              </button>
-            </div>
-          </div>
-
-          <!-- 图标色彩风格 (Icon Color Style) -->
-          <div class="aesthetic-field-col">
-            <label class="aesthetic-field-title">图标色彩风格 (Icon Color Style)</label>
-            <p class="field-desc-para">设定侧边栏及卡片内部的图标色彩风格（单色默认 vs 彩色视觉）。</p>
-            <div class="visual-segmented-control">
-              <button
-                v-for="[value, label] in iconToneOptions"
-                :key="value"
-                type="button"
-                class="visual-segment-btn"
-                :class="{ 'is-active': display.iconTone.value === value }"
-                :disabled="!displayReady"
-                @click="asIconTone(value)"
-              >
-                <span>{{ label }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 图表配色 -->
-          <div class="aesthetic-field-col">
-            <div class="flex justify-between items-center mb-1">
-              <label class="aesthetic-field-title">图表配色体系 (Chart Color)</label>
-              <span class="active-badge">{{ getThemeColorLabel(display.chartColor.value) }}</span>
-            </div>
-            <p class="field-desc-para">专属用于日志分析图表、可视化数据和状态看板。</p>
-            <div class="color-dot-palette" :class="{ 'is-disabled-grid': !displayReady }">
-              <button
-                v-for="[value, label] in chartOptions"
-                :key="value"
-                type="button"
-                class="color-dot-btn"
-                :class="{ 'is-selected': display.chartColor.value === value }"
-                :disabled="!displayReady"
-                :title="label"
-                @click="asChartColor(value)"
-              >
-                <span class="color-palette-circle" :data-accent="value" />
-              </button>
-            </div>
-          </div>
-
-          <!-- 视觉圆角选项 -->
-          <div class="aesthetic-field-col">
-            <label class="aesthetic-field-title">圆角大小 (Border Radius)</label>
-            <p class="field-desc-para">设定按钮、输入框、对话框以及卡片的边角弧度。</p>
-            <div class="visual-segmented-control">
-              <button
-                v-for="[value, label] in radiusOptions"
-                :key="value"
-                type="button"
-                class="visual-segment-btn"
-                :class="{ 'is-active': display.radius.value === value }"
-                :disabled="!displayReady"
-                @click="asRadius(value)"
-              >
-                <span>{{ label }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 界面字号大小 -->
-          <div class="aesthetic-field-col">
-            <label class="aesthetic-field-title">字体字号 (Font Size)</label>
-            <p class="field-desc-para">调整系统各层级文字的字号大小，适配高分屏显示。</p>
-            <div class="visual-segmented-control">
-              <button
-                v-for="[value, label] in textOptions"
-                :key="value"
-                type="button"
-                class="visual-segment-btn"
-                :class="{ 'is-active': display.textSize.value === value }"
-                :disabled="!displayReady"
-                @click="asTextSize(value)"
-              >
-                <span>{{ label }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 界面元素密度 -->
-          <div class="aesthetic-field-col">
-            <label class="aesthetic-field-title">界面布局密度 (Density)</label>
-            <p class="field-desc-para">调整界面组件的紧凑程度，优化边距与列表行高。</p>
-            <div class="visual-segmented-control">
-              <button
-                v-for="[value, label] in densityOptions"
-                :key="value"
-                type="button"
-                class="visual-segment-btn"
-                :class="{ 'is-active': display.density.value === value }"
-                :disabled="!displayReady"
-                @click="asDensity(value)"
-              >
-                <span>{{ label }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 容器边框强度 -->
-          <div class="aesthetic-field-col">
-            <label class="aesthetic-field-title">容器与卡片边框强度</label>
-            <p class="field-desc-para">设定面板与卡片的边框可见度，增强页面空间层次。</p>
-            <div class="visual-segmented-control">
-              <button
-                v-for="[value, label] in cardBorderOptions"
-                :key="value"
-                type="button"
-                class="visual-segment-btn"
-                :class="{ 'is-active': display.cardBorder.value === value }"
-                :disabled="!displayReady"
-                @click="asCardBorder(value)"
-              >
-                <span>{{ label }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 侧边菜单风格 -->
-          <div class="aesthetic-field-col">
-            <label class="aesthetic-field-title">侧边导航风格 (Sidebar Style)</label>
-            <p class="field-desc-para">选择左侧主导航栏的底色模式与半透明模糊度。</p>
-            <div class="visual-segmented-control">
-              <button
-                v-for="[value, label] in menuOptions"
-                :key="value"
-                type="button"
-                class="visual-segment-btn"
-                :class="{ 'is-active': display.menu.value === value }"
-                :disabled="!displayReady"
-                @click="asMenu(value)"
-              >
-                <span>{{ label }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 侧边导航选中态强调 -->
-          <div class="aesthetic-field-col">
-            <label class="aesthetic-field-title">侧边导航强调 (Menu Accent)</label>
-            <p class="field-desc-para">控制当前选中菜单项使用轻量底色，还是直接使用品牌主色突出显示。</p>
-            <div class="visual-segmented-control">
-              <button
-                v-for="[value, label] in menuAccentOptions"
-                :key="value"
-                type="button"
-                class="visual-segment-btn"
-                :class="{ 'is-active': display.menuAccent.value === value }"
-                :disabled="!displayReady"
-                @click="asMenuAccent(value)"
-              >
-                <span>{{ label }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 组件风格基底 -->
-          <div class="aesthetic-field-col">
-            <label class="aesthetic-field-title">界面风格 (UI Style)</label>
-            <p class="field-desc-para">调整主要按钮和表单输入框的基础高度与比例。</p>
-            <UiSelect :model-value="display.uiStyle.value" :disabled="!displayReady" @update:model-value="asStyle">
-              <UiSelectTrigger class="settings-control-select" aria-label="组件风格">
-                <UiSelectValue placeholder="组件风格" />
-              </UiSelectTrigger>
-              <UiSelectContent>
-                <UiSelectItem v-for="[value, label] in styleOptions" :key="value" :value="value">{{ label }}</UiSelectItem>
-              </UiSelectContent>
-            </UiSelect>
-          </div>
-
-
-
+        <el-switch class="apple-switch" :model-value="draft.minimizeToTray" :disabled="!settingsReady" aria-label="关闭到系统托盘" @update:model-value="persistSettingsPatch({ minimizeToTray: Boolean($event) })" />
       </div>
 
-    </section>
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md orange" aria-hidden="true"><Pin :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">窗口置顶</span>
+            <span class="settings-row-helper">窗口显示时保持在其他应用窗口上方，不影响托盘策略。</span>
+          </div>
+        </div>
+        <el-switch class="apple-switch" :model-value="draft.alwaysOnTop" :disabled="!settingsReady" aria-label="窗口置顶" @update:model-value="persistSettingsPatch({ alwaysOnTop: Boolean($event) })" />
+      </div>
 
-    <!-- 恢复默认值的确认模态框 -->
-    <UiAlertDialog
-      :open="resetDisplayDialogOpen"
-      title="恢复当前方案默认预设"
-      description="此操作将会重置您在当前方案下定义的所有细项偏好。是否确认继续？"
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md green" aria-hidden="true"><Power :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">开机自启</span>
+            <span class="settings-row-helper">系统完成引导并登录 Windows 桌面后自动启动该工具。</span>
+          </div>
+        </div>
+        <el-switch class="apple-switch" :model-value="draft.autoLaunch" :disabled="!settingsReady" aria-label="开机自启" @update:model-value="persistSettingsPatch({ autoLaunch: Boolean($event) })" />
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md teal" aria-hidden="true"><EyeOff :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">自启时隐藏到系统托盘</span>
+            <span class="settings-row-helper">开机启动时静默最小化到托盘，不弹出前台主窗口。</span>
+          </div>
+        </div>
+        <el-switch class="apple-switch" :model-value="draft.launchHiddenToTray" :disabled="!settingsReady" aria-label="开机自启时隐藏到托盘" @update:model-value="persistSettingsPatch({ launchHiddenToTray: Boolean($event) })" />
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md purple" aria-hidden="true"><Monitor :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">创建桌面快捷图标</span>
+            <span class="settings-row-helper">在当前 Windows 桌面生成直接启动本软件的快捷方式。</span>
+          </div>
+        </div>
+        <el-switch class="apple-switch" :model-value="draft.createDesktopShortcut" :disabled="!settingsReady" aria-label="创建桌面快捷图标" @update:model-value="persistSettingsPatch({ createDesktopShortcut: Boolean($event) })" />
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md indigo" aria-hidden="true"><Download :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">系统更新源</span>
+            <span class="settings-row-helper">选择新版本发布来源及分发节点。</span>
+          </div>
+        </div>
+        <el-select class="apple-select" popper-class="ios-select-popover" placement="bottom-end" :model-value="draft.updateSource" :disabled="!settingsReady" aria-label="更新源" @update:model-value="persistSettingsPatch({ updateSource: normaliseUpdateSource(String($event)) })">
+          <el-option v-for="[value, label] in updateSourceOptions" :key="value" :value="value" :label="label" />
+        </el-select>
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md blue" aria-hidden="true"><Rocket :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">GitHub 更新代理加速</span>
+            <span class="settings-row-helper">国内网络环境下拉取 GitHub 文件的加速中继地址。</span>
+          </div>
+        </div>
+        <el-input
+          class="apple-field settings-proxy-field"
+          :model-value="draft.githubProxyBase"
+          :disabled="!settingsReady"
+          aria-label="GitHub 更新代理"
+          placeholder="https://gh-proxy.com"
+          @update:model-value="persistSettingsPatch({ githubProxyBase: String($event) })"
+        />
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md orange" aria-hidden="true"><Clock :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">自动更新检查间隔</span>
+            <span class="settings-row-helper">后台自动轮询线上新版本发布的时间周期。</span>
+          </div>
+        </div>
+        <el-select class="apple-select" popper-class="ios-select-popover" placement="bottom-end" :model-value="draft.updateCheckIntervalHours" :disabled="!settingsReady" aria-label="检查间隔" @update:model-value="persistSettingsPatch({ updateCheckIntervalHours: Number($event) })">
+          <el-option v-for="hours in updateIntervalOptions" :key="hours" :value="hours" :label="`${hours} 小时`" />
+        </el-select>
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md gray" aria-hidden="true"><Calendar :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">日志保留周期</span>
+            <span class="settings-row-helper">本地每日日志保留的最大时间上限。</span>
+          </div>
+        </div>
+        <el-select class="apple-select" popper-class="ios-select-popover" placement="bottom-end" :model-value="draft.logRetentionDays" :disabled="!settingsReady" aria-label="保留周期" @update:model-value="persistSettingsPatch({ logRetentionDays: Number($event) })">
+          <el-option v-for="[value, label] in logRetentionOptions" :key="value" :value="value" :label="label" />
+        </el-select>
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md pink" aria-hidden="true"><Terminal :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">控制台日志级别</span>
+            <span class="settings-row-helper">设置记录写入运行日志的最低严重程度。</span>
+          </div>
+        </div>
+        <el-select class="apple-select" popper-class="ios-select-popover" placement="bottom-end" :model-value="draft.logLevel" :disabled="!settingsReady" aria-label="日志级别" @update:model-value="persistSettingsPatch({ logLevel: normaliseLogLevel(String($event)) })">
+          <el-option v-for="[value, label] in logLevelOptions" :key="value" :value="value" :label="label" />
+        </el-select>
+      </div>
+    </div>
+
+    <!-- 外观与个性化 -->
+    <div class="settings-group-card">
+      <div class="settings-group-header">
+        <div>
+          <h3 class="settings-group-title">
+            <span class="sq-icon-badge size-sm purple" aria-hidden="true"><Palette :size="13" :stroke-width="2.2" /></span>
+            外观与个性化
+          </h3>
+          <p class="settings-group-desc">提供 macOS HIG 亮暗双模切换、UI 控件尺寸设定与原生液态玻璃材质微调。</p>
+        </div>
+        <el-button class="btn-apple secondary is-compact" :disabled="!displayReady" @click="confirmResetDisplayPreferences">恢复默认</el-button>
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md indigo" aria-hidden="true"><Sun :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">主题模式</span>
+            <span class="settings-row-helper">切换亮色与暗色模式，立即全局无缝生效。</span>
+          </div>
+        </div>
+        <el-radio-group class="segmented-control" :model-value="display.themeMode.value" :disabled="!displayReady" aria-label="主题模式" @update:model-value="asThemeMode(String($event))">
+          <el-radio-button v-for="[value, label] in themeOptions" :key="value" :value="value">{{ label }}</el-radio-button>
+        </el-radio-group>
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md blue" aria-hidden="true"><Maximize2 :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">控件尺寸</span>
+            <span class="settings-row-helper">调整按钮、表单、表格与文字的全局物理间距。</span>
+          </div>
+        </div>
+        <el-radio-group class="segmented-control" :model-value="display.size.value" :disabled="!displayReady" aria-label="控件尺寸" @update:model-value="asSize(String($event))">
+          <el-radio-button v-for="[value, label] in sizeOptions" :key="value" :value="value">{{ label }}</el-radio-button>
+        </el-radio-group>
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md teal" aria-hidden="true"><DollarSign :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">极光折射流光背景</span>
+            <span class="settings-row-helper">开启液态极光光谱色带折射舞台。日常办公默认关闭，保持视觉纯净清爽。</span>
+          </div>
+        </div>
+        <el-switch class="apple-switch" :model-value="glass.backdrop.value" aria-label="开启/关闭极光折射流光背景" @update:model-value="asGlassBackdrop(Boolean($event))" />
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md purple" aria-hidden="true"><Star :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">液态玻璃折射风格</span>
+            <span class="settings-row-helper">选择卡片与控件表面液态物理光斑的色散与漫反射特性。</span>
+          </div>
+        </div>
+        <el-radio-group class="segmented-control" :model-value="glass.style.value" aria-label="液态玻璃折射风格" @update:model-value="asGlassStyle(String($event))">
+          <el-radio-button v-for="[value, label] in glassStyleOptions" :key="value" :value="value">{{ label }}</el-radio-button>
+        </el-radio-group>
+      </div>
+
+      <div class="settings-row-item">
+        <div class="settings-row-leading">
+          <span class="sq-icon-badge size-md cyan" aria-hidden="true"><Globe :size="15" :stroke-width="2.2" /></span>
+          <div class="settings-row-info">
+            <span class="settings-row-label">液态折射光强</span>
+            <span class="settings-row-helper">调节随动高光光斑与表面边缘物理折射的通透度。</span>
+          </div>
+        </div>
+        <div class="settings-slider-wrap">
+          <input
+            class="settings-slider"
+            type="range"
+            :min="glassIntensityMin"
+            :max="glassIntensityMax"
+            step="1"
+            :value="glass.intensity.value"
+            aria-label="液态折射光强"
+            @input="asGlassIntensity($event)"
+          >
+          <span class="settings-slider-value">{{ glass.intensity.value }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 恢复默认外观的二次确认（设计稿 .apple-alert-dialog）：非破坏性动作，确认键用主色 -->
+    <AlertDialog
+      :destructive="false"
+      :open="resetDialogOpen"
       confirm-text="恢复默认"
-      @close="resetDisplayDialogOpen = false"
-      @confirm="confirmResetDisplayPreferences"
-    />
+      title="确定恢复默认外观设置？"
+      @close="resetDialogOpen = false"
+      @confirm="runResetDisplayPreferences"
+    >
+      该操作会把<strong>主题模式</strong>与<strong>控件尺寸</strong>同时恢复为系统默认值。<br>业务设置（日志级别、更新渠道、自动检查）保持不变，不会被写入。
+    </AlertDialog>
   </div>
 </template>
 
