@@ -261,14 +261,16 @@ html.is-log-focus .mobile-tabbar {
   transition: transform var(--duration-fast) var(--ease-apple), box-shadow var(--duration-fast) var(--ease-apple);
 }
 
-/* 触控防误触隐形热区：视觉 14px，命中区外扩 9px */
+/* 触控防误触隐形热区：视觉 14px，命中区上下各外扩 9px。
+   水平只扩 6px：点间距 12px（中心距 26px），扩到 9px 会让相邻热区重叠 6px，
+   而重叠区按绘制顺序归给后画的「关闭」，等于给关闭键偷了 6px 命中区。 */
 .traffic-btn::after {
   content: "";
   position: absolute;
   top: calc(-1 * var(--sp-9));
   bottom: calc(-1 * var(--sp-9));
-  left: calc(-1 * var(--sp-9));
-  right: calc(-1 * var(--sp-9));
+  left: calc(-1 * var(--sp-6));
+  right: calc(-1 * var(--sp-6));
   border-radius: 50%;
   pointer-events: auto;
 }
@@ -716,6 +718,9 @@ html.dark .tabbar-item:hover:not(.active) {
   border-radius: var(--radius-pill);
   font-size: var(--fs-11);
   font-weight: 600;
+  /* 状态药丸被窄容器压成两行会直接破相，宁可撑破轨道也不折行 */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .badge-apple.ok {

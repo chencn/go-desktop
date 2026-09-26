@@ -25,7 +25,7 @@ import {
   Terminal,
   Wrench,
 } from '@lucide/vue'
-import { exportDisplayPreferences, useDisplayPreferences, type DisplaySize, type ThemeMode } from '@/app/display'
+import { useDisplayPreferences, type DisplaySize, type ThemeMode } from '@/app/display'
 import { glassIntensityMax, glassIntensityMin, useGlassPreferences, type GlassStyle } from '@/app/glass'
 import { useAppStore } from '@/stores/app'
 import { defaultRuntimeSettings, type LogLevel, type Settings, type UpdateSource } from '@/api/wails'
@@ -221,13 +221,13 @@ function runResetDisplayPreferences() {
   persistDisplayPreferences({ immediate: true })
 }
 
-// persistDisplayPreferences 保存 exportDisplayPreferences 的完整快照。
+// persistDisplayPreferences 保存显示偏好快照；快照必须在真正写库那一刻才导出，
+// 否则防抖等待期间被顶栏极光开关改掉的轴会被这份旧快照覆盖回去（整键覆写会一次丢一整轴）。
 function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
   if (!ensureDisplayReady()) {
     return displaySaveQueue
   }
   const revision = ++displaySaveRevision
-  const next = exportDisplayPreferences()
 
   if (displaySaveTimer) {
     window.clearTimeout(displaySaveTimer)
@@ -241,7 +241,7 @@ function persistDisplayPreferences(options: { immediate?: boolean } = {}) {
           return
         }
         try {
-          await appStore.persistDisplayPreferences(next)
+          await appStore.persistDisplayPreferences()
         } catch (error) {
           if (revision === displaySaveRevision) {
             appStore.applyAction({ type: 'errorSet', payload: error instanceof Error ? error.message : '显示偏好保存失败' })

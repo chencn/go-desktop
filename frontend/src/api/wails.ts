@@ -7,7 +7,6 @@
  * - 定义所有后端 API 的 TypeScript 类型和接口
  * - 封装 Wails 绑定调用，提供类型安全的异步函数
  * - 支持显式前端预览模式（VITE_PREVIEW=true 时提供 fallback 数据）
- * - 处理外部链接打开（优先使用 Wails Browser API，降级到 window.open）
  *
  * 架构说明:
  * - 通过 Wails 的代码生成绑定（bindings/ 目录）调用 Go 后端方法
@@ -15,7 +14,6 @@
  * ============================================================================
  */
 
-import { Browser } from '@wailsio/runtime'
 import * as AppBinding from '../../bindings/github.com/chencn/go-desktop/app'
 import { defaultSettings, projectMetadata } from '../shared/project'
 
@@ -497,11 +495,16 @@ function cloneDisplayPreferences(value: DisplayPreferences): DisplayPreferences 
   return { ...value }
 }
 
+// 预览快照按五轴白名单重建：localStorage 里可能留着退役显示方案的脏键，整体 spread 会把它们一路带回运行时状态。
 function normalisePreviewDisplayPreferences(value: unknown): DisplayPreferences {
   const parsed = typeof value === 'object' && value !== null ? value as Partial<DisplayPreferences> : {}
+  const fallback = cloneDisplayPreferences(defaultDisplayPreferences)
   return {
-    ...cloneDisplayPreferences(defaultDisplayPreferences),
-    ...parsed,
+    themeMode: typeof parsed.themeMode === 'string' ? (parsed.themeMode as DisplayPreferences['themeMode']) : fallback.themeMode,
+    size: typeof parsed.size === 'string' ? (parsed.size as DisplayPreferences['size']) : fallback.size,
+    backdrop: typeof parsed.backdrop === 'boolean' ? parsed.backdrop : fallback.backdrop,
+    lgStyle: typeof parsed.lgStyle === 'string' ? (parsed.lgStyle as DisplayPreferences['lgStyle']) : fallback.lgStyle,
+    lgIntensity: typeof parsed.lgIntensity === 'number' ? parsed.lgIntensity : fallback.lgIntensity,
   }
 }
 
@@ -801,21 +804,5 @@ export async function showMainWindow() {
     await binding('ShowMainWindow')()
   } catch (error) {
     await previewFallback(() => undefined, error)
-  }
-}
-
-/**
- * 打开外部链接
- * 优先使用 Wails Browser API，预览模式下降级到 window.open
- */
-export async function openExternalURL(url: string) {
-  try {
-    await Browser.OpenURL(url)
-  } catch (error) {
-    if (isExplicitPreview()) {
-      window.open(url, '_blank', 'noopener,noreferrer')
-      return
-    }
-    throw new Error('打开外部链接失败。')
   }
 }

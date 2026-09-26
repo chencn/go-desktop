@@ -98,6 +98,7 @@ describe('wails api fallback boundaries', () => {
     })
   })
 
+  // 预览快照必须被收成五轴：旧显示方案的脏键不能跟着进运行时状态。
   it('normalizes preview display preferences without legacy fields', async () => {
     vi.stubEnv('VITE_PREVIEW', 'true')
     window.localStorage.setItem('go-desktop.preview.displayPreferences', JSON.stringify({
@@ -108,9 +109,12 @@ describe('wails api fallback boundaries', () => {
     }))
     const { getDisplayPreferences } = await import('../../frontend/src/api/wails')
 
-    await expect(getDisplayPreferences()).resolves.toMatchObject({
+    await expect(getDisplayPreferences()).resolves.toEqual({
       themeMode: 'dark',
       size: 'large',
+      backdrop: false,
+      lgStyle: 'fresnel',
+      lgIntensity: 75,
     })
   })
 

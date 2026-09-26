@@ -17,7 +17,8 @@ const copied = ref(false)
 const licenseStatus = computed(() => appStore.licenseStatus)
 // deviceCode 当前设备短码，用于发给授权签发脚本。
 const deviceCode = computed(() => licenseStatus.value?.deviceCode ?? '')
-// authorized 决定状态药丸的配色与文案。
+// authorized 决定状态药丸的配色与文案。卡片只在授权确实启用的地方挂载：关于页有 enabled 闸门，
+// 闸门页 App.vue 只在 required && !authorized 时渲染，而 required 为真必然 enabled 为真。
 const authorized = computed(() => Boolean(licenseStatus.value?.authorized))
 // statusLabel 是卡片右上角的授权结论。
 const statusLabel = computed(() => (authorized.value ? '已激活商用授权' : '未激活商用授权'))

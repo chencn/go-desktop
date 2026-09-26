@@ -277,22 +277,23 @@
   background: var(--surface);
 }
 
-.log-stat-box.info {
-  border-left: var(--sp-3) solid var(--accent);
-}
-
-.log-stat-box.warn {
-  border-left: var(--sp-3) solid var(--warn);
-}
-
-.log-stat-box.error {
-  border-left: var(--sp-3) solid var(--danger);
-}
-
 .log-stat-box strong {
   font-family: var(--font-display);
   font-size: var(--fs-18);
   color: var(--fg);
+}
+
+/* 级别颜色只落在数字上：设计稿的 3px 左侧色条与彩色数字是同一件事，留一个就够 */
+.log-stat-box.info strong {
+  color: var(--accent);
+}
+
+.log-stat-box.warn strong {
+  color: var(--warn);
+}
+
+.log-stat-box.error strong {
+  color: var(--danger);
 }
 
 .log-stat-box span {
@@ -319,5 +320,20 @@
   .stats-grid {
     grid-template-columns: 1fr;
     gap: var(--sp-12);
+  }
+}
+
+/* 大档的字号与内边距按 1.08 放大，但列数仍按视口算：实测 1024 宽时卡片被压到 172.8px，
+   服务名与状态药丸被迫折行。设计稿没有尺寸档概念，故只在大档把折叠点从 1024 抬到 1152
+   （1152 起卡片 204.8px 可单行容纳，标准档与小档行为与设计稿逐像素一致）。 */
+@media (min-width: 768px) and (max-width: 1151px) {
+  html[data-display-size="large"] .services-grid,
+  html[data-display-size="large"] .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sp-14);
+  }
+
+  html[data-display-size="large"] .dashboard-grid {
+    grid-template-columns: 1fr;
   }
 }

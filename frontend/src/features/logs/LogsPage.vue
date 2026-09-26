@@ -8,6 +8,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Maximize2, RefreshCw, Search, SlidersHorizontal, TimerReset, Trash2 } from '@lucide/vue'
 import { useAppStore } from '@/stores/app'
+import { useDisplayPreferences } from '@/app/display'
 import { toMessage } from '@/app/state'
 import { formatDateTime } from '@/shared/format'
 import { displayMessage } from '@/shared/labels'
@@ -88,6 +89,30 @@ const paginationSummary = computed(() => {
 const emptyLogsText = computed(() => {
   const gate = String(appStore.settings?.logLevel ?? 'info').toUpperCase()
   return `暂无匹配日志 (门禁级别: ≥ ${gate})`
+})
+
+// 三档字号会改变单元格文本宽度，但 el-table 的列宽是按像素写死的：大档下设计稿的 196px 会把时间戳折成两行。
+// 列宽因此跟随写在 <html> 上的 --ui-scale 等比放大，标准档仍与设计稿逐像素相等。
+const displayPreferences = useDisplayPreferences()
+const uiScale = ref(1)
+
+// scaledColumnWidth 把设计稿列宽换算成当前档的像素宽度。
+function scaledColumnWidth(base: number) {
+  return Math.round(base * uiScale.value)
+}
+
+// syncUiScale 从样式表读回当前缩放档；读不到（SSR、样式未就绪）一律按 1 处理。
+function syncUiScale() {
+  if (typeof document === 'undefined') return
+  const value = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale'))
+  uiScale.value = Number.isFinite(value) && value > 0 ? value : 1
+}
+
+watch(displayPreferences.size, async () => {
+  await nextTick()
+  syncUiScale()
+  // 行高同样随档位变化，不重算的话分页会按旧行高塞进行不下的行数。
+  updateLogPageSize()
 })
 
 function calculateLogPageSize(tableElement?: HTMLElement | null, paginationElement?: HTMLElement | null) {
@@ -239,6 +264,7 @@ async function initializeLogPageSize() {
 }
 
 onMounted(() => {
+  syncUiScale()
   void initializeLogPageSize()
   if (typeof ResizeObserver !== 'undefined') {
     pageSizeObserver = new ResizeObserver(updateLogPageSize)
@@ -430,17 +456,17 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
           aria-label="应用日志"
           :empty-text="logLayoutReady ? emptyLogsText : ''"
         >
-          <el-table-column label="时间" width="196">
+          <el-table-column label="时间" :width="scaledColumnWidth(196)">
             <template #default="{ row }">
               <span class="log-time-cell">{{ formatDateTime(row.time) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="来源" width="128">
+          <el-table-column label="来源" :width="scaledColumnWidth(128)">
             <template #default="{ row }">
               <span class="log-scope-tag">{{ logScopeLabel(row.scope) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="级别" width="108">
+          <el-table-column label="级别" :width="scaledColumnWidth(108)">
             <template #default="{ row }">
               <span :class="`log-level-badge ${logLevelClass(row.severity)}`">{{ logLevelLabel(row.severity) }}</span>
             </template>

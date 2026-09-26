@@ -15,31 +15,14 @@ vi.mock('../../frontend/src/api/wails', () => {
     createDesktopShortcut: false,
     launchHiddenToTray: false,
   }
-  const defaultShadcnDisplayProfile = {
-    accentColor: 'neutral',
-    baseColor: 'neutral',
-    cardBorder: 'visible',
-    chartColor: 'neutral',
-    density: 'comfortable',
-    iconTone: 'default',
-    menu: 'default',
-    menuAccent: 'subtle',
-    radius: 'medium',
-    textSize: 'normal',
-    themeColor: 'neutral',
-    uiStyle: 'vega',
-  }
-  const defaultArtisticDisplayProfile = {
-    ...defaultShadcnDisplayProfile,
-    accentColor: 'apple-blue',
-    baseColor: 'neutral',
-    cardBorder: 'visible',
-    chartColor: 'apple-blue',
-    iconTone: 'colorful',
-    menu: 'default',
-    menuAccent: 'bold',
-    radius: 'medium',
-    themeColor: 'apple-blue',
+  // 与 frontend/src/api/wails.ts 的 defaultDisplayPreferences 保持同一形状：v3 只有五轴，
+  // 退役显示方案（displayScheme / profiles / accentColor 等）不再是偏好维度。
+  const defaultDisplayPreferences = {
+    themeMode: 'light',
+    size: 'default',
+    backdrop: false,
+    lgStyle: 'fresnel',
+    lgIntensity: 75,
   }
 
   return {
@@ -51,15 +34,7 @@ vi.mock('../../frontend/src/api/wails', () => {
       deviceCode: '',
       message: '授权未启用',
     },
-    defaultDisplayPreferences: {
-      ...defaultArtisticDisplayProfile,
-      displayScheme: 'artistic',
-      themeMode: 'light',
-      profiles: {
-        shadcn: defaultShadcnDisplayProfile,
-        artistic: defaultArtisticDisplayProfile,
-      },
-    },
+    defaultDisplayPreferences,
   }
 })
 

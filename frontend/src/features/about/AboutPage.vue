@@ -28,6 +28,10 @@ const appName = computed(() => appStore.appInfo?.name ?? projectMetadata.appName
 const appDescription = computed(() => appStore.appInfo?.description ?? projectMetadata.description)
 const currentVersion = computed(() => appStore.appInfo?.version ?? projectMetadata.defaultVersion)
 const startedAtLabel = computed(() => formatDateTime(appStore.appInfo?.startedAt))
+
+// licenseCardVisible 只在构建确实启用授权时才挂授权卡：未启用时后端返回的 authorized 默认是 true，
+// 关于页摆一张空设备码 + 授权码输入框的卡片，只会让人误以为还需要激活。
+const licenseCardVisible = computed(() => appStore.licenseStatus?.enabled === true)
 const uptimeLabel = computed(() => formatUptime(appStore.appInfo?.startedAt, now.value))
 const platformLabel = computed(() => `${appStore.environmentInfo?.os ?? '未获取'} / ${appStore.environmentInfo?.arch ?? '未获取'}`)
 const releaseSourceLabel = computed(() => `${projectMetadata.github.owner}/${projectMetadata.github.repo}`)
@@ -143,7 +147,7 @@ function formatUptime(value: string | undefined, currentTime: number) {
       </div>
     </section>
 
-    <LicenseCard />
+    <LicenseCard v-if="licenseCardVisible" />
   </div>
 </template>
 

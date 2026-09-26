@@ -123,6 +123,8 @@
   color: var(--meta);
   font-family: var(--font-mono);
   font-size: var(--fs-12);
+  /* 时间戳折成两行会把整行行高顶起来，列宽已按档位放大，这里再兜住不换行 */
+  white-space: nowrap;
 }
 
 .log-message-cell {
@@ -139,6 +141,7 @@
   font-size: var(--fs-11);
   font-weight: 600;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .log-level-badge.is-debug {

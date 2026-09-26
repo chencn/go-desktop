@@ -400,66 +400,7 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button:not(.is-active) .el-r
 }
 
 /* ==========================================================================
-   5. 单选圆钮（设计稿 §8.2：18×18 微透底座 + Action Blue 选中 + 8px 白点）
-   ========================================================================== */
-.el-radio-group.apple-radio-group {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-16);
-  flex-wrap: wrap;
-}
-
-.el-radio.apple-radio,
-.el-radio.apple-radio .el-radio__label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-8);
-  font-size: var(--fs-13);
-  font-weight: 500;
-  color: var(--fg);
-  margin: 0;
-}
-
-.el-radio.apple-radio .el-radio__inner {
-  width: var(--sp-18);
-  height: var(--sp-18);
-  border-radius: 50%;
-  border: 1.5px solid var(--radio-edge);
-  background: var(--radio-base);
-  box-shadow: var(--radio-shadow);
-  backdrop-filter: blur(var(--sp-12));
-  -webkit-backdrop-filter: blur(var(--sp-12));
-  transition: all var(--duration-fast) var(--ease-apple);
-}
-
-.el-radio.apple-radio .el-radio__inner::after {
-  width: var(--sp-8);
-  height: var(--sp-8);
-  background: var(--color-white-solid);
-  box-shadow: 0 1px 2px var(--color-black-alpha-200);
-}
-
-.el-radio.apple-radio.is-checked .el-radio__inner {
-  border-color: var(--accent);
-  background: var(--accent);
-  box-shadow: var(--radio-checked-shadow);
-}
-
-.el-radio.apple-radio:hover:not(.is-disabled) .el-radio__inner {
-  border-color: var(--accent);
-  background: var(--color-white-alpha-050);
-}
-
-/* 手机端无障碍热区：整行最小 44px（设计稿 §11C） */
-@media (max-width: 767px) {
-  .el-radio.apple-radio {
-    min-height: var(--sp-44);
-    padding: var(--sp-6) 0;
-  }
-}
-
-/* ==========================================================================
-   6. iOS 玻璃下拉选择器（设计稿 .ios-select-trigger / .ios-select-popover）
+   5. iOS 玻璃下拉选择器（设计稿 .ios-select-trigger / .ios-select-popover）
    ========================================================================== */
 .el-select.apple-select {
   width: var(--apple-select-width, auto);
@@ -614,7 +555,7 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button:not(.is-active) .el-r
 }
 
 /* ==========================================================================
-   7. 输入框（设计稿 .log-command-search input / .el-select-apple 输入态）
+   6. 输入框（设计稿 .log-command-search input / .el-select-apple 输入态）
    ========================================================================== */
 .el-input.apple-field {
   width: var(--apple-field-width, 100%);
@@ -716,7 +657,7 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button:not(.is-active) .el-r
 }
 
 /* ==========================================================================
-   8. 表格（设计稿 §7 .apple-table：吸顶表头 + 11px 大写栏目 + 行悬停主色底）
+   7. 表格（设计稿 §7 .apple-table：吸顶表头 + 11px 大写栏目 + 行悬停主色底）
    ========================================================================== */
 .el-table.apple-table {
   --el-table-border-color: var(--border-soft);
@@ -764,7 +705,7 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button:not(.is-active) .el-r
 }
 
 /* ==========================================================================
-   9. 分页（设计稿 .page-btn 28×28 白玻璃方键）
+   8. 分页（设计稿 .page-btn 28×28 白玻璃方键）
    ========================================================================== */
 .el-pagination.apple-pagination {
   --el-pagination-button-width: var(--sp-28);
@@ -814,7 +755,7 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button:not(.is-active) .el-r
 }
 
 /* ==========================================================================
-   10. 进度条（设计稿 .apple-progress-track 8px 药丸 + 主色填充）
+   9. 进度条（设计稿 .apple-progress-track 8px 药丸 + 主色填充）
    ========================================================================== */
 .el-progress.apple-progress {
   --el-color-primary: var(--accent);
@@ -842,7 +783,7 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button:not(.is-active) .el-r
 }
 
 /* ==========================================================================
-   11. 弹窗（设计稿 §10 .update-dialog 480px 玻璃面板 + header/body/footer）
+   10. 弹窗（设计稿 §10 .update-dialog 480px 玻璃面板 + header/body/footer）
    ========================================================================== */
 .el-overlay:has(.apple-dialog) {
   background: var(--overlay-fill);
@@ -945,7 +886,7 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button:not(.is-active) .el-r
 }
 
 /* ==========================================================================
-   12. 警告二次确认弹窗（设计稿 .apple-alert-dialog：420px 居中图文 + 等宽按钮）
+   11. 警告二次确认弹窗（设计稿 .apple-alert-dialog：420px 居中图文 + 等宽按钮）
    ========================================================================== */
 .el-dialog.apple-dialog.is-alert {
   --dialog-width: calc(420px * var(--ui-scale));
@@ -979,7 +920,7 @@ html.dark .el-dialog.apple-dialog.is-alert {
 }
 
 /* ==========================================================================
-   13. 提示条与浮层
+   12. 提示条与浮层
    ========================================================================== */
 .el-alert.apple-alert {
   --el-alert-padding-primary: var(--sp-12);
