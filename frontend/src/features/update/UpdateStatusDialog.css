@@ -22,7 +22,8 @@
   gap: var(--sp-14);
   padding: var(--sp-12) var(--sp-16);
   border-radius: var(--radius-md);
-  background: var(--accent-light);
+  background: var(--banner-fill);
+  border: var(--banner-edge);
 }
 
 .update-info-banner svg {

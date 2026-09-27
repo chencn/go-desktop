@@ -67,17 +67,33 @@
   --apple-select-width: var(--sp-280);
   --apple-select-label-width: 100%;
 
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-16);
   padding: var(--sp-14) var(--sp-20);
-  border-bottom: 1px solid var(--border-soft);
+}
+
+/* 分隔线从文案起笔，不穿过左侧图标：58px = 20 行内边距 + 26 徽标 + 12 图标间距，
+   三项都随 --ui-scale 缩放，所以锚点同步缩放才能在三个尺寸档都对齐。 */
+.settings-row-item::after {
+  content: "";
+  position: absolute;
+  left: calc(58px * var(--ui-scale));
+  right: 0;
+  bottom: 0;
+  height: 0.5px;
+  background: var(--border-soft);
+  pointer-events: none;
 }
 
 .settings-row-item:last-child {
-  border-bottom: none;
   border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px);
+}
+
+.settings-row-item:last-child::after {
+  display: none;
 }
 
 /* 行左半：图标徽标 + 文案，整体占据剩余宽度并把文案压缩到可截断 */
@@ -116,21 +132,50 @@
 
 /* 液态折射光强行：设计稿用内联样式铺出「滑块 + 百分比读数」，170/42 不在间距刻度上，故页内声明 */
 .settings-slider-wrap {
-  --settings-slider-min-width: calc(170px * var(--ui-scale));
+  --settings-slider-width: calc(220px * var(--ui-scale));
   --settings-slider-value-width: calc(42px * var(--ui-scale));
 
   display: flex;
-  min-width: var(--settings-slider-min-width);
+  width: var(--settings-slider-width);
   align-items: center;
-  gap: var(--sp-10);
+  gap: var(--sp-12);
 }
 
-/* 原生 range 只靠 accent-color 上色，与设计稿一致，不额外包装 EP 滑块 */
+/* 设计稿 .apple-slider：4px 半透凹槽 + 20px 白瓷旋钮，旋钮自身带切面高光与按压回缩。
+   原生 range 只靠 accent-color 上色是上一版稿子的做法，新版已换成自定义伪元素。 */
 .settings-slider {
+  -webkit-appearance: none;
+  appearance: none;
   min-width: 0;
   flex: 1;
-  accent-color: var(--accent);
+  height: var(--sp-4);
+  border-radius: var(--radius-pill);
+  background: var(--slider-track);
+  outline: none;
   cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-apple);
+}
+
+.settings-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--sp-20);
+  height: var(--sp-20);
+  border-radius: 50%;
+  background: var(--slider-thumb);
+  border: var(--slider-thumb-edge);
+  box-shadow: var(--slider-thumb-shadow);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-apple), box-shadow var(--duration-fast) var(--ease-apple);
+}
+
+.settings-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+  box-shadow: var(--slider-thumb-shadow-hover);
+}
+
+.settings-slider::-webkit-slider-thumb:active {
+  transform: scale(0.96);
 }
 
 .settings-slider-value {

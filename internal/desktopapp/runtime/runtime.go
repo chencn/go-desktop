@@ -140,8 +140,4 @@ type Runtime struct {
 	// forceQuit 强制退出标志
 	// 为 true 时，关闭窗口直接退出而不是隐藏到托盘
 	forceQuit bool
-
-	// secondStart 多实例启动记录
-	// 当用户第二次启动应用时记录参数
-	secondStart []SecondInstanceRecord
 }

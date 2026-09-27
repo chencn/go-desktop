@@ -33,4 +33,20 @@ export default defineConfig({
   server: {
     host: "127.0.0.1",
   },
+  build: {
+    // 桌面端本地内嵌静态资源，放宽 Web 默认的 500 kB 警报阈值至 1000 kB
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            // 将纯底层框架运行时（Vue 核心与 Pinia）拆为独立 chunk
+            if (id.includes("vue") && !id.includes("element-plus") && !id.includes("lucide")) {
+              return "vendor-vue";
+            }
+          }
+        },
+      },
+    },
+  },
 });

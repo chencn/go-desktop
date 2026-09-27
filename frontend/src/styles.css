@@ -57,15 +57,17 @@
   --bg: var(--color-white-solid);
   --surface: var(--color-value-f5f5f7);
   --surface-warm: var(--color-value-fbfbfd);
-  --surface-glass: var(--color-white-alpha-850);
-  --sidebar-bg: var(--color-value-rgba-246-246-248-0p88);
+  --surface-glass: var(--color-white-alpha-820);
+  --sidebar-bg: var(--color-value-rgba-246-246-248-0p84);
 
   /* 液态玻璃材质：弹窗、侧栏、TabBar 共用的通透底色与光学参数（暗色只换底色与高光） */
-  --glass-bg: var(--color-white-alpha-780);
-  --glass-border: 1px solid var(--color-white-alpha-650);
+  --glass-bg: var(--color-white-alpha-720);
+  --glass-border: 1px solid var(--color-black-alpha-070);
   --glass-blur: blur(28px) saturate(190%) contrast(102%);
-  --glass-highlight: inset 0 1px 1px 0 var(--color-white-alpha-920), inset 0 -1px 1px 0 var(--color-black-alpha-040);
-  --glass-shadow: 0 16px 40px -6px var(--color-black-alpha-080), 0 4px 14px var(--color-black-alpha-030);
+  --glass-highlight: inset 0 1px 1px 0 var(--color-white-alpha-950), inset 0 -1px 1px 0 var(--color-black-alpha-030);
+  --glass-shadow: 0 16px 36px -6px var(--color-black-alpha-070), 0 4px 12px var(--color-black-alpha-030);
+  /* 菲涅尔切面边缘：0.5px 真实切削反光，卡片与徽标共用的第二层高程描边 */
+  --elev-rim: inset 0 1px 0 0 var(--color-white-alpha-950), 0 0 0 0.5px var(--color-black-alpha-060);
 
   /* 液态玻璃光学引擎：折射风格写在 <html data-lg-style>，光强写成 0–1 系数由材质层用 calc 乘入。
      默认档 = fresnel + 75%，与设计稿 :root 逐字相等。 */
@@ -92,7 +94,7 @@
     var(--color-value-d838aa) 49%, var(--color-value-f64964) 65%, var(--color-value-ffae36) 80%, var(--color-value-dadf39) 92%,
     var(--color-value-62c764));
   --stage-ambient: radial-gradient(circle,
-    color-mix(in srgb, var(--color-value-0071e3) 25%, var(--color-transparent)) 0%,
+    color-mix(in srgb, var(--accent) 25%, var(--color-transparent)) 0%,
     color-mix(in srgb, var(--color-value-7054d4) 15%, var(--color-transparent)) 45%,
     var(--color-transparent) 70%);
   /* 假窗口外的桌面底色：设计稿 .window-stage 的径向渐变，真实应用铺在 WebView 最外层 */
@@ -100,106 +102,136 @@
   --stage-desktop: radial-gradient(circle at 50% 18%, var(--color-value-f8f9fb) 0%, var(--color-value-e5e8ef) 100%);
   --stage-aurora: var(--color-value-0c0e12);
 
-  /* 顶栏液态玻璃材质（设计稿 .app-topbar）：三段光学参数，暗色另档 */
-  --topbar-fill: linear-gradient(180deg, var(--color-white-alpha-850) 0%, var(--color-value-rgba-246-247-250-0p72) 100%);
+  /* 顶栏液态玻璃材质（设计稿 .app-topbar）：镜面高光在上缘、下缘只留暗切面
+     （光从上方来；macOS 27 的取向是「更暗的边缘 + 更亮的 specular」） */
+  --topbar-fill: linear-gradient(180deg, var(--color-white-alpha-880) 0%, var(--color-white-alpha-760) 100%);
   --topbar-blur: blur(28px) saturate(190%);
-  --topbar-edge: var(--color-white-alpha-500);
-  --topbar-shadow: inset 0 1px 0 0 var(--color-white-alpha-900), inset 0 -1px 0 0 var(--color-black-alpha-030),
-    0 4px 20px -8px var(--color-black-alpha-060);
-  /* 顶栏玻璃控件（汉堡键与图标按钮）：半透白底 + Action Blue 悬浮描边 */
+  --topbar-edge: var(--color-black-alpha-065);
+  --topbar-shadow: inset 0 1px 0 0 var(--color-white-alpha-950), inset 0 -1px 0 0 var(--color-black-alpha-060),
+    0 1px 2px var(--color-black-alpha-020);
+  --topbar-divider-fill: var(--border-soft);
+  /* 侧栏空间微晶玻璃底座：与顶栏同 blur 但去掉 contrast，避免菜单文字被二次锐化 */
+  --sidebar-fill: var(--color-white-alpha-740);
+  --sidebar-blur: blur(28px) saturate(190%);
+  --sidebar-edge: var(--color-black-alpha-065);
+  --sidebar-inset: inset -1px 0 0 0 var(--color-white-alpha-450);
+  --sidebar-footer-edge: var(--color-black-alpha-060);
+  /* 手机抽屉：悬在内容之上的浮动层，比常驻侧栏更浓更实（HIG 要求浮层可辨） */
+  --sidebar-drawer-fill: var(--color-white-alpha-880);
+  --sidebar-drawer-blur: blur(32px) saturate(200%);
+  /* 顶栏玻璃图标按钮：真实 backdrop 采样 + 稿子的通透底（.65），浮起靠上缘镜面而非实色 */
   --control-glass-fill: var(--color-white-alpha-650);
-  --control-glass-fill-subtle: var(--color-white-alpha-600);
-  --control-glass-fill-hover: var(--color-white-solid);
+  --control-glass-blur: blur(var(--sp-8));
   --control-glass-edge: var(--color-black-alpha-080);
-  --control-glass-shadow: 0 1px 2px var(--color-black-alpha-030);
-  --control-glass-hover-edge: color-mix(in srgb, var(--color-value-0071e3) 45%, var(--color-transparent));
-  --control-glass-hover-shadow: 0 3px 8px -1px color-mix(in srgb, var(--color-value-0071e3) 18%, var(--color-transparent)),
+  --control-glass-fill-hover: var(--color-white-solid);
+  --control-glass-shadow: inset 0 1px 0 0 var(--color-white-alpha-880), 0 1px 2px var(--color-black-alpha-030);
+  --control-glass-hover-edge: color-mix(in srgb, var(--accent) 45%, var(--color-transparent));
+  --control-glass-hover-shadow: 0 3px 8px -1px color-mix(in srgb, var(--accent) 18%, var(--color-transparent)),
     inset 0 1px 0 var(--color-white-solid);
-  --control-glass-active-fill: color-mix(in srgb, var(--color-value-0071e3) 12%, var(--color-transparent));
-  --control-glass-active-edge: color-mix(in srgb, var(--color-value-0071e3) 28%, var(--color-transparent));
-  /* 折叠键悬浮投影在暗色沿用同一份（设计稿只覆盖底色与描边，不覆盖 box-shadow） */
-  --toggle-hover-shadow: 0 2px 6px color-mix(in srgb, var(--color-value-0071e3) 15%, var(--color-transparent)),
-    inset 0 1px 0 var(--color-white-solid);
-  /* 顶栏控件前景：设计稿暗色把两颗玻璃键的文字都提白，因此单独成轴 */
-  --glass-control-fg: var(--muted);
-  --glass-control-fg-hover: var(--fg);
+  --control-glass-active-fill: color-mix(in srgb, var(--accent) 12%, var(--color-transparent));
+  --control-glass-active-edge: color-mix(in srgb, var(--accent) 28%, var(--color-transparent));
+  /* 折叠键是无底裸按钮：常态底/边/影恒为透明，只有悬停与按压态浮出灰面 */
+  --toggle-fill: var(--color-transparent);
+  --toggle-edge: var(--color-transparent);
+  --toggle-fill-hover: var(--color-black-alpha-050);
+  --toggle-edge-hover: var(--color-black-alpha-040);
+  --toggle-shadow-hover: 0 2px 6px -1px var(--color-black-alpha-040);
+  --toggle-fill-active: var(--color-black-alpha-090);
+  /* 顶栏控件前景：折叠键是弱化的灰图标，图标按钮是正文级的实色图标 */
+  --toggle-icon-fg: var(--muted);
+  --toggle-icon-fg-hover: var(--fg);
   --action-icon-fg: var(--fg-2);
   --action-icon-fg-hover: var(--accent);
+  --action-icon-shadow: var(--control-glass-shadow);
   --action-active-fg: var(--accent);
   --action-active-shadow: inset 0 1px 1px 0 var(--color-white-alpha-800),
-    0 2px 6px color-mix(in srgb, var(--color-value-0071e3) 15%, var(--color-transparent));
+    0 2px 6px color-mix(in srgb, var(--accent) 15%, var(--color-transparent));
   /* 导航行悬停与激活胶囊：日间白→浅蓝渐变 + Action Blue 描边 */
-  --nav-active-fill: linear-gradient(135deg, var(--color-white-solid) 0%, var(--color-value-f0f5ff) 100%);
-  --nav-active-edge: color-mix(in srgb, var(--color-value-0071e3) 32%, var(--color-transparent));
-  --nav-active-shadow: 0 2px 8px -1px color-mix(in srgb, var(--color-value-0071e3) 20%, var(--color-transparent)),
-    0 1px 2px var(--color-black-alpha-040), inset 0 1px 0 var(--color-white-solid);
+  --nav-active-fill: linear-gradient(135deg, var(--color-white-alpha-980) 0%, var(--color-value-rgba-244-248-255-0p92) 100%);
+  --nav-active-edge: color-mix(in srgb, var(--accent) 20%, var(--color-transparent));
+  --nav-active-shadow: inset 0 1px 1px 0 var(--color-white-solid),
+    0 3px 10px -2px color-mix(in srgb, var(--accent) 16%, var(--color-transparent)),
+    0 1px 3px 0 var(--color-black-alpha-040);
   --nav-active-fg: var(--accent);
-  --nav-hover-shadow: 0 1px 2px var(--color-black-alpha-040);
+  --nav-hover: var(--color-black-alpha-045);
+  --nav-hover-edge: var(--color-black-alpha-020);
+  --nav-hover-shadow: 0 2px 6px -1px var(--color-black-alpha-030);
+  --nav-press-fill: var(--color-black-alpha-080);
 
-  /* 液态玻璃按钮填充（设计稿 .btn-apple.primary/.secondary/.danger）：三段渐变 + 内高光 + 外投影 */
-  --btn-primary-fill: linear-gradient(180deg, var(--color-value-1d88fe) 0%, var(--color-value-0071e3) 52%, var(--color-value-0063cb) 100%);
+  /* 液态玻璃按钮填充（设计稿 .btn-apple.primary/.secondary/.danger）：三段渐变 + 内高光 + 外投影
+     中位一律走 --accent / --danger，两端只负责亮与暗的立体感，换主色时不会脱节 */
+  --btn-primary-fill: linear-gradient(180deg, var(--color-value-0a84ff) 0%, var(--accent) 52%,
+      color-mix(in srgb, var(--accent) 84%, var(--color-black-solid)) 100%);
   --btn-primary-shadow: inset 0 1px 1.5px 0 var(--color-white-alpha-650), inset 0 -1px 1px 0 var(--color-black-alpha-180),
-    0 3px 10px -2px color-mix(in srgb, var(--color-value-0071e3) 45%, var(--color-transparent));
-  --btn-primary-fill-hover: linear-gradient(180deg, var(--color-value-2b91fe) 0%, var(--color-value-007cf5) 52%, var(--color-value-006dd9) 100%);
+    0 3px 10px -2px color-mix(in srgb, var(--accent) 45%, var(--color-transparent));
+  --btn-primary-fill-hover: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 52%, var(--color-value-0a84ff) 100%);
   --btn-primary-shadow-hover: inset 0 1px 1.5px 0 var(--color-white-alpha-800),
-    0 4px 14px -1px color-mix(in srgb, var(--color-value-0071e3) 55%, var(--color-transparent));
+    0 4px 14px -1px color-mix(in srgb, var(--accent) 55%, var(--color-transparent));
   --btn-secondary-fill: var(--color-white-solid);
   --btn-secondary-edge: var(--color-black-alpha-140);
   --btn-secondary-shadow: 0 1px 2.5px var(--color-black-alpha-060), inset 0 1px 0 var(--color-white-solid);
   --btn-secondary-fill-hover: var(--color-white-solid);
-  --btn-secondary-edge-hover: color-mix(in srgb, var(--color-value-0071e3) 48%, var(--color-transparent));
-  --btn-secondary-shadow-hover: 0 3px 10px -1px color-mix(in srgb, var(--color-value-0071e3) 22%, var(--color-transparent)),
+  --btn-secondary-edge-hover: color-mix(in srgb, var(--accent) 48%, var(--color-transparent));
+  --btn-secondary-shadow-hover: 0 3px 10px -1px color-mix(in srgb, var(--accent) 22%, var(--color-transparent)),
     0 1px 2px var(--color-black-alpha-050), inset 0 1px 0 var(--color-white-solid);
   --btn-secondary-fill-active: var(--color-value-f4f6fa);
-  --btn-secondary-edge-active: color-mix(in srgb, var(--color-value-0071e3) 55%, var(--color-transparent));
+  --btn-secondary-edge-active: color-mix(in srgb, var(--accent) 55%, var(--color-transparent));
   --btn-secondary-shadow-active: inset 0 1px 2px var(--color-black-alpha-080);
-  --btn-danger-fill: linear-gradient(180deg, var(--color-value-ff4d4f) 0%, var(--color-value-dc2626) 50%, var(--color-value-b91c1c) 100%);
+  --btn-danger-fill: linear-gradient(180deg, var(--color-value-ff453a) 0%, var(--danger) 100%);
   --btn-danger-shadow: inset 0 1px 1.5px 0 var(--color-white-alpha-650),
-    0 3px 10px -2px color-mix(in srgb, var(--color-value-dc2626) 40%, var(--color-transparent));
-  --btn-danger-fill-hover: linear-gradient(180deg, var(--color-value-ff5e60) 0%, var(--color-value-e53030) 50%, var(--color-value-c41e1e) 100%);
+    0 3px 10px -2px color-mix(in srgb, var(--danger) 40%, var(--color-transparent));
+  --btn-danger-fill-hover: linear-gradient(180deg, color-mix(in srgb, var(--danger) 78%, var(--color-white-solid)) 0%,
+      var(--color-value-ff453a) 100%);
   --btn-danger-shadow-hover: inset 0 1px 1.5px 0 var(--color-white-alpha-800),
-    0 4px 12px -1px color-mix(in srgb, var(--color-value-dc2626) 50%, var(--color-transparent));
+    0 4px 12px -1px color-mix(in srgb, var(--danger) 50%, var(--color-transparent));
 
   /* 前景与层级文本（HIG 四级中性色） */
   --fg: var(--color-value-1d1d1f);
   --fg-2: var(--color-value-424245);
   --muted: var(--color-value-6e6e73);
   --meta: var(--color-value-86868b);
+  /* 玻璃带/玻璃侧栏上的 11–12px 小字采用 --fg-2 增强 Vibrancy，确保在白玻璃背景上满足 WCAG AA 4.5:1 对比度 */
+  --meta-on-glass: var(--fg-2);
+
+  /* 浅霜采样（表头、图表 HUD）与控件磨砂：光学常数不随显示尺寸缩放，降级节统一置为 none */
+  --frost-blur: blur(16px) saturate(180%);
+  --btn-blur: blur(16px);
+  --switch-blur: blur(8px);
+  --scrim-blur: blur(8px);
+  --drawer-scrim-blur: blur(4px);
 
   /* 边框体系 */
   --border: var(--color-value-d2d2d7);
   --border-soft: var(--color-value-e8e8ed);
-  --border-focus: var(--color-value-0071e3);
+  --border-focus: var(--accent);
 
-  /* 单一聚焦主色：Apple Action Blue */
-  --accent: var(--color-value-0071e3);
+  /* 单一聚焦主色：Apple 官方 systemBlue 的日间档（暗色档在 html.dark 里覆盖）。
+     悬浮/按压端一律由 color-mix 从 --accent 派生，不再另造 hex —— 色值只允许出现在官方系统色表里。 */
+  --accent: var(--color-value-007aff);
   --accent-on: var(--color-white-solid);
-  --accent-hover: var(--color-value-0077ed);
-  --accent-active: var(--color-value-0066cc);
+  --accent-hover: color-mix(in srgb, var(--accent) 82%, var(--color-white-solid));
+  --accent-active: color-mix(in srgb, var(--accent) 84%, var(--color-black-solid));
   --accent-light: color-mix(in srgb, var(--accent) 8%, var(--color-transparent));
 
-  /* 语义状态色彩（HIG System Colors） */
+  /* 语义状态色彩：iOS 系统色档，明暗同色；info 不再是那颗纯灰 */
   --success: var(--color-value-34c759);
   --success-light: color-mix(in srgb, var(--success) 12%, var(--color-transparent));
   --warn: var(--color-value-ff9500);
   --warn-light: color-mix(in srgb, var(--warn) 12%, var(--color-transparent));
   --danger: var(--color-value-ff3b30);
   --danger-light: color-mix(in srgb, var(--danger) 12%, var(--color-transparent));
-  --info: var(--color-value-8e8e93);
-  --info-light: color-mix(in srgb, var(--info) 14%, var(--color-transparent));
+  --info: var(--color-value-5ac8fa);
+  --info-light: color-mix(in srgb, var(--info) 18%, var(--color-transparent));
 
-  /* 图表语义色：设计稿只给处理分布图用到三档 */
-  --chart-1: var(--accent);
+  /* 图表语义色：设计稿只给处理分布图用到三档，主蓝跟随 --accent 的 iOS 亮蓝 */
+  --chart-1: var(--color-value-007aff);
   --chart-2: var(--success);
   --chart-5: var(--warn);
 
-  /* 表面派生层：行悬停、导航悬停、玻璃描边、HUD 浮层 */
+  /* 表面派生层：行悬停、玻璃描边、HUD 浮层 */
   --row-hover: color-mix(in srgb, var(--accent) 4%, var(--color-transparent));
-  --nav-hover: var(--color-black-alpha-055);
-  --nav-hover-edge: var(--color-black-alpha-080);
   --surface-hover: var(--color-black-alpha-040);
   --window-border: var(--color-white-alpha-150);
-  --sidebar-inset: inset -1px 0 0 0 var(--color-white-alpha-400);
   --toast-bg: color-mix(in srgb, var(--color-value-1d1d1f) 82%, var(--color-transparent));
   --toast-edge: var(--color-white-alpha-180);
   --toast-shadow: 0 12px 36px var(--color-black-alpha-380), inset 0 1px 1px var(--color-white-alpha-280);
@@ -221,12 +253,17 @@
   --radius-badge: 7px;
   --radius-badge-lg: 8px;
   --radius-segment-knob: 6px;
+  /* 导航胶囊的连续曲率：展开态 9px，折叠态方形透镜 10px（设计稿固定值） */
+  --radius-nav: 9px;
+  --radius-nav-rail: 10px;
 
-  /* 深度与聚焦光晕 */
-  --shadow-window: 0 24px 64px var(--color-black-alpha-220), 0 0 0 1px var(--color-black-alpha-080);
-  --shadow-card: 0 1px 3px var(--color-black-alpha-040), 0 0 0 1px var(--border-soft);
-  --shadow-hover: 0 8px 24px var(--color-black-alpha-080), 0 0 0 1px var(--border);
-  --shadow-popover: 0 20px 50px var(--color-black-alpha-250), 0 0 0 1px var(--color-black-alpha-100);
+  /* 深度与聚焦光晕（0.5px 切削描边 + 分层投影） */
+  --shadow-window: 0 28px 72px var(--color-black-alpha-200), 0 0 0 0.5px var(--color-black-alpha-080);
+  --shadow-card: 0 1px 3px var(--color-black-alpha-030), 0 6px 16px -4px var(--color-black-alpha-040),
+    0 0 0 0.5px var(--border-soft);
+  --shadow-hover: 0 10px 28px -4px var(--color-black-alpha-080), 0 2px 8px var(--color-black-alpha-030),
+    0 0 0 0.5px var(--border);
+  --shadow-popover: 0 20px 48px var(--color-black-alpha-180), 0 0 0 0.5px var(--color-black-alpha-080);
   --focus-halo: 0 0 0 3.5px color-mix(in srgb, var(--accent) 28%, var(--color-transparent));
 
   /* 弹性阻尼过渡 */
@@ -301,8 +338,8 @@
   --content-measure: calc(880px * var(--ui-scale));
   --control-height: calc(32px * var(--ui-scale));
   --control-height-lg: calc(36px * var(--ui-scale));
-  /* 触控热区是下限而非尺寸：小档缩放到 35px 就失去它存在的意义，因此只允许向上长。 */
-  --control-height-touch: max(38px, calc(38px * var(--ui-scale)));
+  /* iOS 26 触控热区黄金门限：44px 绝对下限，小尺寸只允许向上生长，避免误触 */
+  --control-height-touch: max(44px, calc(44px * var(--ui-scale)));
   --control-size: calc(32px * var(--ui-scale));
   --traffic-size: calc(14px * var(--ui-scale));
   --traffic-size-touch: calc(15px * var(--ui-scale));
@@ -340,22 +377,47 @@
   /* 日志工具条图标的靛蓝语义色：设计稿逐颗指定，其余彩色图标已换成 .sq-icon-badge 渐变徽标 */
   --icon-indigo: var(--color-value-5856d6);
 
-  /* Apple 经典超椭圆徽标渐变（设计稿 .sq-icon-badge / .stat-icon-wrap）：明暗共用同一色板 */
-  --tile-blue: linear-gradient(135deg, var(--color-value-0071e3) 0%, var(--color-value-0056b3) 100%);
-  --tile-teal: linear-gradient(135deg, var(--color-value-30b0c7) 0%, var(--color-value-0891b2) 100%);
-  --tile-gray: linear-gradient(135deg, var(--color-value-8e8e93) 0%, var(--color-value-636366) 100%);
-  --tile-green: linear-gradient(135deg, var(--color-value-34c759) 0%, var(--color-value-228b3c) 100%);
-  --tile-indigo: linear-gradient(135deg, var(--color-value-5856d6) 0%, var(--color-value-3e38a8) 100%);
-  --tile-orange: linear-gradient(135deg, var(--color-value-ff9500) 0%, var(--color-value-d46b00) 100%);
-  --tile-purple: linear-gradient(135deg, var(--color-value-af52de) 0%, var(--color-value-7d2d9c) 100%);
-  --tile-pink: linear-gradient(135deg, var(--color-value-ff2d55) 0%, var(--color-value-c2185b) 100%);
-  --tile-cyan: linear-gradient(135deg, var(--color-value-32ade6) 0%, var(--color-value-0077b6) 100%);
-  --tile-red: linear-gradient(135deg, var(--color-value-ff3b30) 0%, var(--color-value-c01b1b) 100%);
-  --tile-yellow: linear-gradient(135deg, var(--color-value-ffcc00) 0%, var(--color-value-d49a00) 100%);
-  --tile-shadow: 0 2px 6px var(--color-black-alpha-120), inset 0 1px 0 var(--color-white-alpha-280);
-  /* 统计卡徽标：设计稿比导航徽标阴影重 1px、橙色深端也略浅 */
-  --tile-shadow-stat: 0 2px 8px var(--color-black-alpha-120), inset 0 1px 0 var(--color-white-alpha-250);
-  --tile-orange-stat: linear-gradient(135deg, var(--color-value-ff9500) 0%, var(--color-value-cc7000) 100%);
+  /* 矿物晶体徽标渐变（设计稿 .sq-icon-badge / .stat-icon-wrap）：145deg P3 降饱和档，明暗共用同一色板 */
+  /* 11 颗渐变徽标色板：两端全部取 Apple 官方系统色表的两个外观档 ——
+     亮端 = Dark 档（官方值本身更亮），暗端 = Light 档，145deg 只做立体差、不引入自造色。
+     来源：UIKit UIColor system* / HIG Color（iOS 26 设计套件沿用值）。 */
+  --tile-blue: linear-gradient(145deg, var(--color-value-0a84ff) 0%, var(--color-value-007aff) 100%);
+  --tile-teal: linear-gradient(145deg, var(--color-value-40c8e0) 0%, var(--color-value-30b0c7) 100%);
+  --tile-gray: linear-gradient(145deg, var(--color-value-98989f) 0%, var(--color-value-8e8e93) 100%);
+  --tile-green: linear-gradient(145deg, var(--color-value-30d158) 0%, var(--color-value-34c759) 100%);
+  --tile-indigo: linear-gradient(145deg, var(--color-value-5e5ce6) 0%, var(--color-value-5856d6) 100%);
+  --tile-orange: linear-gradient(145deg, var(--color-value-ff9f0a) 0%, var(--color-value-ff9500) 100%);
+  --tile-purple: linear-gradient(145deg, var(--color-value-bf5af2) 0%, var(--color-value-af52de) 100%);
+  --tile-pink: linear-gradient(145deg, var(--color-value-ff375f) 0%, var(--color-value-ff2d55) 100%);
+  --tile-cyan: linear-gradient(145deg, var(--color-value-64d2ff) 0%, var(--color-value-32ade6) 100%);
+  --tile-red: linear-gradient(145deg, var(--color-value-ff453a) 0%, var(--color-value-ff3b30) 100%);
+  --tile-yellow: linear-gradient(145deg, var(--color-value-ffd60a) 0%, var(--color-value-ffcc00) 100%);
+  /* 晶体外壳：0.5px 菲涅尔切面高光 + 顶部月牙内反光 + 柔和物理投影；夜间整体压饱和提不出亮点，靠 filter 统一降档 */
+  --tile-edge: 0.5px solid var(--color-white-alpha-240);
+  --tile-shadow: inset 0 1px 1px 0 var(--color-white-alpha-420), inset 0 -1px 1px 0 var(--color-black-alpha-120),
+    0 2px 6px -1px var(--color-black-alpha-100);
+  /* 白色符号在 iOS 亮色档（黄/青/绿/橙）上本身对比只有 1.5–2.4，靠两层投影分离：
+     一层贴边硬投影定形，一层零偏移描边把符号从底色里"抠"出来 */
+  --tile-svg-drop: drop-shadow(0 0.5px 0.5px var(--color-black-alpha-320)), drop-shadow(0 0 1px var(--color-black-alpha-180));
+  --tile-filter: none;
+  --tile-hover-filter: brightness(1.06);
+  /* 统计卡徽标：外投影比导航徽标重 2px，切面高光更亮一档 */
+  --tile-edge-stat: 0.5px solid var(--color-white-alpha-280);
+  --tile-shadow-stat: inset 0 1px 1px 0 var(--color-white-alpha-420), inset 0 -1px 1px 0 var(--color-black-alpha-120),
+    0 2px 8px var(--color-black-alpha-100);
+  --tile-svg-drop-stat: drop-shadow(0 0.5px 0.5px var(--color-black-alpha-350)), drop-shadow(0 0 1px var(--color-black-alpha-200));
+
+  /* 图表悬停 HUD：与表头同档的玻璃浮层，夜间换成不透明深灰避免透出柱体 */
+  --hud-fill: var(--surface-glass);
+  --hud-shadow: 0 4px 12px var(--color-black-alpha-120), inset 0 1px 0 var(--color-white-solid);
+
+  /* 关于页应用图标：与徽标同一套晶体材质，只是放大到 68px */
+  --app-icon-fill: linear-gradient(145deg, var(--color-value-0a84ff) 0%, var(--color-value-007aff) 100%);
+  --app-icon-edge: 0.5px solid var(--color-white-alpha-320);
+  --app-icon-shadow: inset 0 1.5px 1.5px 0 var(--color-white-alpha-450), inset 0 -1.5px 2px 0 var(--color-black-alpha-150),
+    0 8px 24px color-mix(in srgb, var(--accent) 28%, var(--color-transparent));
+  --app-icon-filter: none;
+  --app-icon-svg-drop: drop-shadow(0 1px 2px var(--color-black-alpha-220));
 
   /* iOS 开关轨道与分段凹槽：日间半透灰槽 + 内阴影，夜间换白色半透 */
   --switch-off-track: var(--color-value-rgba-120-120-128-0p2);
@@ -373,6 +435,44 @@
   --segment-track-inset: inset 0 1px 2px var(--color-black-alpha-060);
   --segment-knob-shadow: 0 2px 6px var(--color-black-alpha-120), 0 0.5px 1px var(--color-black-alpha-080);
 
+  /* 处理分布轨道：与分段凹槽同深，但底色更浅一档，体积感全靠内阴影 */
+  --dist-track-fill: var(--color-black-alpha-050);
+  --dist-track-inset: inset 0 1px 2px var(--color-black-alpha-060);
+
+  /* iOS 输入框与滑杆（设计稿 .apple-input / .apple-slider）：内凹浅槽底 + 白瓷旋钮 */
+  --input-fill: var(--color-black-alpha-035);
+  --input-fill-hover: var(--color-black-alpha-050);
+  --input-edge: var(--border-soft);
+  --input-edge-hover: var(--border);
+  --input-inset: inset 0 1px 2px var(--color-black-alpha-040);
+  --input-focus-fill: var(--bg);
+  --input-focus-inset: inset 0 1px 1px var(--color-black-alpha-030);
+  --slider-track: var(--color-black-alpha-120);
+  --slider-thumb: linear-gradient(180deg, var(--color-white-solid) 0%, var(--color-value-f4f5f8) 100%);
+  --slider-thumb-edge: 0.5px solid var(--color-black-alpha-080);
+  --slider-thumb-shadow: 0 2px 7px var(--color-black-alpha-180), 0 0.5px 1px var(--color-black-alpha-100),
+    inset 0 1px 1px var(--color-white-solid);
+  --slider-thumb-shadow-hover: 0 4px 12px var(--color-black-alpha-220), 0 1px 2px var(--color-black-alpha-100),
+    inset 0 1px 1px var(--color-white-solid);
+
+  /* 表格（设计稿 .apple-table）：吸顶玻璃表头 + 偶数行斑马 + 主色悬停/选中行 */
+  --table-head-fill: var(--surface-glass);
+  --table-head-rim: 0 1px 0 0 var(--color-white-alpha-400);
+  --table-zebra: var(--color-black-alpha-016);
+  --table-hover: var(--color-value-rgba-0-113-227-0p045);
+  --table-selected: color-mix(in srgb, var(--accent) 12%, var(--color-transparent));
+
+  /* 弹窗关闭钮：中性玻璃圆盘（设计稿 .modal-close-btn），不是红绿灯第三颗。数值逐字照稿子 */
+  --close-btn-fill: var(--color-black-alpha-050);
+  --close-btn-edge: 0.5px solid var(--color-black-alpha-080);
+  --close-btn-edge-hover: var(--color-black-alpha-140);
+  --close-btn-fg: var(--color-black-alpha-520);
+  --close-btn-fg-hover: var(--color-black-alpha-820);
+  --close-btn-shadow: inset 0 1px 1px 0 var(--color-white-alpha-750), 0 1px 2px 0 var(--color-black-alpha-040);
+  --close-btn-shadow-hover: inset 0 1px 1px 0 var(--color-white-alpha-900), 0 2px 6px -1px var(--color-black-alpha-080);
+  --close-btn-fill-hover: var(--color-black-alpha-090);
+  --close-btn-fill-active: var(--color-black-alpha-140);
+
   /* iOS 玻璃下拉触发器与 Popover 浮层（设计稿 .ios-select-trigger / .ios-select-popover） */
   --select-fill: linear-gradient(180deg, var(--color-white-alpha-940) 0%, var(--color-value-rgba-246-246-250-0p8) 100%);
   --select-edge: var(--color-black-alpha-130);
@@ -380,8 +480,8 @@
   --select-shadow: 0 1px 3px var(--color-black-alpha-060), inset 0 1px 0.5px var(--color-white-alpha-950),
     inset 0 -0.5px 0.5px var(--color-black-alpha-030);
   --select-fill-hover: linear-gradient(180deg, var(--color-white-solid) 0%, var(--color-value-rgba-248-250-255-0p92) 100%);
-  --select-edge-hover: color-mix(in srgb, var(--color-value-0071e3) 42%, var(--color-transparent));
-  --select-shadow-hover: 0 3px 10px color-mix(in srgb, var(--color-value-0071e3) 15%, var(--color-transparent)),
+  --select-edge-hover: color-mix(in srgb, var(--accent) 42%, var(--color-transparent));
+  --select-shadow-hover: 0 3px 10px color-mix(in srgb, var(--accent) 15%, var(--color-transparent)),
     inset 0 1px 0.5px var(--color-white-solid);
   --popover-fill: var(--color-white-alpha-880);
   --popover-edge: var(--color-white-alpha-700);
@@ -389,11 +489,20 @@
   --popover-shadow: 0 16px 36px -6px var(--color-black-alpha-220), 0 4px 12px -2px var(--color-black-alpha-080),
     inset 0 1px 1px 0 var(--color-white-alpha-900);
 
-  /* 玻璃容器（弹窗 / 抽屉遮罩）与警告徽标 */
-  --overlay-fill: var(--color-black-alpha-450);
+  /* 玻璃容器（弹窗 / 抽屉遮罩）与警告徽标。
+     弹窗自成材质档：iOS 26/27 的面板在浅底上是「发光的白玻璃」而不是灰板，
+     所以底色比通用 --glass-bg 更实、采样带 saturate+brightness 提亮，遮罩相应减淡到 .28。 */
+  --overlay-fill: var(--color-black-alpha-280);
+  --dialog-fill: var(--color-white-alpha-860);
+  --dialog-blur: blur(30px) saturate(210%) brightness(1.05);
   --dialog-edge: var(--color-white-alpha-450);
   --alert-danger-fill: linear-gradient(135deg, var(--color-value-ff3b30) 0%, var(--color-value-c41c13) 100%);
   --alert-danger-shadow: 0 4px 14px color-mix(in srgb, var(--color-value-ff3b30) 35%, var(--color-transparent));
+
+  /* 玻璃面板内的次级信息容器：Apple 要求彩色只用在控件强调上（"be judicious with your use of color"），
+     所以横幅底走中性填充 + 0.5px 切面，不铺 --accent-light 的淡蓝底 */
+  --banner-fill: var(--color-black-alpha-050);
+  --banner-edge: 0.5px solid var(--color-black-alpha-060);
 
   /* Element Plus 变量桥接：EP 组件天然继承 HIG 令牌 */
   --el-color-primary: var(--accent);
@@ -437,44 +546,62 @@
 html.dark {
   color-scheme: dark;
 
-  --bg: var(--color-value-1c1c1e);
-  --surface: var(--color-black-solid);
-  --surface-warm: var(--color-value-2c2c2e);
-  --surface-glass: color-mix(in srgb, var(--color-value-1c1c1e) 88%, var(--color-transparent));
-  --sidebar-bg: var(--color-value-rgba-22-22-24-0p92);
+  --bg: var(--color-black-solid);
+  --surface: var(--color-value-1a1c22);
+  --surface-warm: var(--color-value-24262e);
+  --surface-glass: var(--color-value-rgba-28-30-36-0p85);
+  --sidebar-bg: var(--color-value-rgba-20-22-26-0p88);
 
-  --glass-bg: var(--color-value-rgba-28-28-32-0p78);
-  --glass-border: 1px solid var(--color-white-alpha-140);
-  --glass-highlight: inset 0 1px 1px 0 var(--color-white-alpha-220), inset 0 -1px 1px 0 var(--color-black-alpha-450);
+  --glass-bg: var(--color-value-rgba-28-30-36-0p76);
+  --glass-border: 1px solid var(--color-white-alpha-160);
+  --glass-highlight: inset 0 1px 1px 0 var(--color-white-alpha-200), inset 0 -1px 1px 0 var(--color-black-alpha-450);
   --glass-shadow: 0 20px 48px -6px var(--color-black-alpha-600), 0 6px 18px var(--color-black-alpha-350);
+  /* 暗色边缘按 27 的取向拉开：上缘镜面更亮、外描边更实，避免整窗糊成一片灰 */
+  --elev-rim: inset 0 1px 0 0 var(--color-white-alpha-220), 0 0 0 0.5px var(--color-white-alpha-160);
 
   --stage-grid-line: var(--color-white-alpha-035);
   --stage-desktop: radial-gradient(circle at 50% 18%, var(--color-value-1a1c22) 0%, var(--color-value-0d0e12) 100%);
   --stage-aurora: var(--color-value-08090c);
 
-  --topbar-fill: linear-gradient(180deg, var(--color-value-rgba-34-35-40-0p88) 0%, var(--color-value-rgba-22-23-27-0p76) 100%);
-  --topbar-edge: var(--color-white-alpha-100);
-  --topbar-shadow: inset 0 1px 0 0 var(--color-white-alpha-150), 0 4px 20px -8px var(--color-black-alpha-350);
+  --topbar-fill: linear-gradient(180deg, var(--color-value-rgba-24-26-32-0p78) 0%, var(--color-value-rgba-22-24-30-0p78) 100%);
+  --topbar-edge: var(--color-white-alpha-070);
+  --topbar-shadow: inset 0 1px 0 0 var(--color-white-alpha-110), inset 0 -1px 0 0 var(--color-black-alpha-300),
+    0 2px 8px var(--color-black-alpha-350);
+  --topbar-divider-fill: var(--color-white-alpha-120);
+  --sidebar-fill: var(--color-value-rgba-24-26-32-0p78);
+  --sidebar-edge: var(--color-white-alpha-070);
+  --sidebar-inset: inset -1px 0 0 0 var(--color-white-alpha-100);
+  --sidebar-footer-edge: var(--color-white-alpha-060);
+  --sidebar-drawer-fill: var(--color-value-rgba-24-26-32-0p9);
 
   --control-glass-fill: var(--color-white-alpha-060);
-  --control-glass-fill-subtle: var(--color-white-alpha-060);
   --control-glass-fill-hover: var(--color-white-alpha-140);
   --control-glass-edge: var(--color-white-alpha-120);
+  --control-glass-shadow: inset 0 1px 0 0 var(--color-white-alpha-180);
   --control-glass-hover-edge: var(--color-white-alpha-250);
   --control-glass-hover-shadow: inset 0 1px 1px 0 var(--color-white-alpha-250);
-  --control-glass-active-fill: color-mix(in srgb, var(--color-value-0071e3) 25%, var(--color-transparent));
-  --control-glass-active-edge: color-mix(in srgb, var(--color-value-0071e3) 45%, var(--color-transparent));
-  --glass-control-fg: var(--color-white-solid);
-  --glass-control-fg-hover: var(--color-white-solid);
+  --control-glass-active-fill: color-mix(in srgb, var(--accent) 25%, var(--color-transparent));
+  --control-glass-active-edge: color-mix(in srgb, var(--accent) 45%, var(--color-transparent));
+  --toggle-fill: var(--color-transparent);
+  --toggle-edge: var(--color-transparent);
+  --toggle-fill-hover: var(--color-white-alpha-080);
+  --toggle-edge-hover: var(--color-white-alpha-060);
+  --toggle-shadow-hover: 0 2px 6px -1px var(--color-black-alpha-250);
+  --toggle-fill-active: var(--color-white-alpha-140);
+  --toggle-icon-fg: var(--color-white-alpha-750);
   --action-icon-fg: var(--color-white-solid);
   --action-icon-fg-hover: var(--color-white-solid);
+  --action-icon-shadow: none;
   --action-active-fg: var(--color-value-38a1ff);
   --action-active-shadow: inset 0 1px 1px 0 var(--color-white-alpha-200);
-  --nav-active-fill: linear-gradient(135deg, var(--color-white-alpha-200) 0%, var(--color-white-alpha-080) 100%);
-  --nav-active-edge: var(--color-white-alpha-280);
-  --nav-active-shadow: inset 0 1px 1px 0 var(--color-white-alpha-350), 0 4px 14px var(--color-black-alpha-400);
+  --nav-active-fill: linear-gradient(135deg, var(--color-white-alpha-160) 0%, var(--color-white-alpha-090) 100%);
+  --nav-active-edge: var(--color-white-alpha-150);
+  --nav-active-shadow: inset 0 1px 1px 0 var(--color-white-alpha-250), 0 3px 12px -2px var(--color-black-alpha-450);
   --nav-active-fg: var(--color-white-solid);
-  --nav-hover-shadow: inset 0 1px 1px 0 var(--color-white-alpha-180);
+  --nav-hover: var(--color-white-alpha-080);
+  --nav-hover-edge: var(--color-white-alpha-040);
+  --nav-hover-shadow: 0 2px 8px -1px var(--color-black-alpha-350);
+  --nav-press-fill: var(--color-white-alpha-140);
 
   --btn-secondary-fill: var(--color-white-alpha-090);
   --btn-secondary-edge: var(--color-white-alpha-200);
@@ -492,50 +619,64 @@ html.dark {
      12px 以下文字读不动（WCAG AA 要 4.5:1）。这里取稿子里已有的 60% 白档（≈5.4:1），
      暗色层级仍由 白 → 88% → 60% 三档维持。 */
   --meta: var(--color-value-rgba-235-235-245-0p6);
+  /* 暗色 60% 白压黑底已 6.36:1，玻璃带上无需再提档 */
+  --meta-on-glass: var(--meta);
 
   --border: var(--color-value-rgba-84-84-88-0p65);
   --border-soft: var(--color-value-rgba-84-84-88-0p35);
-  --border-focus: var(--color-value-0a84ff);
+  --border-focus: var(--accent);
 
+  /* 深空底上用 Apple 官方 systemBlue 的暗色档；悬浮/按压端同样只派生，不另造 hex */
   --accent: var(--color-value-0a84ff);
   --accent-on: var(--color-white-solid);
-  --accent-hover: var(--color-value-409cff);
-  --accent-active: var(--color-value-0071e3);
+  --accent-hover: color-mix(in srgb, var(--accent) 78%, var(--color-white-solid));
+  --accent-active: color-mix(in srgb, var(--accent) 80%, var(--color-black-solid));
   --accent-light: color-mix(in srgb, var(--accent) 18%, var(--color-transparent));
 
-  --success: var(--color-value-30d158);
+  /* 语义状态色明暗同值，只有淡底透明度在暗色下加档才需要覆盖 */
   --success-light: color-mix(in srgb, var(--success) 18%, var(--color-transparent));
-  --warn: var(--color-value-ff9f0a);
   --warn-light: color-mix(in srgb, var(--warn) 18%, var(--color-transparent));
-  --danger: var(--color-value-ff453a);
   --danger-light: color-mix(in srgb, var(--danger) 22%, var(--color-transparent));
-  --info: var(--color-value-98989d);
   --info-light: color-mix(in srgb, var(--info) 20%, var(--color-transparent));
 
   /* 夜间主色阶必须与深空底色相调：EP 默认把 light-N 往白里混，暗色下会得出近白底。 */
-  --el-color-primary-light-3: color-mix(in srgb, var(--el-color-primary) 70%, var(--color-value-1c1c1e));
-  --el-color-primary-light-5: color-mix(in srgb, var(--el-color-primary) 50%, var(--color-value-1c1c1e));
-  --el-color-primary-light-7: color-mix(in srgb, var(--el-color-primary) 30%, var(--color-value-1c1c1e));
-  --el-color-primary-light-8: color-mix(in srgb, var(--el-color-primary) 20%, var(--color-value-1c1c1e));
-  --el-color-primary-light-9: color-mix(in srgb, var(--el-color-primary) 10%, var(--color-value-1c1c1e));
+  --el-color-primary-light-3: color-mix(in srgb, var(--el-color-primary) 70%, var(--surface));
+  --el-color-primary-light-5: color-mix(in srgb, var(--el-color-primary) 50%, var(--surface));
+  --el-color-primary-light-7: color-mix(in srgb, var(--el-color-primary) 30%, var(--surface));
+  --el-color-primary-light-8: color-mix(in srgb, var(--el-color-primary) 20%, var(--surface));
+  --el-color-primary-light-9: color-mix(in srgb, var(--el-color-primary) 10%, var(--surface));
   --el-color-primary-dark-2: color-mix(in srgb, var(--el-color-primary) 80%, var(--color-black-solid));
 
   --row-hover: color-mix(in srgb, var(--accent) 8%, var(--color-transparent));
-  --nav-hover: var(--color-white-alpha-100);
-  --nav-hover-edge: var(--color-white-alpha-160);
   --surface-hover: var(--color-white-alpha-060);
   --window-border: var(--color-white-alpha-150);
-  --sidebar-inset: inset -1px 0 0 0 var(--color-white-alpha-080);
   --toast-shadow: 0 12px 36px var(--color-black-alpha-550), inset 0 1px 1px var(--color-white-alpha-280);
 
-  --shadow-window: 0 32px 80px var(--color-black-alpha-700), 0 0 0 1px var(--color-white-alpha-120);
-  --shadow-card: 0 2px 8px var(--color-black-alpha-400), 0 0 0 1px var(--border-soft);
-  --shadow-hover: 0 8px 24px var(--color-black-alpha-550), 0 0 0 1px var(--border);
-  --shadow-popover: 0 24px 60px var(--color-black-alpha-600), 0 0 0 1px var(--color-white-alpha-150);
+  --shadow-window: 0 32px 80px var(--color-black-alpha-700), 0 0 0 0.5px var(--color-white-alpha-140);
+  --shadow-card: 0 2px 8px var(--color-black-alpha-400), 0 0 0 0.5px var(--border-soft);
+  --shadow-hover: 0 10px 30px var(--color-black-alpha-550), 0 0 0 0.5px var(--border);
+  --shadow-popover: 0 24px 60px var(--color-black-alpha-600), 0 0 0 0.5px var(--color-white-alpha-160);
   --focus-halo: 0 0 0 3.5px color-mix(in srgb, var(--accent) 38%, var(--color-transparent));
 
-  /* 靛蓝工具条图标在暗色下换亮一档的 Apple Indigo；徽标渐变色板设计稿不随主题变化 */
+  /* 靛蓝工具条图标在暗色下换亮一档的 Apple Indigo。徽标色板暗色不再整体灰化：
+     macOS 27 把侧栏图标重新上了色，层次改由上缘镜面（--elev-rim）与更暗的边缘承担 */
   --icon-indigo: var(--color-value-5e5ce6);
+  --tile-edge: 0.5px solid var(--color-white-alpha-180);
+  --tile-shadow: inset 0 1px 0.5px 0 var(--color-white-alpha-380), inset 0 -1px 1px 0 var(--color-black-alpha-350),
+    0 2px 7px -1px var(--color-black-alpha-450);
+  --tile-filter: none;
+  --tile-hover-filter: brightness(1.06);
+  --tile-edge-stat: 0.5px solid var(--color-white-alpha-180);
+  --tile-shadow-stat: inset 0 1px 0.5px 0 var(--color-white-alpha-380), inset 0 -1px 1px 0 var(--color-black-alpha-350),
+    0 2px 8px var(--color-black-alpha-450);
+
+  --hud-fill: var(--color-value-rgba-32-34-40-0p92);
+  --hud-shadow: 0 4px 12px var(--color-black-alpha-500), inset 0 1px 0 var(--color-white-alpha-150);
+
+  --app-icon-edge: 0.5px solid var(--color-white-alpha-200);
+  --app-icon-shadow: inset 0 1px 1px 0 var(--color-white-alpha-350), inset 0 -1.5px 2px 0 var(--color-black-alpha-400),
+    0 8px 24px var(--color-black-alpha-450);
+  --app-icon-filter: none;
 
   --switch-off-track: var(--color-white-alpha-140);
   --switch-off-shadow: inset 0 1.5px 3px var(--color-black-alpha-400), inset 0 0 0 1px var(--color-white-alpha-080);
@@ -554,7 +695,123 @@ html.dark {
   --segment-track: var(--color-white-alpha-080);
   --segment-track-inset: inset 0 1px 2px var(--color-black-alpha-250);
 
-  --dialog-edge: var(--color-white-alpha-120);
+  --dist-track-fill: var(--color-white-alpha-080);
+  --dist-track-inset: inset 0 1px 2px var(--color-black-alpha-300);
+
+  --input-fill: var(--color-white-alpha-060);
+  --input-fill-hover: var(--color-white-alpha-090);
+  --input-edge: var(--color-white-alpha-120);
+  --input-edge-hover: var(--color-white-alpha-180);
+  --input-inset: inset 0 1px 2px var(--color-black-alpha-300);
+  --input-focus-fill: var(--color-white-alpha-120);
+  --slider-track: var(--color-white-alpha-200);
+  --slider-thumb: linear-gradient(180deg, var(--color-value-f0f0f2) 0%, var(--color-value-d8d8de) 100%);
+  --slider-thumb-shadow: 0 3px 8px var(--color-black-alpha-450), 0 0.5px 1px var(--color-black-alpha-200);
+
+  --table-head-fill: var(--color-value-rgba-26-28-34-0p88);
+  --table-head-rim: 0 1px 0 0 var(--color-white-alpha-060);
+  --table-zebra: var(--color-white-alpha-022);
+  --table-hover: var(--color-value-rgba-43-130-228-0p09);
+  --table-selected: color-mix(in srgb, var(--accent) 18%, var(--color-transparent));
+
+  /* 关闭盘逐字照稿子的暗色档：底 .10/.18/.24，描边 .15/.25 */
+  --close-btn-fill: var(--color-white-alpha-100);
+  --close-btn-edge: 0.5px solid var(--color-white-alpha-150);
+  --close-btn-edge-hover: var(--color-white-alpha-250);
+  --close-btn-fg: var(--color-white-alpha-650);
+  --close-btn-fg-hover: var(--color-white-solid);
+  --close-btn-shadow: inset 0 1px 1px 0 var(--color-white-alpha-250), 0 1px 2px 0 var(--color-black-alpha-300);
+  --close-btn-shadow-hover: inset 0 1px 1px 0 var(--color-white-alpha-400), 0 2px 6px 0 var(--color-black-alpha-400);
+  --close-btn-fill-hover: var(--color-white-alpha-180);
+  --close-btn-fill-active: var(--color-white-alpha-240);
+
+  /* 暗色面板仍是深色晶体（不跟着提亮），但遮罩要比日间更重才分得开层 */
+  --overlay-fill: var(--color-black-alpha-550);
+  --dialog-fill: var(--color-value-rgba-26-28-34-0p88);
+  --dialog-blur: blur(30px) saturate(200%);
+  --dialog-edge: var(--color-white-alpha-180);
+  --banner-fill: var(--color-white-alpha-080);
+  --banner-edge: 0.5px solid var(--color-white-alpha-120);
+}
+
+/* ==========================================================================
+   材质降级（macOS 26/27 HIG 的硬性要求）
+   Reduce Transparency / Increase Contrast 下，液态玻璃必须变成「更实的霜面」：
+   去采样、底色转近不透明、描边转实色。组件规则一律不感知这两个开关，
+   全部走令牌，所以这里只重定义材质轴本身。
+   ========================================================================== */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root {
+    --topbar-fill: var(--color-value-f5f5f7);
+    --topbar-blur: none;
+    --topbar-edge: var(--border);
+    --sidebar-fill: var(--color-value-f5f5f7);
+    --sidebar-blur: none;
+    --sidebar-edge: var(--border);
+    --sidebar-drawer-fill: var(--color-white-solid);
+    --sidebar-drawer-blur: none;
+    --glass-bg: var(--color-white-solid);
+    --glass-border: 1px solid var(--border);
+    --glass-blur: none;
+    --surface-glass: var(--color-value-f5f5f7);
+    --popover-fill: var(--color-value-f5f5f7);
+    --popover-blur: none;
+    --select-fill: var(--color-white-solid);
+    --select-blur: none;
+    --segment-blur: none;
+    --frost-blur: none;
+    --btn-blur: none;
+    --switch-blur: none;
+    --scrim-blur: none;
+    --drawer-scrim-blur: none;
+    --control-glass-blur: none;
+    --control-glass-fill: var(--color-white-solid);
+    --control-glass-blur: none;
+    --dialog-fill: var(--color-white-solid);
+    --dialog-blur: none;
+    --banner-fill: var(--color-value-f5f5f7);
+    --banner-edge: 0.5px solid var(--border);
+    --overlay-fill: var(--color-black-alpha-650);
+    --dialog-edge: var(--border);
+  }
+
+  html.dark {
+    --topbar-fill: var(--color-value-1a1c22);
+    --sidebar-fill: var(--color-value-1a1c22);
+    --sidebar-edge: var(--border);
+    --sidebar-drawer-fill: var(--color-value-1a1c22);
+    --glass-bg: var(--color-value-1c1e24);
+    --glass-border: 1px solid var(--color-white-alpha-300);
+    --surface-glass: var(--color-value-1c1e24);
+    --popover-fill: var(--color-value-1c1e24);
+    --select-fill: var(--color-value-24262e);
+    --control-glass-fill: var(--color-white-alpha-180);
+    --dialog-fill: var(--color-value-24262e);
+    --banner-fill: var(--color-white-alpha-180);
+    --topbar-edge: var(--border);
+    --overlay-fill: var(--color-black-alpha-750);
+    --dialog-edge: var(--color-white-alpha-300);
+  }
+}
+
+/* Windows 高对比 / 强制颜色：材质彻底交给系统画，我们只留一条系统色描边 */
+@media (forced-colors: active) {
+  :root {
+    --topbar-blur: none;
+    --sidebar-blur: none;
+    --sidebar-drawer-blur: none;
+    --glass-blur: none;
+    --popover-blur: none;
+    --select-blur: none;
+    --segment-blur: none;
+    --frost-blur: none;
+    --btn-blur: none;
+    --switch-blur: none;
+    --scrim-blur: none;
+    --drawer-scrim-blur: none;
+    --control-glass-blur: none;
+    --dialog-blur: none;
+  }
 }
 
 /* 显示尺寸三档：设计稿 UI Scale Engine，缩放因子与根字号逐档相等

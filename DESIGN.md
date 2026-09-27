@@ -6,7 +6,7 @@
 
 `go-desktop` 是一个基于 Wails3、Vue 3、TypeScript、Tailwind v4 和 Element Plus 组件库的中文桌面工具项目。
 
-界面基线是 Apple macOS Sequoia / iOS 18 HIG：单一一份设计令牌，桌面、平板、手机三端共用同一套外壳与原子，像素级对齐 `OpenDesign` 设计稿（mock 入口 `index.html`）。
+界面基线是 Apple iOS 26 / macOS 26 Liquid Glass HIG：单一一份设计令牌，桌面、平板、手机三端共用同一套外壳与原子，像素级对齐 `OpenDesign` 设计稿（mock 入口 `index.html`）。
 
 界面目标：
 
@@ -67,8 +67,8 @@ Element Plus 通过 `unplugin-vue-components` + `ElementPlusResolver` 按需注�
 导航规则：
 
 - 侧栏导航数据只在 `frontend/src/shared/views.ts` 维护一份（`navigationGroups` / `navigation` / `pageTitle` / `pageSubtitle`），桌面侧栏、手机底部 TabBar 和顶栏标题都从那里取。
-- 侧栏按 `核心功能 / 配置与系统` 分组，每项配 `.sq-icon-badge` 渐变徽标，只有图标 + 文案（不放日志数量角标）；`≥1024` 全宽、`768–1023` 收成图标导轨、`≤767` 变成抽屉。
-- 右上角是一条控制带：日夜切换 + 极光舞台 + 更新状态三枚 `.action-icon-btn`，分隔线，然后是苹果红绿灯，DOM 顺序与视觉顺序都是最小化→最大化→关闭（关闭在最右）。
+- 侧栏按 `核心功能 / 配置与系统` 分组，每项配 `.sq-icon-badge` 渐变徽标，只有图标 + 文案（不放日志数量角标）；`≥1024` 全宽、`768–1023` 收成 70px 图标导轨并可由顶栏汉堡键展开成 232px 浮层（`.tablet-open`）、`≤767` 变成抽屉（`.mobile-open`）。后两种浮层都要配遮罩，收起时遮罩与状态一起归零。
+- 右上角是一条控制带：日夜切换 + 极光舞台 + 更新状态三枚 `.action-icon-btn`，分隔线，然后是苹果红绿灯，DOM 顺序与视觉顺序都是最小化→最大化→关闭（关闭在最右；为兼顾 Windows 桌面用户原生习惯，窗口控制按钮保持在右上角及此排列顺序，不改到左上角）。
 - 更新状态按钮按状态显示 busy（图标自转）/ ready（状态点脉冲）/ danger（红色脉冲）视觉态。
 - `≤767` 隐藏红绿灯与侧栏，改用底部 `mobile-tabbar`，侧栏由顶栏汉堡键经遮罩层唤出。
 - 顶栏标题区域是窗口拖拽热区，所有按钮、导航和弹窗触发区域必须显式保持 no-drag。
@@ -118,7 +118,7 @@ Element Plus 通过 `unplugin-vue-components` + `ElementPlusResolver` 按需注�
 | lgStyle | `fresnel / frosted / sheen`（默认 `fresnel`） | `<html data-lg-style>` 切换折射风格 |
 | lgIntensity | `30–100`（默认 `75`） | `<html style="--lg-intensity-factor">` 乘进 blur / alpha |
 
-主色固定为 Apple Action Blue（`#0071e3`，暗色 `#0a84ff`），raw 值只在 `frontend/src/colors.css` 以 `--color-value-0071e3` 写死一次；`styles.css` 先把它收进语义令牌 `--accent`，再用 `--el-color-primary: var(--accent)` 桥接给 Element Plus，light-3/5/7/8/9 与 dark-2 色阶用 `color-mix` 派生（亮色向白底相调、暗色向 `#1c1c1e` 相调），明暗两态自动跟随。主题色方案（多色板切换）作为后续扩展预留。行内图标不再是偏好维度，一律走 `.sq-icon-badge` 语义渐变徽标。
+主色固定为 iOS System Blue（`#007aff`，暗色 `#0a84ff`，悬浮 `#1a86ff`，按压端 `#0062cc`），raw 值只在 `frontend/src/colors.css` 以 `--color-value-007aff` 写死一次；`styles.css` 先把它收进语义令牌 `--accent`，再用 `--el-color-primary: var(--accent)` 桥接给 Element Plus，light-3/5/7/8/9 与 dark-2 色阶用 `color-mix` 派生（亮色向白底相调、暗色向 `--surface` 相调），明暗两态自动跟随。**主色的所有派生（悬浮描边、激活底、聚焦光晕、按钮渐变中位、图表主蓝）一律写 `var(--accent)`，不得再直接引用 raw 蓝令牌**，否则换主色时派生会脱节。语义状态色是 iOS 系统色档且明暗同值（`--success #34c759` / `--warn #ff9500` / `--danger #ff3b30` / `--info #5ac8fa`——info 已从原来的纯灰 `#85858c` 换成系统青），只有 `--*-light` 淡底在暗色加档；暗色底是纯黑 `--bg #000`、`--surface #1a1c22`、`--surface-warm #24262e`。主题色方案（多色板切换）作为后续扩展预留。行内图标不再是偏好维度，一律走 `.sq-icon-badge` 语义渐变徽标。
 
 五个轴是同一条链路，没有「前端专属」偏好：
 
@@ -157,7 +157,10 @@ export type DisplayPreferences = {
 - 保存失败时显示错误，并把已乐观切换的控件回滚到原值（顶栏极光开关、主题切换同此规则）。
 - 切换不允许触发页面 reload。
 - 主色控制 `el-*` 组件主色、选中态、焦点环和关键进度。
-- 行内图标语义色固定，以 `.sq-icon-badge`（侧栏、分组标题、设置行、服务卡）和 `.stat-icon-wrap`（统计卡）两类渐变徽标提供，色板 token 为 `--tile-*`，维护在 `frontend/src/styles.css` 与 `frontend/src/styles/layout.css`。
+- 行内图标语义色固定，以 `.sq-icon-badge`（侧栏、分组标题、设置行、服务卡）和 `.stat-icon-wrap`（统计卡）两类渐变徽标提供，色板 token 为 `--tile-*` 11 颗：**两端一律取 Apple 官方系统色的两个外观档**（亮端 = Dark 档、暗端 = Light 档，不允许出现官方表之外的 hex）（blue `#0a84ff→#007aff`、indigo `#5e5ce6→#5856d6`、purple `#bf5af2→#af52de`、pink `#ff375f→#ff2d55`、red `#ff453a→#ff3b30`、orange `#ff9f0a→#ff9500`、yellow `#ffd60a→#ffcc00`、green `#30d158→#34c759`、teal `#40c8e0→#30b0c7`、cyan `#64d2ff→#32ade6`、gray `#98989f→#8e8e93`），145deg 只做立体差，禁止再把暗端压到 `#1x/#2x` 深色（那是整颗图标发闷发灰的根因），明暗同一色板。材质外壳是 `--tile-edge` / `--tile-shadow` / `--tile-svg-drop` / `--tile-filter` 四条；卡片与图标的高程描边用 `--elev-rim`（上缘镜面 + 0.5px 菲涅尔切面）。白色符号在黄/青/绿/橙这类亮档上的固有对比只有 1.5–2.4（色彩本身决定，加深底色会牺牲"阳光"），所以 `--tile-svg-drop` 用两层投影分离：贴边硬投影定形 + 零偏移描边把符号从底色里抠出来。维护在 `frontend/src/styles.css` 与 `frontend/src/styles/layout.css`。
+- 材质取向是通透与高光，不是哑光：设计稿在 `.action-icon-btn` / `.modal-close-btn` 上明写的 `backdrop-filter` 采样必须保留，底色按稿子的通透档（日 `.65`、夜 `.06`），浮起靠上缘镜面而不是实色填充；暗色徽标不再叠 `saturate(.82) brightness(.92)` 的去饱和滤镜（`--tile-filter: none`），高程由 `--elev-rim` 与更暗的边缘承担。任何合规/性能整改都不许以牺牲这层光泽为代价；若两者冲突，摆证据让用户拍板。
+- 弹窗自成材质档 `--dialog-fill` / `--dialog-blur`（日 `.86` 白 + `blur(30px) saturate(210%) brightness(1.05)`，夜 `rgba(26,28,34,.88)`），遮罩相应减淡到 `--overlay-fill` 日 `.28` / 夜 `.55`；页眉页脚保持 `--surface-warm` 近白实底，不得改成透明（透明会透出暗遮罩而发灰）。依据是 Apple 对玻璃的两条硬性要求：更厚的材质保证细部文字的对比，材质之上用 vibrant 中性色。
+- 玻璃面板内部不许再铺彩色底：`.update-info-banner` 原按稿子用 `--accent-light`（8% Action Blue），实测在近白玻璃上形成"白底压淡蓝"的脏色块，已改走中性 `--banner-fill` / `--banner-edge`（日 `black/.05` + `.06` 切面，夜 `white/.08` + `.12`）。彩色只保留在图标与小徽标（`.log-level-badge`、`.always-on-top-badge`、主按钮）这一层级，出自 HIG 原话 "Be judicious with your use of color in controls and navigation so they stay legible and allow your content to infuse them and shine through."
 - 五个偏好轴切换都必须立即改变实际渲染效果，不允许出现只记录不改观感的假设置。
 - 禁止远程字体加载，字体族固定系统字体。
 
@@ -193,7 +196,7 @@ export type DisplayPreferences = {
 - 跨页面图标与徽标原子，例如 `.sq-icon-badge` 用到的 `--tile-*` 渐变色板、`.badge-apple`、`.ver-badge`、`.nav-item-badge`（`.nav-item-badge` 只属于日志页筛选按钮的命中数角标，侧栏导航不放日志数量）。
 - 全部三端断点。
 
-`frontend/src/styles/liquid-glass.css` 承载材质层：`.lg` / `.lg-surface` / `.lg-light` / `.lg-sheen` / `.lg-content` 三层光学基元、极光流光舞台 `.stage-backdrop`，以及指针随动高光所需的变量解释。
+`.lg` / `.lg-surface` / `.lg-light` / `.lg-sheen` / `.lg-content` 三层光学基元不在本仓维护：它们逐字节拷贝自上游 `D:\liquid-glass\src\glass.css`，落在 `frontend/src/styles/liquid-glass.upstream.css`，`main.ts` 里先于派生层引入。上游升级时整文件重新拷贝，禁止手抄进派生文件、禁止改它的色值与降级规则。`frontend/src/styles/liquid-glass.css` 只写派生层：极光流光舞台 `.stage-backdrop`、业务卡片的材质档位与折射风格档；派生层不得给 `.lg-surface`/`.lg-light`/`.lg-sheen` 写 `display`/`visibility`（那会盖掉上游的材质降级），也不得给宿主 `.lg` 加 `opacity`/`filter`/`backdrop-filter`（上游硬性要求宿主保持无滤镜，采样只在 `.lg-surface` 层做）。
 
 `frontend/src/styles/element-plus.css` 承载 Element Plus 皮肤层：把 `el-*` 组件捏成设计稿观感的语义类（`.btn-apple`、`.apple-switch`、`.apple-select`、`.apple-field`、`.apple-table`、`.apple-pagination`、`.apple-dialog`、`.apple-alert`、`.apple-progress`、`.segmented-control`）。它必须在 `main.ts` 里排在最后引入，以便覆盖按需引入的 EP 组件样式。
 
@@ -204,7 +207,7 @@ export type DisplayPreferences = {
 - `frontend/src/features/settings/SettingsPage.css`
 - `frontend/src/features/update/UpdateStatusDialog.css`
 
-页面私有 CSS 只写本页结构、宽度与栅格，控件观感一律挂皮肤类；`raw` 色值只能出现在 `frontend/src/colors.css`，其它文件通过 `var(--color-*)` 或语义令牌引用。
+页面私有 CSS 只写本页结构、宽度与栅格，控件观感一律挂皮肤类；`raw` 色值只能出现在 `frontend/src/colors.css`，其它文件通过 `var(--color-*)` 或语义令牌引用。唯一的例外是 `*.upstream.css`（逐字节拷贝的上游文件）：它的色值归上游，`.tmp/check-css.mjs` 与 `TestFrontendColorsUseSingleTokenFile` 对它显式豁免，不允许为了过审计去改写它。
 
 禁止项：
 
@@ -230,7 +233,7 @@ export type DisplayPreferences = {
 | --- | --- | --- |
 | `el-button` + `.btn-apple` | Element Plus + 皮肤层 | 主/次/危险按钮，弹窗等宽按钮用 `.is-alert-action` |
 | `el-switch` + `.apple-switch` | Element Plus + 皮肤层 | 44×26 iOS 阻尼开关 |
-| `el-radio-group` + `.segmented-control` | Element Plus + 皮肤层 | iOS 分段器（主题、尺寸、玻璃风格）与日志级别页签 `.is-tone-tabs` |
+| `el-radio-group` + `.segmented-control` | Element Plus + 皮肤层 | iOS 分段器（主题、尺寸、玻璃风格）与日志级别页签 `.is-tone-tabs`；两处分段器共用 §3 同一套轨道与滑块材质，`.is-tone-tabs` 只加数量胶囊与级别文字色 |
 | `el-select` + `.apple-select` | Element Plus + 皮肤层 | iOS 玻璃下拉，浮层用 `.ios-select-popover` |
 | `el-input` / `el-textarea` + `.apple-field` | Element Plus + 皮肤层 | 文本输入、带图标搜索、授权码多行等宽输入 |
 | `el-table` + `.apple-table` | Element Plus + 皮肤层 | 日志表（吸顶表头、行悬停主色底） |
@@ -296,14 +299,14 @@ export type DisplayPreferences = {
 日志页规则：
 
 - 支持来源、级别、关键词、日志文件筛选；筛选面板默认折叠，命中条件数显示在筛选按钮的 `.nav-item-badge` 角标上。
-- 级别页签是 `.segmented-control.is-tone-tabs` 分段器，页签右侧挂该级别的数量胶囊；激活页签只按级别换文字色（debug 灰 / warning 橙 / error 红），滑块和胶囊保持主色底。
+- 级别页签是 `.segmented-control.is-tone-tabs` 分段器，页签右侧挂该级别的数量胶囊；激活页签只按级别换文字色（debug 灰 / warning 橙 / error 红），滑块和胶囊保持主色底。**全项目只有 §3 一套分段器材质**：`.is-tone-tabs` 不得覆写轨道底色、采样、内距、圆角、描边、滑块投影或悬浮反馈，只允许加数量胶囊与级别文字色这两类语义差异（手机端为容纳五个页签额外允许横向滚动布局）。
 - 分页摘要必须交代后端最低门禁：`每页 N 条，当前第 P / T 页 (门禁过滤后共 X 条记录，系统最低门禁: ≥ LEVEL)`，空态同理写成 `暂无匹配日志 (门禁级别: ≥ LEVEL)`，让用户能区分「没有日志」和「被门禁挡住」。
 - 表格用 `el-table` + `.apple-table`：表头吸顶、11px 大写、`letter-spacing: 0.04em`、行悬停主色底；级别列用 `.log-level-badge`、模块列用 `.log-scope-tag`，时间列 `.log-time-cell` 等宽。
 - 手机端表格换成 `.log-mobile-card` 卡片列表，`.log-table-shell` 隐藏。
 - 空态放在表格 body 内，不在表格外额外拆一块空状态。
 - 路径、日志内容、版本号必须 `min-width: 0` 和 `overflow-wrap: anywhere`。
 - 清空日志必须使用 `AlertDialog` 组件二次确认。
-- 自动刷新、手动刷新、筛选和专注模式属于日志页工具条；专注模式在 `<html>` 上切 `is-log-focus`，由 `styles/layout.css` 收起侧栏与底部 TabBar，组件卸载时必须移除该类。
+- 自动刷新、手动刷新、筛选和专注模式属于日志页工具条；专注模式在 `<html>` 上切 `is-log-focus`，由 `styles/layout.css` 收起侧栏、底部 TabBar 与顶栏内容，组件卸载时必须移除该类。顶栏不能整条 `display: none`：无边框窗口的拖拽区（`--wails-draggable: drag`）和三颗窗口控制钮都挂在它上面，所以专注态把 `.app-topbar` 收成 14px 透明拖拽带（去底、去采样、去描边去阴影），标题与右侧动作区隐藏，红绿灯绝对定位在右上角、`opacity: 0` + `pointer-events: none`，指针进入顶栏才浮出。
 
 ## 9. 数据和路径
 
@@ -335,15 +338,15 @@ export type DisplayPreferences = {
 | 顶栏 | 高 `--topbar-height`（52px），液态玻璃材质，红绿灯在右端，顺序为最小化→最大化→关闭 |
 | 侧栏 | `--sidebar-width: clamp(196px, 232px + (100vw - 1360px) * 0.12, 300px)`，1360px 视口正好等于设计稿 232px，更宽才向右扩张，窄屏不低于 196px；折叠态 `--sidebar-collapsed-width`（68px） |
 | 内容视口 | `.app-main-viewport` 唯一滚动容器，栏距 `--page-gutter-y/x`（24px / 28px） |
-| 平板 `<= 1023px` | 侧栏收成 70px 图标栏，隐藏文字与页脚文案，栅格降为两列 |
-| 手机 `<= 767px` | 侧栏变 260px 抽屉（`translateX(-100%)` 收起）+ 底部 TabBar，视口栏距改 `16px 14px calc(tabbar+20px)` |
+| 平板 `<= 1023px` | 侧栏收成 70px 图标栏（44×44 方形透镜胶囊），隐藏文字与页脚文案，栅格降为两列；汉堡键把侧栏展开成 232px 浮层 `.tablet-open` 并压暗遮罩 |
+| 手机 `<= 767px` | 侧栏变抽屉（`translateX(-100%)` 收起，稿子基底写 260px，但 `.mobile-open` 的特异度更高，展开态实测 232px）+ 底部 TabBar，视口栏距改 `16px 14px calc(tabbar+20px)` |
 
 规则：
 
 - `.app-window` 固定两列：sidebar + content；`.app-main-viewport` 是唯一页面滚动容器。
 - 所有 grid / flex 子项必须 `min-width: 0`。
 - 四个页面共用同一套视口栏距：概览、日志、设置、关于全部通栏铺开。设计稿把设置与关于限宽 880px 并居中，那属于 1400px 假窗口，真实最大化窗口下会缩成居中小票，因此这两页不再 `max-width` / `margin: 0 auto`。
-- 弹窗由 `.el-overlay-dialog:has(.apple-dialog)` 用 flex 真正垂直+水平居中；更新弹窗页头的关闭钮是设计稿的红色红绿灯圆点，靠 `.el-dialog__header` 的 `space-between` 钉在右端，不允许用绝对定位的默认 `headerbtn`（会随标题长度漂移）。
+- 桌面弹窗由 `.el-overlay-dialog:has(.apple-dialog)` 用 flex 真正垂直+水平居中，窄屏（`≤767px`）自动收口为 iOS 26 标准的贴底 Bottom Sheet（带顶部手势抓手条与 `env(safe-area-inset-bottom)` 安全区垫高）；更新弹窗页头的关闭钮是设计稿的 `.modal-close-btn`（28px 中性玻璃圆盘 + 白色 X，外扩补足 44px 触控区），不是红绿灯第三颗红珠，靠 `.el-dialog__header` 的 `space-between` 钉在右端，不允许用绝对定位的默认 `headerbtn`（会随标题长度漂移）。
 - 日志表、路径和长文本可以内部横滚或换行，但不能撑破 `.app-window`。
 - 五个主要交互区域不能出现横向溢出：概览、日志、设置、关于、更新弹窗。
 - 视觉验证必须覆盖 `1440×900`、最大化宽屏、平板 `768-1023px`、手机 `<= 767px`，且亮/暗与清爽/极光四种组合。

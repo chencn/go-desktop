@@ -6,123 +6,13 @@
 */
 
 /* ==========================================================================
-   1. .lg 三层光学基元（上游 liquid-glass.css，禁止在此改写数值）
-   .lg-surface 底层折射磨砂 / .lg-light 随动边缘高光 / .lg-sheen 45° 色散漫反射 / .lg-content 内容层
+   1. .lg 三层光学基元 = 上游文件，本仓零改写
+   材质基元（.lg / .lg-surface / .lg-light / .lg-sheen / .lg-content 与四条降级规则、
+   逐实例开关 data-glass-renderer / data-focus-ring）不在这里维护，直接来自上游：
+   D:\liquid-glass\src\glass.css  ->  frontend/src/styles/liquid-glass.upstream.css（逐字节拷贝，main.ts 先于本文件引入）。
+   上游升级时整文件重新拷贝即可，不要在本文件里逐条手抄或补写基元规则。
+   本文件只写派生层：舞台（§2）、业务卡片材质（§3）、折射风格档（§4）。
    ========================================================================== */
-.lg {
-  --lg-radius: 40px;
-  --lg-tint: var(--color-white-alpha-018);
-  --lg-pointer-x: 28%;
-  --lg-pointer-y: 12%;
-  position: relative;
-  border-radius: var(--lg-radius);
-  /* 宿主保持透明与无滤镜，让真实 backdrop 留在下层 */
-  box-shadow: 0 24px 36px -20px var(--color-value-rgba-31-42-58-0p23), 0 8px 16px -10px var(--color-value-rgba-31-42-58-0p19);
-  transition: box-shadow 0.2s ease;
-}
-
-.lg-surface,
-.lg-light,
-.lg-sheen {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-.lg-surface {
-  z-index: 0;
-  background: var(--lg-tint);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-}
-
-.lg-light {
-  z-index: 1;
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-}
-
-/* 随动高光只沿边缘透出一圈，靠 rim mask 把中心挖空 */
-.lg-light::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    ellipse at var(--lg-pointer-x) var(--lg-pointer-y),
-    var(--color-white-alpha-680),
-    var(--color-white-alpha-150) 38%,
-    var(--color-transparent) 68%
-  );
-  -webkit-mask-image: var(--lg-rim-mask, linear-gradient(var(--color-transparent), var(--color-transparent)));
-  mask-image: var(--lg-rim-mask, linear-gradient(var(--color-transparent), var(--color-transparent)));
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-}
-
-.lg-sheen {
-  z-index: 2;
-  background:
-    linear-gradient(155deg, var(--color-white-alpha-075), var(--color-transparent) 24%, var(--color-transparent) 77%,
-      var(--color-white-alpha-018)),
-    radial-gradient(ellipse at var(--lg-pointer-x) var(--lg-pointer-y), var(--color-white-alpha-042), var(--color-transparent) 57%);
-}
-
-.lg-content {
-  position: relative;
-  z-index: 3;
-  border-radius: inherit;
-}
-
-.lg:focus-visible,
-.lg:has(:focus-visible) {
-  outline: 2px solid var(--color-value-3463ce);
-  outline-offset: var(--sp-5);
-}
-
-/* 逐实例降级：不支持 backdrop-filter 或用户要求降低透明度/对比度时回实心晶体 */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .lg-surface {
-    background: var(--lg-solid, var(--color-value-e9ecf1));
-  }
-}
-
-@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  .lg-surface {
-    background: var(--lg-solid, var(--color-value-e9ecf1)) !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-  .lg-light,
-  .lg-sheen {
-    display: none;
-  }
-}
-
-@media (forced-colors: active) {
-  .lg {
-    outline: 1px solid CanvasText;
-    color: CanvasText;
-  }
-  .lg-surface {
-    background: Canvas !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-  .lg-light,
-  .lg-sheen {
-    display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lg,
-  .lg * {
-    transition: none !important;
-    animation: none !important;
-  }
-}
 
 /* ==========================================================================
    2. 极光流光舞台（设计稿 .window-stage / .stage-backdrop）
@@ -216,10 +106,15 @@ html.has-backdrop .stage-backdrop {
   border-radius: var(--radius-lg);
   padding: 0 !important;
   overflow: hidden;
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
   transition: transform 0.22s var(--ease-apple), box-shadow 0.22s var(--ease-apple), border-color 0.22s ease,
     background 0.22s ease !important;
+}
+
+/* iOS 26 流体按压阻尼：瞬时微压缩反馈 */
+.service-card.lg:active,
+.stat-card.lg:active {
+  transform: scale(0.985);
+  transition-duration: 80ms;
 }
 
 .service-card.lg .lg-content {
@@ -239,9 +134,9 @@ html.has-backdrop .stage-backdrop {
 /* A. 日间清爽态 */
 html:not(.dark):not(.has-backdrop) .service-card.lg,
 html:not(.dark):not(.has-backdrop) .stat-card.lg {
-  background: var(--color-white-alpha-720);
-  border: 1px solid var(--color-black-alpha-080);
-  box-shadow: 0 4px 16px -4px var(--color-black-alpha-050), 0 1px 2px var(--color-black-alpha-030);
+  background: var(--glass-bg);
+  border: var(--glass-border);
+  box-shadow: var(--elev-rim), 0 12px 32px -8px var(--color-black-alpha-070), 0 2px 6px -2px var(--color-black-alpha-040);
 }
 
 html:not(.dark):not(.has-backdrop) .service-card.lg .lg-surface,
@@ -253,11 +148,10 @@ html:not(.dark):not(.has-backdrop) .stat-card.lg .lg-surface {
   box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-950), inset 0 -1px 2px var(--color-black-alpha-020);
 }
 
+/* 清爽态只调漫反射的强度与色相；display/visibility 归 §1 的材质降级管，这里不越权覆写 */
 html:not(.dark):not(.has-backdrop) .service-card.lg .lg-sheen,
 html:not(.dark):not(.has-backdrop) .stat-card.lg .lg-sheen {
-  display: block;
   opacity: 0.5;
-  visibility: visible;
   background: linear-gradient(135deg, var(--color-white-alpha-350) 0%, var(--color-white-alpha-050) 35%,
     var(--color-transparent) 60%);
 }
@@ -280,8 +174,8 @@ html:not(.dark):not(.has-backdrop) .stat-card.lg:hover .lg-surface {
 html.dark:not(.has-backdrop) .service-card.lg,
 html.dark:not(.has-backdrop) .stat-card.lg {
   background: var(--lg-card-fill);
-  border: 1px solid var(--color-white-alpha-120);
-  box-shadow: var(--lg-card-shadow);
+  border: var(--glass-border);
+  box-shadow: var(--elev-rim), var(--lg-card-shadow);
 }
 
 html.dark:not(.has-backdrop) .service-card.lg .lg-surface,
@@ -295,9 +189,7 @@ html.dark:not(.has-backdrop) .stat-card.lg .lg-surface {
 
 html.dark:not(.has-backdrop) .service-card.lg .lg-sheen,
 html.dark:not(.has-backdrop) .stat-card.lg .lg-sheen {
-  display: block;
   opacity: 0.3;
-  visibility: visible;
   background: linear-gradient(135deg, var(--color-white-alpha-080) 0%, var(--color-transparent) 40%);
 }
 
@@ -334,9 +226,11 @@ html.has-backdrop .service-card.lg .lg-surface,
 html.has-backdrop .stat-card.lg .lg-surface {
   display: block;
   background: var(--color-white-alpha-120);
-  backdrop-filter: blur(28px) saturate(210%);
-  -webkit-backdrop-filter: blur(28px) saturate(210%);
+  /* 接入 iOS 26 Liquid Glass 真实折射滤镜，不支持的浏览器自动优雅降级为高斯模糊 */
+  backdrop-filter: blur(28px) url(#liquid-glass) saturate(210%) brightness(1.05);
+  -webkit-backdrop-filter: blur(28px) url(#liquid-glass) saturate(210%) brightness(1.05);
   box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-350);
+  isolation: isolate;
 }
 
 html.has-backdrop .service-card.lg .lg-light,
@@ -372,8 +266,8 @@ html.dark.has-backdrop .stat-card.lg .lg-surface {
    ========================================================================== */
 html[data-lg-style="fresnel"] .service-card.lg .lg-surface,
 html[data-lg-style="fresnel"] .stat-card.lg .lg-surface {
-  backdrop-filter: blur(calc(20px * var(--lg-intensity-factor, 0.75))) saturate(180%);
-  -webkit-backdrop-filter: blur(calc(20px * var(--lg-intensity-factor, 0.75))) saturate(180%);
+  backdrop-filter: blur(calc(20px * var(--lg-intensity-factor, 0.75))) url(#liquid-glass) saturate(180%) brightness(1.04);
+  -webkit-backdrop-filter: blur(calc(20px * var(--lg-intensity-factor, 0.75))) url(#liquid-glass) saturate(180%) brightness(1.04);
 }
 
 html[data-lg-style="frosted"] .service-card.lg .lg-surface,

@@ -10,6 +10,8 @@ import App from './App.vue'
 import './colors.css'
 import './styles.css'
 import './styles/layout.css'
+// 上游玻璃基元：逐字节拷贝自 D:\liquid-glass\src\glass.css，禁止改写，升级时整文件重拷。
+import './styles/liquid-glass.upstream.css'
 import './styles/liquid-glass.css'
 // 皮肤层必须排在最后：它要覆盖 App.vue 依赖链里按需引入的 Element Plus 组件样式。
 import './styles/element-plus.css'

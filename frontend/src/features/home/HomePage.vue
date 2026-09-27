@@ -310,7 +310,7 @@ onUnmounted(() => {
       <div class="demo-bar-chart" aria-label="演示趋势图">
         <div v-for="point in trendPoints" :key="point.label" class="demo-bar-column">
           <span class="demo-bar-track">
-            <span class="demo-bar-fill" :style="{ height: `${point.value}%` }" />
+            <span class="demo-bar-fill" :data-val="`${point.value}%`" :style="{ height: `${point.value}%` }" />
           </span>
           <small>{{ point.label }}</small>
         </div>

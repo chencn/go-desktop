@@ -180,13 +180,6 @@ type UpdateStatus struct {
 	UpdatedAt       string  `json:"updatedAt"`                 // UpdatedAt 是 RFC3339 状态更新时间。
 }
 
-// SecondInstanceRecord 记录被路由到主进程的第二实例启动请求。
-type SecondInstanceRecord struct {
-	Args       []string `json:"args"`       // Args 是第二进程启动参数的副本。
-	WorkingDir string   `json:"workingDir"` // WorkingDir 是第二进程工作目录。
-	ReceivedAt string   `json:"receivedAt"` // ReceivedAt 是主进程处理该请求的时间。
-}
-
 // StartupLaunch 是 main.go 使用的启动参数语义别名，不作为 Wails 模型暴露。
 type StartupLaunch = appruntime.StartupLaunch
 
@@ -248,11 +241,6 @@ func (r *Runtime) GetLicenseStatus() LicenseStatus {
 func (r *Runtime) ActivateLicense(licenseKey string) (LicenseStatus, error) {
 	status, err := r.Runtime.ActivateLicense(licenseKey)
 	return LicenseStatus(status), err
-}
-
-// GetSecondInstanceRecords 返回主进程处理过的第二实例启动请求。
-func (r *Runtime) GetSecondInstanceRecords() []SecondInstanceRecord {
-	return toSecondInstanceRecords(r.Runtime.GetSecondInstanceRecords())
 }
 
 // GetUpdateStatus 返回当前更新流程状态。
@@ -347,12 +335,6 @@ func (api *API) GetLicenseStatus() (LicenseStatus, error) {
 func (api *API) ActivateLicense(licenseKey string) (LicenseStatus, error) {
 	status, err := api.inner.ActivateLicense(licenseKey)
 	return LicenseStatus(status), err
-}
-
-// GetSecondInstanceRecords 是暴露给 Wails 的第二实例记录入口。
-func (api *API) GetSecondInstanceRecords() ([]SecondInstanceRecord, error) {
-	records, err := api.inner.GetSecondInstanceRecords()
-	return toSecondInstanceRecords(records), err
 }
 
 // GetSettings 是暴露给 Wails 的后端设置读取入口。
@@ -480,17 +462,6 @@ func toLogFileInfos(values []appruntime.LogFileInfo) []LogFileInfo {
 	result := make([]LogFileInfo, len(values))
 	for index, value := range values {
 		result[index] = LogFileInfo(value)
-	}
-	return result
-}
-
-func toSecondInstanceRecords(values []appruntime.SecondInstanceRecord) []SecondInstanceRecord {
-	if values == nil {
-		return nil
-	}
-	result := make([]SecondInstanceRecord, len(values))
-	for index, value := range values {
-		result[index] = SecondInstanceRecord(value)
 	}
 	return result
 }

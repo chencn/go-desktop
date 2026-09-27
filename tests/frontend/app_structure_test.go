@@ -269,6 +269,25 @@ func TestSegmentedControlSkinNeutralizesElementPlusDefaults(t *testing.T) {
 		}
 	}
 
+	// 全项目只有 §3 一套分段器材质：§4 的级别页签只准加数量胶囊与级别文字色，
+	// 不许另起轨道底色/采样/滑块投影/悬浮底色，否则同一个项目里两处分段器会长得不一样。
+	toneStart := strings.Index(elementSkin, "4. 日志级别页签")
+	toneEnd := strings.Index(elementSkin, "5. iOS 玻璃下拉选择器")
+	if toneStart < 0 || toneEnd < 0 || toneEnd < toneStart {
+		t.Fatal("element-plus.css should keep the log level tab section delimited between §4 and §5")
+	}
+	toneSection := elementSkin[toneStart:toneEnd]
+	for _, forbidden := range []string{
+		"background: var(--surface)",
+		"backdrop-filter: none",
+		"box-shadow: none",
+		"box-shadow: 0 var(--sp-1)",
+	} {
+		if strings.Contains(toneSection, forbidden) {
+			t.Fatalf("log level tabs must inherit the §3 segmented track material, found %q", forbidden)
+		}
+	}
+
 	// EP 的选中态挂在 is-active 上，皮肤不能再依赖 :checked 兄弟选择器，否则优先级不够被蓝底盖回。
 	if strings.Contains(elementSkin, "__original-radio:checked + .el-radio-button__inner") {
 		t.Fatal("element-plus.css should drive the checked segment through .is-active, not the hidden input sibling")
@@ -1036,12 +1055,12 @@ func TestGlassPreferencesPersistThroughBackend(t *testing.T) {
 }
 
 // TestDisplayCssUsesCurrentColorAxes 验证 styles.css 把 HIG 语义令牌桥接到 Element Plus 变量，
-// 主色固定 Apple Action Blue 且色阶由 color-mix 派生，明暗两态都跟随 html.dark。
+// 主色固定 iOS System Blue 且色阶全部由 color-mix 从 --accent 派生，明暗两态都跟随 html.dark。
 func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 	styles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "styles.css"), "\r\n", "\n")
 
 	for _, required := range []string{
-		`--accent: var(--color-value-0071e3);`,
+		`--accent: var(--color-value-007aff);`,
 		`--el-color-primary: var(--accent);`,
 		`--el-color-primary-light-3: color-mix(in srgb, var(--el-color-primary) 70%, var(--color-white-solid));`,
 		`--el-color-primary-light-9: color-mix(in srgb, var(--el-color-primary) 10%, var(--color-white-solid));`,
@@ -1055,8 +1074,8 @@ func TestDisplayCssUsesCurrentColorAxes(t *testing.T) {
 		`html.dark {`,
 		`--accent: var(--color-value-0a84ff);`,
 		// 夜间色阶向深空底色相调，否则 EP 默认往白里混会得出近白悬浮底。
-		`--el-color-primary-light-3: color-mix(in srgb, var(--el-color-primary) 70%, var(--color-value-1c1c1e));`,
-		`--el-color-primary-light-9: color-mix(in srgb, var(--el-color-primary) 10%, var(--color-value-1c1c1e));`,
+		`--el-color-primary-light-3: color-mix(in srgb, var(--el-color-primary) 70%, var(--surface));`,
+		`--el-color-primary-light-9: color-mix(in srgb, var(--el-color-primary) 10%, var(--surface));`,
 	} {
 		if !strings.Contains(styles, required) {
 			t.Fatalf("styles.css should bridge HIG tokens to Element Plus variables %q", required)
@@ -1089,7 +1108,7 @@ func TestFrontendColorsUseSingleTokenFile(t *testing.T) {
 		t.Fatal("global color token file must load before frontend/src/styles.css")
 	}
 
-	if !strings.Contains(styles, "var(--color-value-0071e3)") {
+	if !strings.Contains(styles, "var(--color-value-007aff)") {
 		t.Fatal("styles.css should consume raw palette colors through the global color token file")
 	}
 
@@ -1143,6 +1162,11 @@ func TestFrontendColorsUseSingleTokenFile(t *testing.T) {
 		if rel == frontendColorTokenFile {
 			return nil
 		}
+		// *.upstream.css 是逐字节拷贝的上游材质文件（见 frontend/src/styles/liquid-glass.upstream.css），
+		// 色值由上游定义、升级时整文件重拷，不允许为了过本审计去改写上游文件，因此这里显式豁免。
+		if strings.HasSuffix(rel, ".upstream.css") {
+			return nil
+		}
 		source := strings.ReplaceAll(readRootFile(t, filepath.FromSlash(rel)), "\r\n", "\n")
 		if strings.Contains(source, "--color-var(") || strings.Contains(source, "var(--color-var") {
 			violations = append(violations, rel+": invalid nested color var")
@@ -1178,10 +1202,10 @@ func TestDisplayPreferencePaletteUsesSingleRuntimeColorSource(t *testing.T) {
 	colorTokens := strings.ReplaceAll(readRootFile(t, filepath.FromSlash(frontendColorTokenFile)), "\r\n", "\n")
 	settingsStyles := strings.ReplaceAll(readRootFile(t, "frontend", "src", "features", "settings", "SettingsPage.css"), "\r\n", "\n")
 
-	colorTokenVar := "--color-value-0071e3"
-	colorTokenDeclaration := colorTokenVar + ": #0071e3;"
+	colorTokenVar := "--color-value-007aff"
+	colorTokenDeclaration := colorTokenVar + ": #007aff;"
 	if count := strings.Count(colorTokens, colorTokenDeclaration); count != 1 {
-		t.Fatalf("action blue should be hard-coded exactly once in %s, got %d", frontendColorTokenFile, count)
+		t.Fatalf("iOS system blue should be hard-coded exactly once in %s, got %d", frontendColorTokenFile, count)
 	}
 	// 主色链只允许一次写死：colors.css 出 raw 值 -> --accent 语义令牌 -> Element Plus 桥接。
 	accentRule := "--accent: var(" + colorTokenVar + ");"
@@ -1192,8 +1216,8 @@ func TestDisplayPreferencePaletteUsesSingleRuntimeColorSource(t *testing.T) {
 	if count := strings.Count(styles, primaryRule); count != 1 {
 		t.Fatalf("styles.css should bridge Element Plus primary through the accent token exactly once, got %d", count)
 	}
-	if strings.Contains(settingsStyles, "#0071e3") {
-		t.Fatalf("SettingsPage.css must not repeat hard-coded action blue %q; use var(%s)", "#0071e3", colorTokenVar)
+	if strings.Contains(settingsStyles, "#007aff") {
+		t.Fatalf("SettingsPage.css must not repeat hard-coded iOS system blue %q; use var(%s)", "#007aff", colorTokenVar)
 	}
 }
 
@@ -1424,13 +1448,19 @@ func TestLogsPageUsesThemeAlignedPageLayout(t *testing.T) {
 			t.Fatalf("logs page themed layout should define %q", required)
 		}
 	}
-	// 专注模式由 LogsPage 在 <html> 上切 is-log-focus，外壳只在 layout.css 收起导航列。
+	// 专注模式由 LogsPage 在 <html> 上切 is-log-focus，外壳在 layout.css 里收起导航列与顶栏。
+	// 顶栏只收成一条透明拖拽带、三颗窗口控制钮仍留在 DOM 里等悬停浮出：
+	// 无边框窗口的拖拽区与最小化/最大化/关闭全挂在顶栏上，整条 display:none 会把窗口控制一起砍掉。
 	for _, required := range []string{
 		"html.is-log-focus .app-sidebar",
 		"html.is-log-focus .mobile-tabbar",
+		"html.is-log-focus .app-topbar",
+		"html.is-log-focus .topbar-left",
+		"html.is-log-focus .traffic-lights-right",
+		"html.is-log-focus .app-topbar:hover .traffic-lights-right",
 	} {
 		if !strings.Contains(layoutStyles, required) {
-			t.Fatalf("layout.css should hide shell navigation in log focus mode: missing %q", required)
+			t.Fatalf("layout.css should collapse shell chrome but keep window controls in log focus mode: missing %q", required)
 		}
 	}
 	if !strings.Contains(layoutStyles, "display: none") {
@@ -1524,14 +1554,19 @@ func TestLogsPageKeepsDensePaginationAndTableDetails(t *testing.T) {
 		`.el-table.apple-table th.el-table__cell`,
 		`.el-table.apple-table td.el-table__cell`,
 		`--el-table-border-color: var(--border-soft);`,
-		`--el-table-header-bg-color: var(--surface-warm);`,
-		`--el-table-row-hover-bg-color: var(--row-hover);`,
+		`--el-table-header-bg-color: var(--table-head-fill);`,
+		`--el-table-row-hover-bg-color: var(--table-hover);`,
+		// 设计稿 .apple-table 有偶数行斑马底，EP 靠 stripe 开关 + fill-color-lighter 才有同等观感
+		`--el-fill-color-lighter: var(--table-zebra);`,
 		`text-transform: uppercase;`,
-		`letter-spacing: 0.04em;`,
+		`letter-spacing: 0.05em;`,
 	} {
 		if !strings.Contains(elementPlusStyles, required) {
 			t.Fatalf("logs page table should mirror the shared apple-table skin %q", required)
 		}
+	}
+	if !strings.Contains(logsPage, "stripe") {
+		t.Fatalf("logs page table should enable stripe so the design's even-row zebra background shows up")
 	}
 }
 

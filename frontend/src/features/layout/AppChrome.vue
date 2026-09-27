@@ -39,8 +39,11 @@ const updateOpen = ref(false)
 const sidebarCollapsed = ref(false)
 // mobileSidebarOpen 是手机端抽屉状态，与桌面折叠状态互不干扰。
 const mobileSidebarOpen = ref(false)
-// isMobile 决定切换按钮操作抽屉还是折叠；断点必须与 layout.css 的 767px 保持一致。
+// tabletSidebarOpen 是平板 768–1023 的浮起展开态：平时是 70px 图标轨，点开才铺满 232px 并压上遮罩。
+const tabletSidebarOpen = ref(false)
+// isMobile / isTablet 决定切换按钮操作抽屉、浮层还是折叠；断点必须与 layout.css 的 767px 与 1023px 一致。
 const isMobile = ref(false)
+const isTablet = ref(false)
 // isWindowMaximised 只服务红绿灯最大化按钮的辅助文案，不作为业务状态持久化。
 const isWindowMaximised = ref(false)
 
@@ -88,7 +91,8 @@ type WailsHostWindow = typeof globalThis & {
   wails?: { invoke?: unknown }
 }
 
-let viewportQuery: MediaQueryList | undefined
+let mobileQuery: MediaQueryList | undefined
+let tabletQuery: MediaQueryList | undefined
 
 function hasNativeWindowRuntime(win: WailsHostWindow) {
   return typeof win.chrome?.webview?.postMessage === 'function'
@@ -166,38 +170,53 @@ function closeWindow() {
   void runWindowCommand(() => Window.Close())
 }
 
-// 断点两侧语义不同：手机端拉开抽屉，桌面端折叠成图标轨道。
+// 断点两侧语义不同：手机拉开抽屉，平板浮起展开图标轨，桌面折叠成图标轨。
 function toggleSidebar() {
   if (isMobile.value) {
     mobileSidebarOpen.value = !mobileSidebarOpen.value
     return
   }
+  if (isTablet.value) {
+    tabletSidebarOpen.value = !tabletSidebarOpen.value
+    return
+  }
   sidebarCollapsed.value = !sidebarCollapsed.value
 }
 
-// 手机端切换页面后自动收起抽屉，否则遮罩会挡住新页面。
+// 手机端与平板端切页后自动收起浮层，否则遮罩会挡住新页面。
 function navigate(view: ViewKey) {
-  mobileSidebarOpen.value = false
+  closeSidebarOverlays()
   emit('navigate', view)
 }
 
-function onViewportChange(event: MediaQueryListEvent) {
-  isMobile.value = event.matches
-  if (!event.matches) {
-    mobileSidebarOpen.value = false
-  }
+// closeSidebarOverlays 由遮罩点击与断点切换共用，保证两种浮层不会同时残留。
+function closeSidebarOverlays() {
+  mobileSidebarOpen.value = false
+  tabletSidebarOpen.value = false
+}
+
+// 跨断点时必须清掉该断点专属的浮层态：否则平板展开着拖到桌面，会留下打不开的遮罩。
+function onViewportChange() {
+  isMobile.value = mobileQuery?.matches ?? false
+  isTablet.value = tabletQuery?.matches ?? false
+  if (!isMobile.value) mobileSidebarOpen.value = false
+  if (!isTablet.value) tabletSidebarOpen.value = false
 }
 
 onMounted(() => {
   void refreshWindowMaximised()
   if (typeof window === 'undefined' || !window.matchMedia) return
-  viewportQuery = window.matchMedia('(max-width: 767px)')
-  isMobile.value = viewportQuery.matches
-  viewportQuery.addEventListener('change', onViewportChange)
+  mobileQuery = window.matchMedia('(max-width: 767px)')
+  tabletQuery = window.matchMedia('(min-width: 768px) and (max-width: 1023px)')
+  isMobile.value = mobileQuery.matches
+  isTablet.value = tabletQuery.matches
+  mobileQuery.addEventListener('change', onViewportChange)
+  tabletQuery.addEventListener('change', onViewportChange)
 })
 
 onBeforeUnmount(() => {
-  viewportQuery?.removeEventListener('change', onViewportChange)
+  mobileQuery?.removeEventListener('change', onViewportChange)
+  tabletQuery?.removeEventListener('change', onViewportChange)
 })
 
 // 桌面窗口尺寸变化时最大化态可能已失效，只在按钮可用时重新读取。
@@ -309,13 +328,13 @@ watch(() => isWindowControlsDisabled.value, (disabled) => {
 
     <div class="app-body">
       <div
-        :class="cn('mobile-sidebar-backdrop', mobileSidebarOpen && 'active')"
+        :class="cn('mobile-sidebar-backdrop', (mobileSidebarOpen || tabletSidebarOpen) && 'active')"
         aria-hidden="true"
-        @click="mobileSidebarOpen = false"
+        @click="closeSidebarOverlays"
       ></div>
 
       <aside
-        :class="cn('app-sidebar', sidebarCollapsed && !isMobile && 'is-collapsed', mobileSidebarOpen && 'mobile-open')"
+        :class="cn('app-sidebar', sidebarCollapsed && !isMobile && !isTablet && 'is-collapsed', mobileSidebarOpen && 'mobile-open', tabletSidebarOpen && 'tablet-open')"
         aria-label="主导航"
       >
         <nav class="sidebar-nav">

@@ -39,8 +39,12 @@ const reasonLabels: Record<string, string> = {
   download_failed: '下载安装包失败',
   download_skipped: '已跳过安装包下载',
 
+  missing_update_check: '尚未执行更新检查，请先检查更新',
   not_verified: '没有可安装的已校验更新包',
   verified_file_missing: '已校验安装包文件缺失',
+  pending_load_failed: '读取待安装更新状态失败',
+  pending_save_failed: '保存待安装更新状态失败',
+  panic: '程序内部异常',
   installing: '正在启动静默安装器',
   install_failed: '启动静默安装器失败',
   install_started: '静默安装器已启动',

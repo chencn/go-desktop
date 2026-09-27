@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { Info, Loader2, RefreshCw } from '@lucide/vue'
+import { Info, Loader2, RefreshCw, X } from '@lucide/vue'
 import { type UpdateStatus } from '@/api/wails'
 import { useAppStore } from '@/stores/app'
 import { formatBytes } from '@/shared/format'
@@ -195,7 +195,9 @@ async function runSecondaryAction() {
         <RefreshCw :size="18" aria-hidden="true" />
         应用更新状态
       </span>
-      <button type="button" class="traffic-btn close" title="关闭" aria-label="关闭更新弹窗" @click="closeDialog"></button>
+      <button type="button" class="modal-close-btn" title="关闭" aria-label="关闭更新弹窗" @click="closeDialog">
+        <X :size="12" aria-hidden="true" />
+      </button>
     </template>
 
     <div class="update-info-banner">

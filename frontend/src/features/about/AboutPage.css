@@ -30,10 +30,17 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--color-value-0071e3) 0%, var(--color-value-00458a) 100%);
+  /* 18px 介于 --radius-lg(16) 与 --radius-xl(20) 之间，是稿子给这颗大晶体的独立曲率 */
+  border-radius: 18px;
+  background: var(--app-icon-fill);
+  border: var(--app-icon-edge);
   color: var(--color-white-solid);
-  box-shadow: 0 var(--sp-8) var(--sp-24) color-mix(in srgb, var(--color-value-0071e3) 35%, var(--color-transparent));
+  box-shadow: var(--app-icon-shadow);
+  filter: var(--app-icon-filter);
+}
+
+.about-app-icon svg {
+  filter: var(--app-icon-svg-drop);
 }
 
 .about-hero-content h2 {

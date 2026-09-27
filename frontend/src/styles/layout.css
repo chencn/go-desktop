@@ -37,6 +37,40 @@ html.is-log-focus .mobile-tabbar {
   display: none !important;
 }
 
+/* 专注态要连顶栏一起让位：整条 header 收成一条贴顶的透明拖拽带。
+   不能直接 display:none —— 无边框窗口的拖拽区和三颗窗口控制钮都挂在顶栏上，
+   全砍掉会让用户没法移动、最小化或关闭窗口；所以保留几何与 drag 区，
+   红绿灯平时隐去，指针靠近顶栏才浮出。 */
+html.is-log-focus .app-topbar {
+  height: var(--sp-14);
+  padding: 0;
+  background: var(--color-transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+html.is-log-focus .topbar-left,
+html.is-log-focus .topbar-actions,
+html.is-log-focus .topbar-divider {
+  display: none;
+}
+
+html.is-log-focus .traffic-lights-right {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-apple);
+}
+
+html.is-log-focus .app-topbar:hover .traffic-lights-right {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* ==========================================================================
    2. 顶栏：液态玻璃抬头材质 + 苹果三控制按钮右置 + 常驻更新状态按钮
    ========================================================================== */
@@ -68,23 +102,31 @@ html.is-log-focus .mobile-tabbar {
   width: var(--control-size);
   height: var(--control-size);
   border-radius: var(--radius-sm);
-  border: 1px solid var(--control-glass-edge);
-  background: var(--control-glass-fill-subtle);
-  color: var(--glass-control-fg);
+  border: 1px solid var(--toggle-edge);
+  background: var(--toggle-fill);
+  color: var(--toggle-icon-fg);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--control-glass-shadow);
-  transition: all var(--duration-fast) var(--ease-apple);
+  box-shadow: none;
+  transition: background-color var(--duration-fast) var(--ease-apple), color var(--duration-fast) var(--ease-apple),
+    border-color var(--duration-fast) var(--ease-apple), transform var(--duration-fast) var(--ease-apple),
+    box-shadow var(--duration-fast) var(--ease-apple);
   --wails-draggable: no-drag;
 }
 
 .sidebar-toggle-btn:hover {
-  background: var(--control-glass-fill-hover);
-  color: var(--glass-control-fg-hover);
-  border-color: var(--control-glass-hover-edge);
-  box-shadow: var(--toggle-hover-shadow);
+  background: var(--toggle-fill-hover);
+  color: var(--toggle-icon-fg-hover);
+  border-color: var(--toggle-edge-hover);
+  box-shadow: var(--toggle-shadow-hover);
+  transform: translateY(-0.5px);
+}
+
+.sidebar-toggle-btn:active {
+  background: var(--toggle-fill-active);
+  transform: scale(0.94);
 }
 
 .topbar-title-group {
@@ -113,7 +155,7 @@ html.is-log-focus .mobile-tabbar {
 
 .topbar-sub-title {
   font-size: var(--fs-11);
-  color: var(--meta);
+  color: var(--meta-on-glass);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -156,9 +198,10 @@ html.is-log-focus .mobile-tabbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(var(--sp-8));
-  -webkit-backdrop-filter: blur(var(--sp-8));
-  box-shadow: var(--control-glass-shadow);
+  padding: 0;
+  backdrop-filter: var(--control-glass-blur);
+  -webkit-backdrop-filter: var(--control-glass-blur);
+  box-shadow: var(--action-icon-shadow);
   transition: all var(--duration-fast) var(--ease-apple);
   --wails-draggable: no-drag;
 }
@@ -182,11 +225,7 @@ html.is-log-focus .mobile-tabbar {
   transform: scale(0.96);
 }
 
-/* 更新状态：is-ready 绿点徽标 / is-danger 错误 / is-busy 图标自转 */
-.action-icon-btn.is-ready {
-  color: var(--success);
-}
-
+/* 更新状态：is-ready 只用绿点徽标（设计稿不给整颗图标染色）/ is-danger 报错染色 / is-busy 图标自转 */
 .action-icon-btn.is-danger {
   color: var(--danger);
 }
@@ -233,8 +272,10 @@ html.is-log-focus .mobile-tabbar {
 
 .topbar-divider {
   width: 1px;
-  height: var(--sp-18);
-  background: var(--border);
+  height: var(--sp-14);
+  background: var(--topbar-divider-fill);
+  opacity: 0.7;
+  margin: 0 var(--sp-2);
 }
 
 /* 苹果三个控制按钮：最右侧，从左至右 最小化 → 最大化 → 关闭 */
@@ -242,8 +283,8 @@ html.is-log-focus .mobile-tabbar {
   display: flex;
   align-items: center;
   gap: var(--sp-12);
-  padding-left: var(--sp-6);
-  padding-right: var(--sp-2);
+  /* 12px 间距是触控防粘连的人机工学黄金值；上下各留 2px 让珠子的高光不被顶栏裁切 */
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-6);
   --wails-draggable: no-drag;
 }
 
@@ -258,7 +299,13 @@ html.is-log-focus .mobile-tabbar {
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: transform var(--duration-fast) var(--ease-apple), box-shadow var(--duration-fast) var(--ease-apple);
+  /* 凸面珠子单独成合成层：不做 GPU 隔离时缩放到 1.15 会在边缘出现锯齿 */
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* 过冲弹性只给 transform，box-shadow 走平滑曲线，避免高光跟着抖 */
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.22s ease;
 }
 
 /* 触控防误触隐形热区：视觉 14px，命中区上下各外扩 9px。
@@ -276,46 +323,116 @@ html.is-log-focus .mobile-tabbar {
 }
 
 .traffic-btn:hover {
-  transform: scale(1.12);
-  box-shadow: 0 1px var(--sp-4) var(--color-black-alpha-200);
+  transform: scale(1.15);
+  filter: brightness(1.06);
 }
 
 .traffic-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.88);
+  filter: brightness(0.95);
+  transition-duration: 0.08s;
 }
 
+/* 红宝石微晶（关闭）：凸面聚光 + 菲涅尔月牙高光 + 焦散投影 */
 .traffic-btn.close {
-  background: var(--color-value-ff5f56);
-  border: 0.5px solid var(--color-value-e0443e);
+  background: radial-gradient(circle at 35% 28%, var(--color-value-ff786f) 0%, var(--color-value-ff5f56) 45%, var(--color-value-df3832) 100%);
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-850), inset 0 -1px 1.5px 0 var(--color-value-rgba-160-20-20-0p35),
+    0 1.5px 4px -0.5px var(--color-value-rgba-255-95-86-0p45), 0 0.5px 1px 0 var(--color-black-alpha-080);
+  border: 0.5px solid var(--color-value-rgba-190-40-35-0p55);
 }
 
+/* 琥珀微晶（最小化） */
 .traffic-btn.minimize {
-  background: var(--color-value-ffbd2e);
-  border: 0.5px solid var(--color-value-dea123);
+  background: radial-gradient(circle at 35% 28%, var(--color-value-ffd257) 0%, var(--color-value-ffbd2e) 45%, var(--color-value-dc9814) 100%);
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-880), inset 0 -1px 1.5px 0 var(--color-value-rgba-165-105-0-0p35),
+    0 1.5px 4px -0.5px var(--color-value-rgba-255-189-46-0p45), 0 0.5px 1px 0 var(--color-black-alpha-080);
+  border: 0.5px solid var(--color-value-rgba-195-130-10-0p55);
 }
 
+/* 翡翠微晶（最大化 / 还原） */
 .traffic-btn.maximize {
-  background: var(--color-value-27c93f);
-  border: 0.5px solid var(--color-value-1aab29);
+  background: radial-gradient(circle at 35% 28%, var(--color-value-4ee866) 0%, var(--color-value-28c840) 45%, var(--color-value-18a026) 100%);
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-850), inset 0 -1px 1.5px 0 var(--color-value-rgba-15-120-30-0p35),
+    0 1.5px 4px -0.5px var(--color-value-rgba-40-200-64-0p45), 0 0.5px 1px 0 var(--color-black-alpha-080);
+  border: 0.5px solid var(--color-value-rgba-22-145-36-0p55);
 }
 
+.traffic-btn.close:hover {
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-950), inset 0 -1px 1.5px 0 var(--color-value-rgba-160-20-20-0p3),
+    0 3px 8px -1px var(--color-value-rgba-255-95-86-0p65), 0 1px 2px 0 var(--color-black-alpha-120);
+}
+
+.traffic-btn.minimize:hover {
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-950), inset 0 -1px 1.5px 0 var(--color-value-rgba-165-105-0-0p3),
+    0 3px 8px -1px var(--color-value-rgba-255-189-46-0p65), 0 1px 2px 0 var(--color-black-alpha-120);
+}
+
+.traffic-btn.maximize:hover {
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-950), inset 0 -1px 1.5px 0 var(--color-value-rgba-15-120-30-0p3),
+    0 3px 8px -1px var(--color-value-rgba-40-200-64-0p65), 0 1px 2px 0 var(--color-black-alpha-120);
+}
+
+/* 暗色只换焦散与描边：凸面聚光仍由同一颗径向渐变提供，避免夜间珠子发灰 */
+html.dark .traffic-btn.close {
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-700), inset 0 -1px 1.5px 0 var(--color-black-alpha-500),
+    0 2px 7px 0 var(--color-value-rgba-255-95-86-0p4);
+  border-color: var(--color-value-rgba-255-95-86-0p45);
+}
+
+html.dark .traffic-btn.minimize {
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-750), inset 0 -1px 1.5px 0 var(--color-black-alpha-500),
+    0 2px 7px 0 var(--color-value-rgba-255-189-46-0p4);
+  border-color: var(--color-value-rgba-255-189-46-0p45);
+}
+
+html.dark .traffic-btn.maximize {
+  box-shadow: inset 0 1px 1px 0 var(--color-white-alpha-700), inset 0 -1px 1.5px 0 var(--color-black-alpha-500),
+    0 2px 7px 0 var(--color-value-rgba-40-200-64-0p4);
+  border-color: var(--color-value-rgba-40-200-64-0p45);
+}
+
+/* 内部折射刻蚀矢量符号：默认整组隐藏，悬停任意一颗或整组时一起显影 */
 .traffic-btn svg {
   opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-apple);
-  stroke: var(--color-black-alpha-650);
-  stroke-width: 2.2;
+  transition: opacity 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.18s ease;
+  stroke: var(--color-value-rgba-40-10-10-0p78);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   width: var(--sp-8);
   height: var(--sp-8);
   pointer-events: none;
+  filter: drop-shadow(0 0.5px 0.5px var(--color-white-alpha-350));
 }
 
-.traffic-lights-right:hover .traffic-btn svg {
+.traffic-btn.minimize svg {
+  stroke: var(--color-value-rgba-70-40-0-0p78);
+}
+
+.traffic-btn.maximize svg {
+  stroke: var(--color-value-rgba-0-50-10-0p78);
+}
+
+.traffic-lights-right:hover .traffic-btn svg,
+.traffic-btn:hover svg {
   opacity: 1;
 }
 
+/* H5 预览没有原生窗口运行时才 disabled。设计稿没有 disabled 降透明这一档，
+   整组珠子一旦被压到 45% 就成了半灰哑光，玻璃宝石观感全丢；这里只收掉按压与指针反馈，
+   宝石底色、镜面与焦散投影保持满档。 */
 .traffic-btn:disabled {
   cursor: default;
-  opacity: 0.45;
+}
+
+.traffic-btn:disabled:hover {
+  transform: none;
+  filter: none;
+}
+
+.traffic-btn:disabled:active {
+  transform: none;
+  filter: none;
 }
 
 /* ==========================================================================
@@ -329,14 +446,27 @@ html.is-log-focus .mobile-tabbar {
   border-radius: var(--radius-badge);
   flex-shrink: 0;
   color: var(--color-white-solid) !important;
+  border: var(--tile-edge);
   box-shadow: var(--tile-shadow);
+  filter: var(--tile-filter);
   position: relative;
-  transition: transform var(--duration-fast) var(--ease-apple), box-shadow var(--duration-fast) var(--ease-apple);
+  transition: transform var(--duration-fast) var(--ease-apple), box-shadow var(--duration-fast) var(--ease-apple),
+    filter var(--duration-fast) var(--ease-apple);
+  /* 空间微晶抗锯齿：渐变体不做 GPU 隔离时，缩放边缘会起锯齿 */
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .sq-icon-badge svg {
   stroke: var(--color-white-solid) !important;
   display: block;
+  filter: var(--tile-svg-drop);
+}
+
+.sq-icon-badge:hover {
+  transform: translateY(-0.5px);
+  filter: var(--tile-hover-filter);
 }
 
 .sq-icon-badge.blue {
@@ -401,10 +531,10 @@ html.is-log-focus .mobile-tabbar {
 
 .app-sidebar {
   width: var(--sidebar-width);
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-right: 1px solid var(--border-soft);
+  background: var(--sidebar-fill);
+  backdrop-filter: var(--sidebar-blur);
+  -webkit-backdrop-filter: var(--sidebar-blur);
+  border-right: 1px solid var(--sidebar-edge);
   box-shadow: var(--sidebar-inset);
   display: flex;
   flex-direction: column;
@@ -419,20 +549,21 @@ html.is-log-focus .mobile-tabbar {
 
 .sidebar-nav {
   flex: 1;
-  padding: var(--sp-16) var(--sp-8) var(--sp-12);
+  padding: var(--sp-10) var(--sp-8);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
 }
 
 .nav-group-title {
   font-size: var(--fs-11);
   font-weight: 600;
-  color: var(--meta);
-  padding: var(--sp-8) var(--sp-10) var(--sp-4);
+  color: var(--meta-on-glass);
+  padding: var(--sp-12) var(--sp-10) var(--sp-4);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  user-select: none;
 }
 
 .app-sidebar.is-collapsed .nav-group-title {
@@ -443,27 +574,36 @@ html.is-log-focus .mobile-tabbar {
   display: flex;
   align-items: center;
   gap: var(--sp-10);
-  padding: var(--sp-9) var(--sp-12);
-  margin: var(--sp-2) var(--sp-4);
-  border-radius: var(--radius-sm);
-  color: var(--fg-2);
+  padding: var(--sp-8) var(--sp-10);
+  margin: var(--sp-1) var(--sp-4);
+  /* iOS 26 连续曲率胶囊：9px 比 --radius-sm 紧一档，比 --radius-md 松，不参与缩放 */
+  border-radius: var(--radius-nav);
+  color: var(--fg);
   cursor: pointer;
   text-decoration: none;
   font-size: var(--fs-13);
   font-weight: 500;
   border: 1px solid var(--color-transparent);
-  backdrop-filter: blur(var(--sp-8));
-  -webkit-backdrop-filter: blur(var(--sp-8));
-  transition: all var(--duration-fast) var(--ease-apple);
+  transition: background-color var(--duration-fast) var(--ease-apple), color var(--duration-fast) var(--ease-apple),
+    border-color var(--duration-fast) var(--ease-apple), transform var(--duration-fast) var(--ease-apple),
+    box-shadow var(--duration-fast) var(--ease-apple);
   background: var(--color-transparent);
   text-align: left;
 }
 
+/* 悬停态：环境微漫射光斑胶囊 */
 .nav-item:hover:not(.active) {
   background: var(--nav-hover) !important;
   border-color: var(--nav-hover-edge) !important;
   color: var(--fg) !important;
   box-shadow: var(--nav-hover-shadow) !important;
+  transform: translateY(-0.5px);
+}
+
+/* 按压瞬态：流体压缩阻尼 */
+.nav-item:active:not(.active) {
+  background: var(--nav-press-fill) !important;
+  transform: scale(0.97);
 }
 
 /* 液态玻璃菜单胶囊 */
@@ -473,6 +613,12 @@ html.is-log-focus .mobile-tabbar {
   border: 1px solid var(--nav-active-edge) !important;
   box-shadow: var(--nav-active-shadow) !important;
   font-weight: 600 !important;
+  transform: translateY(-0.5px);
+}
+
+/* 当前页也被按压时同样回缩，否则选中项看起来是块死玻璃 */
+.nav-item.active:active {
+  transform: scale(0.97);
 }
 
 .nav-item-label {
@@ -491,9 +637,14 @@ html.is-log-focus .mobile-tabbar {
   color: var(--color-white-solid);
 }
 
+/* 折叠态：正方形液态透镜图标胶囊，44×44 舒适判定 */
 .app-sidebar.is-collapsed .nav-item {
   justify-content: center;
-  padding: var(--sp-10) 0;
+  width: var(--sp-44);
+  height: var(--sp-44);
+  margin: var(--sp-3) auto;
+  padding: 0;
+  border-radius: var(--radius-nav-rail);
 }
 
 .app-sidebar.is-collapsed .nav-item-label,
@@ -502,13 +653,13 @@ html.is-log-focus .mobile-tabbar {
 }
 
 .sidebar-footer {
-  padding: var(--sp-12) var(--sp-14);
-  border-top: 1px solid var(--border-soft);
+  padding: var(--sp-11) var(--sp-14);
+  border-top: 1px solid var(--sidebar-footer-edge);
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: var(--fs-12);
-  color: var(--meta);
+  color: var(--meta-on-glass);
 }
 
 .runtime-indicator {
@@ -597,7 +748,8 @@ html.is-log-focus .mobile-tabbar {
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--tabbar-height);
+  /* 融合动态高度与底部安全区，防止 Home Bar 遮挡选项 */
+  height: calc(var(--tabbar-height) + env(safe-area-inset-bottom, 0px));
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -623,7 +775,7 @@ html.is-log-focus .mobile-tabbar {
   gap: var(--sp-2);
   flex: 1;
   height: 100%;
-  color: var(--meta);
+  color: var(--meta-on-glass);
   cursor: pointer;
   text-decoration: none;
   border-radius: var(--radius-sm);
@@ -636,6 +788,12 @@ html.is-log-focus .mobile-tabbar {
 .tabbar-item:hover:not(.active) {
   color: var(--fg);
   background: var(--color-black-alpha-050);
+}
+
+/* iOS 26 TabBar 流体按压弹性反馈 */
+.tabbar-item:active {
+  transform: scale(0.93);
+  transition-duration: 70ms;
 }
 
 html.dark .tabbar-item:hover:not(.active) {
@@ -662,8 +820,8 @@ html.dark .tabbar-item:hover:not(.active) {
   position: absolute;
   inset: 0;
   background: var(--overlay-fill);
-  backdrop-filter: blur(var(--sp-4));
-  -webkit-backdrop-filter: blur(var(--sp-4));
+  backdrop-filter: var(--drawer-scrim-blur);
+  -webkit-backdrop-filter: var(--drawer-scrim-blur);
   z-index: 38;
   opacity: 0;
   transition: opacity var(--duration-base) var(--ease-apple);
@@ -788,6 +946,8 @@ html.dark .tabbar-item:hover:not(.active) {
 @media (max-width: 1023px) {
   .app-sidebar {
     width: var(--sidebar-rail-width);
+    /* 图标轨上展开的是浮层而不是宽度，所以这里改投影而不是沿用 transform 过渡 */
+    transition: width var(--duration-base) var(--ease-apple), box-shadow var(--duration-base) var(--ease-apple);
   }
   .app-sidebar .nav-group-title,
   .app-sidebar .nav-item-label,
@@ -797,7 +957,48 @@ html.dark .tabbar-item:hover:not(.active) {
   }
   .app-sidebar .nav-item {
     justify-content: center;
+    width: var(--sp-44);
+    height: var(--sp-44);
+    margin: var(--sp-3) auto;
+    padding: 0;
+    border-radius: var(--radius-nav-rail);
+  }
+  .app-sidebar .sidebar-footer {
+    justify-content: center;
     padding: var(--sp-10) 0;
+  }
+
+  /* 平板浮起展开：图标轨平时 70px，点开侧栏铺满 232px 并压遮罩。
+     旧实现只切 is-collapsed（68px），比这里的 70px 规则特异度更高，点了等于没点。 */
+  .app-sidebar.tablet-open,
+  .app-sidebar.mobile-open {
+    width: calc(232px * var(--ui-scale));
+    box-shadow: var(--sp-4) 0 var(--sp-24) var(--color-black-alpha-120);
+    z-index: 50;
+  }
+  html.dark .app-sidebar.tablet-open,
+  html.dark .app-sidebar.mobile-open {
+    box-shadow: var(--sp-4) 0 var(--sp-24) var(--color-black-alpha-380);
+  }
+  .app-sidebar.tablet-open .nav-group-title,
+  .app-sidebar.tablet-open .nav-item-badge,
+  .app-sidebar.tablet-open .runtime-text {
+    display: block;
+  }
+  .app-sidebar.tablet-open .nav-item-label {
+    display: inline;
+  }
+  .app-sidebar.tablet-open .sidebar-footer {
+    justify-content: space-between;
+    padding: var(--sp-11) var(--sp-14);
+  }
+  .app-sidebar.tablet-open .nav-item {
+    justify-content: flex-start;
+    width: auto;
+    height: auto;
+    margin: var(--sp-1) var(--sp-4);
+    padding: var(--sp-8) var(--sp-10);
+    border-radius: var(--radius-nav);
   }
 }
 
@@ -812,6 +1013,10 @@ html.dark .tabbar-item:hover:not(.active) {
     transform: translateX(-100%);
     box-shadow: var(--sp-4) 0 var(--sp-24) var(--color-black-alpha-150);
     z-index: 50;
+    /* 抽屉浮在内容之上，玻璃要比常驻侧栏更实，否则列表文字会和页面糊在一起 */
+    background: var(--sidebar-drawer-fill);
+    backdrop-filter: var(--sidebar-drawer-blur);
+    -webkit-backdrop-filter: var(--sidebar-drawer-blur);
   }
   .app-sidebar.mobile-open {
     transform: translateX(0);
@@ -824,15 +1029,44 @@ html.dark .tabbar-item:hover:not(.active) {
   .app-sidebar.mobile-open .nav-item-label {
     display: inline;
   }
+  .app-sidebar.mobile-open .sidebar-footer {
+    justify-content: space-between;
+    padding: var(--sp-11) var(--sp-14);
+  }
   .app-sidebar.mobile-open .nav-item {
     justify-content: flex-start;
-    padding: var(--sp-10) var(--sp-14);
+    width: auto;
+    height: auto;
+    margin: var(--sp-2) var(--sp-10);
+    padding: var(--sp-9) var(--sp-12);
+    border-radius: var(--radius-nav);
   }
   .mobile-tabbar {
     display: block;
   }
+  /* iOS 26 最小 44x44px 触控垫片扩充：避免窄屏误触 */
+  .action-icon-btn,
+  .sidebar-toggle-btn {
+    position: relative;
+  }
+  .action-icon-btn::before,
+  .sidebar-toggle-btn::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 44px;
+    min-height: 44px;
+    width: 100%;
+    height: 100%;
+  }
+  /* 融合动态横向刘海/灵动岛与纵向 Home Bar 的 Safe Area 安全边距 */
   .app-main-viewport {
-    padding: var(--sp-16) var(--sp-14) calc(var(--tabbar-height) + var(--sp-20));
+    padding-top: max(var(--sp-16), env(safe-area-inset-top, 0px));
+    padding-left: max(var(--sp-14), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--sp-14), env(safe-area-inset-right, 0px));
+    padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom, 0px) + var(--sp-20));
   }
   .topbar-sub-title {
     display: none;

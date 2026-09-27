@@ -128,8 +128,8 @@ export type UpdateCheckResult = {
   sha256?: string
   /** SHA256 校验值来源 */
   sha256Source?: 'github_digest' | 'sha256_asset'
-  /** 跳过原因 */
-  skipReason?: 'offline' | 'disabled' | 'rate_limited'
+  /** 跳过原因（后端只会产生 offline / rate_limited） */
+  skipReason?: 'offline' | 'rate_limited'
   /** 错误原因（内部错误码） */
   errorReason?: string
   /** 检查时间（ISO 8601 格式） */
@@ -337,7 +337,7 @@ export type UpdateStatus = {
 
 /**
  * Go 后端 API 绑定类型
- * 对应 app/api.go 中注册的方法
+ * 对应 app/service.go 中 app.API 暴露的方法（main.go 注册给 Wails 的 service receiver）
  */
 export type ServiceBinding = {
   /** 获取应用信息 */
@@ -735,15 +735,6 @@ export async function scheduleDownloadedUpdateOnStartup(): Promise<UpdateStatus>
 // ============================================================================
 // 日志 API
 // ============================================================================
-
-/** 获取所有日志 */
-export async function listLogs(): Promise<LogEntry[]> {
-  try {
-    return await binding('ListLogs')()
-  } catch (error) {
-    return previewFallback(() => [], error)
-  }
-}
 
 /** 列出每日日志文件 */
 export async function listLogFiles(): Promise<LogFileInfo[]> {

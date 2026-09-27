@@ -116,20 +116,9 @@ func (s *Runtime) ShouldHideOnClose() bool {
 	return s.settings.MinimizeToTray && !s.forceQuit
 }
 
-// RecordSecondInstance 记录第二实例启动请求，最多保留最近 20 条。
+// RecordSecondInstance 记录第二实例启动请求的诊断日志。
 // 第二实例来自桌面快捷方式时，也会写入启动来源日志。
-func (s *Runtime) RecordSecondInstance(args []string, workingDir string) {
-	record := SecondInstanceRecord{
-		Args:       append([]string(nil), args...),
-		WorkingDir: workingDir,
-		ReceivedAt: time.Now().UTC().Format(time.RFC3339),
-	}
-	s.lock.Lock()
-	s.secondStart = append([]SecondInstanceRecord{record}, s.secondStart...)
-	if len(s.secondStart) > 20 {
-		s.secondStart = s.secondStart[:20]
-	}
-	s.lock.Unlock()
+func (s *Runtime) RecordSecondInstance(args []string) {
 	s.RecordLog("single-instance", "收到第二实例启动请求")
 	s.recordStartupLaunch(ParseStartupLaunch(args), "：第二实例")
 }
@@ -146,22 +135,6 @@ func (s *Runtime) recordStartupLaunch(launch StartupLaunch, suffix string) {
 	message := "桌面快捷图标启动" + suffix
 	s.recordCrashBreadcrumb("startup", "%s", message)
 	s.RecordLog("startup", message)
-}
-
-// GetSecondInstanceRecords API 方法，获取第二实例记录。
-func (api *API) GetSecondInstanceRecords() (records []SecondInstanceRecord, err error) {
-	defer api.recoverError("读取第二实例记录", &err)
-	if err := api.requireAuthorized(); err != nil {
-		return nil, err
-	}
-	return api.runtime.GetSecondInstanceRecords(), nil
-}
-
-// GetSecondInstanceRecords 返回第二实例记录快照，调用方修改返回切片不会影响 Runtime 内部状态。
-func (s *Runtime) GetSecondInstanceRecords() []SecondInstanceRecord {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-	return append([]SecondInstanceRecord(nil), s.secondStart...)
 }
 
 // ParseExitRequest 解析命令行退出请求。

@@ -335,27 +335,3 @@ func TestSaveSettingsReturnsErrorWhenConfigStoreUnavailable(t *testing.T) {
 		t.Fatalf("expected config store unavailable error, got %v", err)
 	}
 }
-
-// TestRecordSecondInstanceStoresCopyAndCapsHistory 验证第二实例参数会复制保存，并限制历史数量避免无界增长。
-func TestRecordSecondInstanceStoresCopyAndCapsHistory(t *testing.T) {
-	runtimeService := app.NewRuntime(app.ServiceOptions{})
-	args := []string{"go-desktop.exe", "--installer-exit"}
-	runtimeService.RecordSecondInstance(args, `C:\work`)
-	args[1] = "--mutated"
-
-	records := runtimeService.GetSecondInstanceRecords()
-	if len(records) != 1 {
-		t.Fatalf("expected one second instance record, got %#v", records)
-	}
-	if records[0].Args[1] != "--installer-exit" || records[0].WorkingDir != `C:\work` {
-		t.Fatalf("expected copied second instance data, got %#v", records[0])
-	}
-
-	for i := 0; i < 25; i++ {
-		runtimeService.RecordSecondInstance([]string{"go-desktop.exe"}, "")
-	}
-	records = runtimeService.GetSecondInstanceRecords()
-	if len(records) != 20 {
-		t.Fatalf("expected second instance history to be capped at 20, got %d", len(records))
-	}
-}

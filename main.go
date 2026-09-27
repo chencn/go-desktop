@@ -124,15 +124,13 @@ func main() {
 			UniqueID: metadata.WindowsSingleInstanceID,
 			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
 				defer appRuntime.RecoverPanic("第二实例启动回调")
-				appRuntime.RecordSecondInstance(data.Args, data.WorkingDir)
+				// 前端不消费第二实例事件和记录，这里只保留诊断日志和退出/聚焦行为。
+				appRuntime.RecordSecondInstance(data.Args)
 				if desktopapp.ParseExitRequest(data.Args).Present {
 					appRuntime.QuitApp()
 					return
 				}
 				appRuntime.ShowMainWindow()
-				if mainWindow != nil {
-					mainWindow.EmitEvent("desktop:second-instance", data)
-				}
 			},
 		},
 		Windows: application.WindowsOptions{

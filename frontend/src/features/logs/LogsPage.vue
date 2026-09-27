@@ -453,6 +453,7 @@ function formatLogFileOption(file: { date: string; fileName: string; current: bo
           class="apple-table"
           :data="displayedLogs"
           height="100%"
+          stripe
           aria-label="应用日志"
           :empty-text="logLayoutReady ? emptyLogsText : ''"
         >

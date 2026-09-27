@@ -9,8 +9,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 )
+
+// allowedCommands 是 envrun 允许转发的构建工具白名单。
+// 包装器的职责是给已知构建工具注入 Windows 环境默认值，不是通用 shell 入口；
+// 新增构建工具时在这里登记。
+var allowedCommands = []string{"go", "npm", "npx", "wails3"}
 
 // main 保留子命令的 stdin/stdout/stderr，并把子命令退出码透传给调用方。
 // Windows 上无扩展名命令会优先解析为 .cmd，兼容 npm、wails3 等 shim。
@@ -21,6 +27,11 @@ func main() {
 	}
 
 	command := os.Args[1]
+	base := strings.ToLower(filepath.Base(command))
+	if !slices.Contains(allowedCommands, base) {
+		fmt.Fprintf(os.Stderr, "envrun 只允许执行构建工具 %s，收到：%q\n", strings.Join(allowedCommands, ", "), command)
+		os.Exit(2)
+	}
 	if runtime.GOOS == "windows" && filepath.Ext(command) == "" {
 		if path, err := exec.LookPath(command + ".cmd"); err == nil {
 			command = path
