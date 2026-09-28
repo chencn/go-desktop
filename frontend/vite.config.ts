@@ -1,4 +1,4 @@
-// 文件职责：配置 Vue、Tailwind、Element Plus 按需注册、Wails 绑定目录和源码路径别名。
+// 文件职责：配置 Vue、Tailwind、Element Plus 按需注册、Wails 绑定目录、浏览器预览的 /api 代理和源码路径别名。
 
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
@@ -16,6 +16,10 @@ const srcRoot = new URL("./src", import.meta.url).pathname
   .replace(/^\/([A-Za-z]:\/)/, "$1")
   .replace(/\\/g, "/");
 
+// 本地仅跑 Vite（或 wails3 dev 的浏览器预览）时指向本地 /api 门面：go run ./scripts/envrun go run ./scripts/devapi
+// 不设置时保持原有兜底行为，原生窗口与生产包由 Wails 绑定直连后端，不需要代理。
+const localApiURL = process.env.GO_DESKTOP_LOCAL_API_URL;
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -32,6 +36,14 @@ export default defineConfig({
   },
   server: {
     host: "127.0.0.1",
+    proxy: localApiURL
+      ? {
+          "/api": {
+            target: localApiURL,
+            changeOrigin: true,
+          },
+        }
+      : undefined,
   },
   build: {
     // 桌面端本地内嵌静态资源，放宽 Web 默认的 500 kB 警报阈值至 1000 kB

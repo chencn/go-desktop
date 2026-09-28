@@ -6,15 +6,17 @@
  * 功能概述:
  * - 定义所有后端 API 的 TypeScript 类型和接口
  * - 封装 Wails 绑定调用，提供类型安全的异步函数
+ * - 本地 Vite 浏览器预览（无原生桥）优先打真后端：走 ./http 的 /api 门面
  * - 支持显式前端预览模式（VITE_PREVIEW=true 时提供 fallback 数据）
  *
  * 架构说明:
  * - 通过 Wails 的代码生成绑定（bindings/ 目录）调用 Go 后端方法
- * - 读取类 API 可在显式预览模式降级；保存类调用必须抛错，避免假保存成功
+ * - 读取类 API 可在显式 preview 或门面缺失时降级；保存类调用必须抛错，避免假保存成功
  * ============================================================================
  */
 
 import * as AppBinding from '../../bindings/github.com/chencn/go-desktop/app'
+import { callLocalApi, LocalApiRejectedError, localApiLooksAvailable } from './http'
 import { defaultSettings, projectMetadata } from '../shared/project'
 
 // ============================================================================
@@ -441,7 +443,32 @@ function binding<K extends keyof ServiceBinding>(method: K): NonNullable<Service
   return value as NonNullable<ServiceBinding[K]>
 }
 
+type MethodName = keyof ServiceBinding
+type MethodArgs<K extends MethodName> = Parameters<NonNullable<ServiceBinding[K]>>
+type MethodResult<K extends MethodName> = Awaited<ReturnType<NonNullable<ServiceBinding[K]>>>
+
+// 浏览器预览里调用本地 /api 门面：devapi 未启动时它会被 Vite 的 SPA fallback 兜住，
+// 由 ./http 判定为不可达并回落到原有兜底；显式 preview 模式保持纯假数据、不发请求。
+function shouldTryLocalApi() {
+  return !isExplicitPreview() && isLocalViteBrowserDev() && localApiLooksAvailable()
+}
+
+/** 调用一个后端方法：本地门面优先，其次 Wails 绑定。 */
+async function invoke<K extends MethodName>(method: K, ...args: MethodArgs<K>): Promise<MethodResult<K>> {
+  if (shouldTryLocalApi()) {
+    try {
+      return await callLocalApi<MethodResult<K>>(String(method), args)
+    } catch (error) {
+      // 后端已经应答的失败要继续向上抛，不能让兜底数据盖掉真实错误。
+      if (error instanceof LocalApiRejectedError) throw error
+    }
+  }
+  return (binding(method) as unknown as (...values: MethodArgs<K>) => Promise<MethodResult<K>>)(...args)
+}
+
 function shouldUsePreviewFallback(error: unknown) {
+  // 门面已把后端的失败原样返回：这是真实错误，不能用兜底数据替换。
+  if (error instanceof LocalApiRejectedError) return false
   if (isExplicitPreview() && error instanceof WailsBindingUnavailableError) return true
   return isLocalViteBrowserDev() && isWailsUnavailableError(error)
 }
@@ -454,6 +481,7 @@ function isWailsUnavailableError(error: unknown) {
 
 // 显示偏好在 dev 浏览器预览中允许落到 localStorage，便于不连接 Wails 时调试主题。
 function shouldUseDisplayPreferencesPreviewStore(error: unknown) {
+  if (error instanceof LocalApiRejectedError) return false
   if (shouldUsePreviewFallback(error)) return true
   if (!import.meta.env.DEV) return false
   return isWailsUnavailableError(error)
@@ -536,7 +564,7 @@ function savePreviewDisplayPreferences(preferences: DisplayPreferences): Display
 /** 获取应用信息（名称、版本、描述等） */
 export async function getAppInfo(): Promise<AppInfo> {
   try {
-    return await binding('GetAppInfo')()
+    return await invoke('GetAppInfo')
   } catch (error) {
     return previewFallback(() => ({
       name: projectMetadata.appName,
@@ -551,7 +579,7 @@ export async function getAppInfo(): Promise<AppInfo> {
 /** 获取运行环境信息（操作系统、架构、Go 版本等） */
 export async function getEnvironmentInfo(): Promise<EnvironmentInfo> {
   try {
-    return await binding('GetEnvironmentInfo')()
+    return await invoke('GetEnvironmentInfo')
   } catch (error) {
     return previewFallback(() => ({
       os: navigator.platform || 'browser',
@@ -571,7 +599,7 @@ export async function getEnvironmentInfo(): Promise<EnvironmentInfo> {
 /** 获取当前授权状态 */
 export async function getLicenseStatus(): Promise<LicenseStatus> {
   try {
-    return await binding('GetLicenseStatus')()
+    return await invoke('GetLicenseStatus')
   } catch (error) {
     return previewFallback(() => ({ ...defaultLicenseStatus }), error)
   }
@@ -580,7 +608,7 @@ export async function getLicenseStatus(): Promise<LicenseStatus> {
 /** 激活授权码；预览模式下必须失败，避免误以为已写入授权。 */
 export async function activateLicense(licenseKey: string): Promise<LicenseStatus> {
   try {
-    return await binding('ActivateLicense')(licenseKey)
+    return await invoke('ActivateLicense', licenseKey)
   } catch (error) {
     throwSaveError('激活授权', error)
   }
@@ -594,7 +622,7 @@ export async function activateLicense(licenseKey: string): Promise<LicenseStatus
 export async function getSettings(): Promise<Settings> {
   traceFrontend('getSettings：前端开始调用后端绑定')
   try {
-    const settings = await binding('GetSettings')()
+    const settings = await invoke('GetSettings')
     traceFrontend('getSettings：前端收到后端返回', settings)
     return settings
   } catch (error) {
@@ -607,7 +635,7 @@ export async function getSettings(): Promise<Settings> {
 export async function saveSettings(settings: Settings): Promise<Settings> {
   traceFrontend('saveSettings：前端开始调用后端绑定', settings)
   try {
-    const saved = await binding('SaveSettings')(settings)
+    const saved = await invoke('SaveSettings', settings)
     traceFrontend('saveSettings：前端收到后端返回', saved)
     return saved
   } catch (error) {
@@ -620,7 +648,7 @@ export async function saveSettings(settings: Settings): Promise<Settings> {
 export async function getDisplayPreferences(): Promise<DisplayPreferences> {
   traceFrontend('getDisplayPreferences：前端开始调用后端绑定')
   try {
-    const preferences = await binding('GetDisplayPreferences')()
+    const preferences = await invoke('GetDisplayPreferences')
     traceFrontend('getDisplayPreferences：前端收到后端返回', preferences)
     return preferences
   } catch (error) {
@@ -636,7 +664,7 @@ export async function getDisplayPreferences(): Promise<DisplayPreferences> {
 export async function saveDisplayPreferences(preferences: DisplayPreferences): Promise<DisplayPreferences> {
   traceFrontend('saveDisplayPreferences：前端开始调用后端绑定', preferences)
   try {
-    const saved = await binding('SaveDisplayPreferences')(preferences)
+    const saved = await invoke('SaveDisplayPreferences', preferences)
     traceFrontend('saveDisplayPreferences：前端收到后端返回', saved)
     return saved
   } catch (error) {
@@ -655,7 +683,7 @@ export async function saveDisplayPreferences(preferences: DisplayPreferences): P
 /** 检查更新 */
 export async function checkUpdate(): Promise<UpdateCheckResult> {
   try {
-    return await binding('CheckUpdate')()
+    return await invoke('CheckUpdate')
   } catch (error) {
     return previewFallback(() => ({
       source: defaultRuntimeSettings.updateSource,
@@ -673,7 +701,7 @@ export async function checkUpdate(): Promise<UpdateCheckResult> {
 /** 获取当前更新状态 */
 export async function getUpdateStatus(): Promise<UpdateStatus> {
   try {
-    return await binding('GetUpdateStatus')()
+    return await invoke('GetUpdateStatus')
   } catch (error) {
     return previewFallback(() => ({
       status: 'idle',
@@ -688,7 +716,7 @@ export async function getUpdateStatus(): Promise<UpdateStatus> {
 /** 下载最新更新安装包 */
 export async function downloadUpdate(): Promise<UpdateStatus> {
   try {
-    return await binding('DownloadUpdate')()
+    return await invoke('DownloadUpdate')
   } catch (error) {
     return previewFallback(() => ({
       status: 'skipped',
@@ -704,7 +732,7 @@ export async function downloadUpdate(): Promise<UpdateStatus> {
 /** 安装已下载的更新 */
 export async function installDownloadedUpdate(): Promise<UpdateStatus> {
   try {
-    return await binding('InstallDownloadedUpdate')()
+    return await invoke('InstallDownloadedUpdate')
   } catch (error) {
     return previewFallback(() => ({
       status: 'error',
@@ -720,7 +748,7 @@ export async function installDownloadedUpdate(): Promise<UpdateStatus> {
 /** 将已下载并校验通过的更新安排到下次启动安装 */
 export async function scheduleDownloadedUpdateOnStartup(): Promise<UpdateStatus> {
   try {
-    return await binding('ScheduleDownloadedUpdateOnStartup')()
+    return await invoke('ScheduleDownloadedUpdateOnStartup')
   } catch (error) {
     return previewFallback(() => ({
       status: 'pending_install',
@@ -739,7 +767,7 @@ export async function scheduleDownloadedUpdateOnStartup(): Promise<UpdateStatus>
 /** 列出每日日志文件 */
 export async function listLogFiles(): Promise<LogFileInfo[]> {
   try {
-    return await binding('ListLogFiles')()
+    return await invoke('ListLogFiles')
   } catch (error) {
     return previewFallback(() => [], error)
   }
@@ -748,7 +776,7 @@ export async function listLogFiles(): Promise<LogFileInfo[]> {
 /** 分页查询日志 */
 export async function queryLogs(query: LogQuery): Promise<LogResponse> {
   try {
-    return await binding('QueryLogs')(query)
+    return await invoke('QueryLogs', query)
   } catch (error) {
     return previewFallback(
       () => ({
@@ -770,7 +798,7 @@ export async function queryLogs(query: LogQuery): Promise<LogResponse> {
 /** 清空指定作用域的日志 */
 export async function clearLogs(scope: string): Promise<boolean> {
   try {
-    return await binding('ClearLogs')(scope)
+    return await invoke('ClearLogs', scope)
   } catch (error) {
     return previewFallback(() => true, error)
   }
@@ -783,7 +811,7 @@ export async function clearLogs(scope: string): Promise<boolean> {
 /** 退出应用 */
 export async function quitApp() {
   try {
-    await binding('QuitApp')()
+    await invoke('QuitApp')
   } catch (error) {
     await previewFallback(() => undefined, error)
   }
@@ -792,7 +820,7 @@ export async function quitApp() {
 /** 通知后端显示主窗口，前端初始化完成后调用 */
 export async function showMainWindow() {
   try {
-    await binding('ShowMainWindow')()
+    await invoke('ShowMainWindow')
   } catch (error) {
     await previewFallback(() => undefined, error)
   }

@@ -510,7 +510,7 @@ func TestFrontendInitialiseShowsMainWindowAfterLoading(t *testing.T) {
 	}
 	for _, required := range []string{
 		"export async function showMainWindow()",
-		"binding('ShowMainWindow')",
+		"invoke('ShowMainWindow')",
 	} {
 		if !strings.Contains(wailsAPI, required) {
 			t.Fatalf("frontend/src/api/wails.ts 必须封装 ShowMainWindow 绑定：缺少 %q", required)

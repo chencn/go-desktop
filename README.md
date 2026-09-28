@@ -87,6 +87,25 @@ npm run build
 
 前端构建入口；日常优先使用 Wails Taskfile 包装命令。`frontend/src/components.d.ts` 由 `unplugin-vue-components` 在 vite 运行时生成且不入库，所以新克隆要先跑一次 `npm install && npm run build`（或 `npm run dev`）才能做 `vue-tsc` 类型检查。
 
+## 浏览器预览（本地 /api 门面）
+
+原生窗口里的前端通过 Wails 注入的原生桥调用 `app.API`，浏览器里没有这座桥，只能落到 `frontend/src/api/wails.ts` 的假数据兜底。`scripts/devapi` 新建一个 Runtime，把同一套 `app.API` 方法挂到 `127.0.0.1` 的 `/api`，因此浏览器里点到的设置、日志、更新状态都是真后端行为，而不是写死的样例。
+
+数据目录默认是启动目录下的 `.tmp/devapi`（配置库、每日日志、更新缓存），预览期间改过的设置跨次启动保留；要看已安装应用的那份数据，加 `-data-dir` 指向它的 `data` 目录。
+
+```powershell
+# 终端 1：启动本地门面（仅监听回环地址）
+go run ./scripts/envrun go run ./scripts/devapi
+
+# 终端 2：让 Vite 把 /api 代理过去
+$env:GO_DESKTOP_LOCAL_API_URL = "http://127.0.0.1:8081"
+go run ./scripts/envrun wails3 task dev
+```
+
+浏览器打开 Vite 地址后，`src/api/http.ts` 会优先调用 `/api/<Method>`；门面没有启动时自动回落到原有兜底，行为与之前一致。生产构建和原生窗口链路完全不经过门面，前端也继续走 Wails 绑定。
+
+默认端口用 8081 而不是 8080，避免和 gyt-treatment 的同名 `devapi` 撞车；两个门面需要同时开着。端口冲突时用 `-addr` 换一个，并同步 `GO_DESKTOP_LOCAL_API_URL`。
+
 ## 前端入口
 
 主页面：
