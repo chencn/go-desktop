@@ -295,3 +295,18 @@ html.dark[data-lg-style="sheen"] .stat-card.lg .lg-sheen {
   background: linear-gradient(135deg, var(--color-white-alpha-180) 0%, var(--color-white-alpha-040) 40%,
     var(--color-transparent) 70%);
 }
+
+/* 业务玻璃表面（本项目是 Toast 药丸与移动端底部页签）只消费 --glass-blur 这一条光学令牌，三档折射风格必须同时改写它，
+   否则在没有 .lg 三层卡片的页面上，设置页的「液态玻璃折射风格」没有任何可见对象。
+   半径口径与 styles.css 的 --glass-blur 一致：默认系数 0.75 恰好回到设计稿的 28px；暗色不换 blur，故无需 .dark 分支。 */
+html[data-lg-style="fresnel"] {
+  --glass-blur: blur(calc(28px * var(--lg-intensity-factor, 0.75) / 0.75)) saturate(190%) contrast(102%);
+}
+
+html[data-lg-style="frosted"] {
+  --glass-blur: blur(calc(34px * var(--lg-intensity-factor, 0.75) / 0.75)) saturate(205%) contrast(100%);
+}
+
+html[data-lg-style="sheen"] {
+  --glass-blur: blur(calc(20px * var(--lg-intensity-factor, 0.75) / 0.75)) saturate(215%) contrast(106%);
+}

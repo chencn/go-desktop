@@ -15,7 +15,10 @@
   align-items: center;
   justify-content: center;
   gap: var(--sp-6);
-  height: auto;
+  /* 高度锁到 --control-height：写 auto 时按钮由内容撑出来，同一行里带 14px 图标、15px 图标
+     或纯文字会各差零点几 px，而且整体不随 --ui-scale 缩放，与旁边 input / select 的
+     --control-height 对不齐。紧凑档与等宽按钮行在下面自行退回内容高度。 */
+  height: var(--control-height);
   padding: var(--sp-7) var(--sp-15);
   border-radius: var(--radius-sm);
   font-family: var(--font-body);
@@ -120,6 +123,7 @@
 
 /* 紧凑档：分组标题右侧的「恢复默认」等次级操作（设计稿行内 font-size 12 / padding 4 10） */
 .el-button.btn-apple.is-compact {
+  height: auto;
   padding: var(--sp-4) var(--sp-10);
   font-size: var(--fs-12);
 }
@@ -127,6 +131,7 @@
 /* 警告弹窗的等宽按钮行：设计稿 .alert-actions-row button */
 .el-button.btn-apple.is-alert-action {
   flex: 1;
+  height: auto;
   justify-content: center;
   padding: var(--sp-9) var(--sp-16);
   font-size: var(--fs-14);
@@ -390,6 +395,9 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button .el-radio-button__inn
   justify-content: space-between;
   gap: var(--sp-8);
   min-width: var(--sp-140);
+  /* EP 给 .el-select__wrapper 写了不带 --ui-scale 的 min-height: 32px，只改 height 压不住它：
+     紧凑档 control-height 低于 32，选择框会比同一行的输入框高出一截。这条兜底归皮肤负责。 */
+  min-height: var(--control-height);
   height: var(--control-height);
   padding: 0 var(--sp-10) 0 var(--sp-12);
   border-radius: var(--radius-sm);
@@ -538,6 +546,15 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button .el-radio-button__inn
 /* ==========================================================================
    6. 输入框（设计稿 .log-command-search input / .el-select-apple 输入态）
    ========================================================================== */
+
+/* styles.css 的 :where(button, input, select, textarea, a):focus-visible 会给「可输入元素」画 2px 环，
+   而 Chromium 里文本类控件无论鼠标点还是 Tab 进来都恒定命中 :focus-visible。EP 的可见表面是 wrapper，
+   裸 input / textarea 只是里面那层文字盒，环留在它身上就是「圆角盒里再套一对方角框」——文本框一点就乱。
+   聚焦反馈一律交还给表面，由下面的 .is-focus / :focus 规则来画。 */
+:where(.el-input__inner, .el-textarea__inner, .el-radio-button__original-radio, .el-switch__input):focus-visible {
+  outline: none;
+}
+
 .el-input.apple-field {
   width: var(--apple-field-width, 100%);
 }
@@ -613,24 +630,36 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button .el-radio-button__inn
   box-shadow: none;
 }
 
-/* 设计稿 .license-textarea：多行授权码走等宽 13px、10/12 内衬、聚焦主色光晕 */
-.el-textarea.apple-field.is-mono .el-textarea__inner {
+/* 多行框表面归所有 .el-textarea.apple-field（设计稿 .license-textarea）：
+   只挂 is-mono 才生效会让不带该修饰的多行框整块退回 EP 默认灰盒，与同页的单行框差一档。
+   is-mono 只负责换等宽字号，不再顺带决定边框、内衬与聚焦反馈。 */
+.el-textarea.apple-field .el-textarea__inner {
   padding: var(--sp-10) var(--sp-12);
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 1px solid var(--input-edge);
+  background: var(--input-fill);
   color: var(--fg);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: var(--fs-13);
   line-height: normal;
-  box-shadow: none;
+  box-shadow: var(--input-inset);
   resize: vertical;
   transition: all var(--duration-fast) var(--ease-apple);
 }
 
-.el-textarea.apple-field.is-mono .el-textarea__inner:focus {
+.el-textarea.apple-field.is-mono .el-textarea__inner {
+  font-family: var(--font-mono);
+}
+
+.el-textarea.apple-field .el-textarea__inner:hover {
+  border-color: var(--input-edge-hover);
+  background: var(--input-fill-hover);
+}
+
+.el-textarea.apple-field .el-textarea__inner:focus {
   border-color: var(--accent);
-  box-shadow: var(--focus-halo);
+  background: var(--input-focus-fill);
+  box-shadow: var(--focus-halo), var(--input-focus-inset);
 }
 
 @media (max-width: 767px) {
@@ -674,13 +703,16 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button .el-radio-button__inn
   padding: var(--sp-10) 0;
   border-bottom: 0.5px solid var(--border-soft);
   color: var(--fg);
-  white-space: nowrap;
 }
 
 .el-table.apple-table .cell {
   padding: 0 var(--sp-16);
   line-height: normal;
   font-weight: 400;
+  /* nowrap 必须落在 .cell 上：EP 自己在 .el-table .cell 写了 white-space: normal，
+     声明在 td 上的 nowrap 传不进来（一换行整行行高就被顶起来）。
+     需要换行的单元格由页面在自己的 .cell 选择器上显式改回 normal。 */
+  white-space: nowrap;
 }
 
 /* 稿子给悬停底加了 !important：EP 的斑马行选择器比悬停更具体，不加会被偶数行底色压掉。 */
@@ -738,8 +770,13 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button .el-radio-button__inn
   font-weight: 600;
 }
 
+/* 禁用态有两种写法：翻页键是 :disabled 属性，而只有一页时页码是 .is-disabled 类
+   （EP 只给它换字色与底色，不换透明度），一并压暗才不会出现「看着还能点」的亮页码。 */
 .apple-pagination .btn-prev:disabled,
-.apple-pagination .btn-next:disabled {
+.apple-pagination .btn-prev.is-disabled,
+.apple-pagination .btn-next:disabled,
+.apple-pagination .btn-next.is-disabled,
+.apple-pagination .el-pager li.is-disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -966,15 +1003,15 @@ html.dark .segmented-control.is-tone-tabs .el-radio-button .el-radio-button__inn
     animation: sheet-slide-up var(--duration-base) var(--ease-apple) !important;
   }
 
-  /* iOS 26 标准手势拖拽指示条（Grabber Handle） */
+  /* iOS 26 标准手势拖拽指示条（Grabber Handle）：尺寸走 --sp-* 才随档位缩放；
+     灰色靠半透墨色混合出来，不许拿 --meta 当实底（前景墨色令牌铺块会画成哑光板）。 */
   .el-dialog.apple-dialog::before {
     content: "";
     display: block;
-    width: 36px;
-    height: 5px;
-    border-radius: 999px;
-    background: var(--meta);
-    opacity: 0.45;
+    width: var(--sp-36);
+    height: var(--sp-5);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--meta) 45%, var(--color-transparent));
     margin: var(--sp-10) auto var(--sp-4);
     flex-shrink: 0;
   }
