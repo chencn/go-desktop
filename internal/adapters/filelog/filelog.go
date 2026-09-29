@@ -158,9 +158,9 @@ func ListFiles(dir, appName, currentPath string) []FileInfo {
 		if err != nil {
 			continue
 		}
-		date, ok := dailyLogDate(appName, entry.Name())
+		date, ok := DailyLogDate(appName, entry.Name())
 		if !ok {
-			if !legacyLogFileName(appName, entry.Name()) {
+			if !LegacyLogFileName(appName, entry.Name()) {
 				continue
 			}
 			date = info.ModTime()
@@ -189,10 +189,10 @@ func SelectableName(appName, name string) bool {
 	if name == "" || name == "." {
 		return false
 	}
-	if _, ok := dailyLogDate(appName, name); ok {
+	if _, ok := DailyLogDate(appName, name); ok {
 		return true
 	}
-	return legacyLogFileName(appName, name)
+	return LegacyLogFileName(appName, name)
 }
 
 // Exists 判断路径是否存在且不是目录。
@@ -253,8 +253,9 @@ func parseLegacyTSVLogLine(line []byte) (Entry, bool) {
 	return entry, true
 }
 
-// dailyLogDate 解析 appName-YYYY-MM-DD.log 中的日期。
-func dailyLogDate(appName, name string) (time.Time, bool) {
+// DailyLogDate 解析 appName-YYYY-MM-DD.log 中的日期。
+// 导出给保留清理复用，避免 runtime 再写一份同名判断导致两边口径漂移。
+func DailyLogDate(appName, name string) (time.Time, bool) {
 	appName = strings.TrimSpace(appName)
 	if appName == "" {
 		appName = "go-desktop"
@@ -270,8 +271,8 @@ func dailyLogDate(appName, name string) (time.Time, bool) {
 	return parsed, err == nil
 }
 
-// legacyLogFileName 判断旧版 appName.log 文件名。
-func legacyLogFileName(appName, name string) bool {
+// LegacyLogFileName 判断旧版 appName.log 文件名。
+func LegacyLogFileName(appName, name string) bool {
 	appName = strings.TrimSpace(appName)
 	if appName == "" {
 		appName = "go-desktop"

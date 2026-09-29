@@ -52,7 +52,7 @@ type Runtime struct {
 	// logFilePattern 描述每日文件命名规则，便于环境信息展示和排查。
 	logFilePattern string
 
-	// logCleanupStop 停止启动期日志保留清理任务。
+	// logCleanupStop 停止常驻日志保留清理任务。
 	logCleanupStop context.CancelFunc
 
 	// crashReporter 最早期崩溃日志器

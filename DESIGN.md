@@ -90,7 +90,7 @@ Element Plus 通过 `unplugin-vue-components` + `ElementPlusResolver` 按需注�
 | `updateCheckIntervalHours` | `update.check_interval_hours` | `3` | 检查间隔，`1 / 3 / 6 / 12 小时` |
 | `minimizeToTray` | `window.minimize_to_tray` | `true` | 关闭到系统托盘 |
 | `alwaysOnTop` | `window.always_on_top` | `false` | 窗口显示时置顶 |
-| `logRetentionDays` | `log.retention_days` | `30` | `7 / 30 / 60 / 90 / 180 / 365 / 永不清理` |
+| `logRetentionDays` | `log.retention_days` | `30` | `7 / 30 / 90 / 365 / 永不清理`；运行期每小时清理一次，旧版单文件日志按修改时间判断 |
 | `logLevel` | `log.level` | `info` | `debug / info / warning / error` |
 | `autoLaunch` | `startup.auto_launch` | `false` | 开机自启 |
 | `createDesktopShortcut` | `startup.create_desktop_shortcut` | `true` | 创建桌面快捷图标 |

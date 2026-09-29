@@ -138,7 +138,7 @@ go run ./scripts/envrun wails3 task dev
 | `updateCheckIntervalHours` | `3` | 自动检查间隔，允许 `1 / 3 / 6 / 12` |
 | `minimizeToTray` | `true` | 点击关闭按钮时隐藏到托盘 |
 | `alwaysOnTop` | `false` | 窗口显示时保持置顶 |
-| `logRetentionDays` | `30` | 每日文件日志保留周期，`-1` 表示永不清理 |
+| `logRetentionDays` | `30` | 文件日志保留周期，`-1` 表示永不清理；运行期每小时清理一次，旧版单文件日志按修改时间判断 |
 | `logLevel` | `info` | 最小日志级别 |
 | `autoLaunch` | `false` | 开机自启 |
 | `createDesktopShortcut` | `true` | 创建桌面快捷图标 |
