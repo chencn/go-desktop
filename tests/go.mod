@@ -1,6 +1,6 @@
 module github.com/chencn/go-desktop/tests
 
-go 1.26.5
+go 1.27.3
 
 require github.com/chencn/go-desktop v0.0.0
 

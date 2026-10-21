@@ -1,6 +1,6 @@
 module github.com/chencn/go-desktop
 
-go 1.26.5
+go 1.27.3
 
 require (
 	github.com/go-ole/go-ole v1.3.0
