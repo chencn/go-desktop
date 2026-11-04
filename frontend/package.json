@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@lucide/vue": "^1.17.0",
-    "@wailsio/runtime": "^3.0.0-beta.20",
+    "@wailsio/runtime": "^3.1.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "element-plus": "^2.14.6",
