@@ -16,6 +16,7 @@ import (
 	"github.com/chencn/go-desktop/internal/adapters/filelog"
 )
 
+// maxRuntimeMemoryLogs 是内存 ring buffer 上限；只服务当前前端视图，不落盘。
 const maxRuntimeMemoryLogs = 200
 
 // runtimeLogHandler 同时把 slog 记录写入内存 ring buffer 和每日 JSONL 文件。

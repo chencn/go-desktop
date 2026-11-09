@@ -1,3 +1,6 @@
+// Package settings 定义业务设置的 typed 模型、默认值和归一化规则。
+// 持久化层只保存字符串 KV（config_items），本包负责 typed 设置与 KV 的互转、
+// 非法值回退和配置项展示元数据，业务模块不应直接读写原始 KV。
 package settings
 
 import (
@@ -8,6 +11,7 @@ import (
 	"github.com/chencn/go-desktop/internal/desktopapp/metadata"
 )
 
+// 配置 KV 键常量：业务设置持久化到 config_items 时使用的稳定 key，跨版本不可变更。
 const (
 	KeyUpdateSource             = "update.source"
 	KeyGitHubProxyBase          = "github.proxy_base"
@@ -25,16 +29,16 @@ const defaultLogLevel = "info"
 
 // Settings 是业务层设置模型；持久化时会拆成 config_items 字符串 KV。
 type Settings struct {
-	UpdateSource             string
-	GitHubProxyBase          string
-	UpdateCheckIntervalHours int
-	MinimizeToTray           bool
-	AlwaysOnTop              bool
-	LogRetentionDays         int
-	LogLevel                 string
-	AutoLaunch               bool
-	CreateDesktopShortcut    bool
-	LaunchHiddenToTray       bool
+	UpdateSource             string // 更新源：github 或 local
+	GitHubProxyBase          string // GitHub API 代理前缀；空串表示直连官方 API
+	UpdateCheckIntervalHours int    // 后台检查间隔（小时），只允许 1/3/6/12
+	MinimizeToTray           bool   // 关闭窗口是否隐藏到托盘
+	AlwaysOnTop              bool   // 窗口显示时是否保持置顶
+	LogRetentionDays         int    // 每日日志保留天数；-1 表示永不清理
+	LogLevel                 string // 持久化日志最低级别：debug/info/warning/error
+	AutoLaunch               bool   // 是否注册开机自启
+	CreateDesktopShortcut    bool   // 是否维护当前用户桌面快捷方式
+	LaunchHiddenToTray       bool   // 开机自启时是否隐藏主窗口到托盘
 }
 
 // Default 返回由 metadata 生成链和本包本地默认值共同决定的启动默认设置。

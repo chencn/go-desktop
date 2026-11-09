@@ -1,3 +1,5 @@
+// Package installer 抽象「启动已校验安装包」的平台实现。
+// Windows 使用 NSIS /S 静默参数；其他平台由 installer_other.go 提供占位实现。
 package installer
 
 import "context"

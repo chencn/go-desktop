@@ -48,6 +48,7 @@ func (s *Runtime) cleanupInstalledUpdateCache() {
 	}
 }
 
+// cleanupInstalledUpdateStateFile 删除指向小于等于当前版本安装包的更新状态文件。
 func (s *Runtime) cleanupInstalledUpdateStateFile(fileName string, currentVersion string) {
 	path := s.updateCacheStatePath(fileName)
 	if path == "" {
@@ -74,6 +75,7 @@ func (s *Runtime) cleanupInstalledUpdateStateFile(fileName string, currentVersio
 	}
 }
 
+// updateStateVersion 从状态文件取目标版本；Version 缺失或非法时回退到安装包路径的版本目录名。
 func updateStateVersion(state pendingUpdateState) string {
 	version := strings.TrimSpace(state.Version)
 	if _, ok := semver.Parse(version); ok {
@@ -86,6 +88,7 @@ func updateStateVersion(state pendingUpdateState) string {
 	return filepath.Base(filepath.Dir(filePath))
 }
 
+// shouldCleanupUpdateCacheVersion 判断版本是否小于等于当前版本（已安装或已过期）；任一侧无法解析时不清理。
 func shouldCleanupUpdateCacheVersion(version string, currentVersion string) bool {
 	if _, ok := semver.Parse(version); !ok {
 		return false

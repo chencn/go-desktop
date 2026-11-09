@@ -22,6 +22,7 @@ import type { StartupApiKey, StartupApiStatus } from '@/app/state'
 
 const appStore = useAppStore()
 
+/** 服务卡状态：ok 正常、warning 降级、error 异常，对应徽标配色。 */
 type ServiceStatus = 'ok' | 'warning' | 'error'
 
 // ServiceCard 对应设计稿 .service-card：状态徽标 + 说明句 + 底部键值行。

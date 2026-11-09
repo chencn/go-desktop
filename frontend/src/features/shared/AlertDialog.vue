@@ -6,20 +6,27 @@
 <script setup lang="ts">
 import { TriangleAlert } from '@lucide/vue'
 
+/** 二次确认弹窗契约：只展示与回传，不承载业务动作。 */
 const props = withDefaults(
   defineProps<{
-    cancelText?: string
-    confirmText?: string
-    // destructive 决定确认键是红色危险填充（设计稿 .btn-apple.danger）还是蓝色主色填充。
-    destructive?: boolean
+    /** 是否弹窗可见，由父级持有状态 */
     open: boolean
+    /** 弹窗标题 */
     title: string
+    /** 确认按钮文案，默认「取消」语义的另一侧 */
+    confirmText?: string
+    /** 取消按钮文案 */
+    cancelText?: string
+    /** true 时确认键为红色危险填充，false 为蓝色主色填充，默认 true */
+    destructive?: boolean
   }>(),
   { cancelText: '取消', confirmText: '确认', destructive: true },
 )
 
 const emit = defineEmits<{
+  /** 用户点击取消按钮、遮罩关闭路径被禁用时点 X 或系统关闭触发 */
   close: []
+  /** 用户点击确认按钮触发；业务动作由父级执行 */
   confirm: []
 }>()
 </script>

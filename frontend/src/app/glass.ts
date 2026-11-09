@@ -4,8 +4,10 @@
 
 import { onBeforeUnmount, onMounted, readonly, ref, watch } from 'vue'
 
+/** 液态玻璃折射风格三档，取值与后端 display.DefaultGlassStyle 及设计稿分段控件一致。 */
 export type GlassStyle = 'fresnel' | 'frosted' | 'sheen'
 
+/** 液态玻璃光学偏好快照：极光舞台开关、光强百分比、折射风格。 */
 export type GlassPreferences = {
   backdrop: boolean
   intensity: number
@@ -43,10 +45,12 @@ export function useGlassPreferences() {
   }
 }
 
+/** 切换极光折射流光背景开关；DOM class 由模块级 watch 同步。 */
 export function setBackdrop(value: boolean) {
   backdrop.value = value
 }
 
+/** 切换折射风格档位；非法值由调用方先经 normaliseGlassStyle 归一化。 */
 export function setStyle(value: GlassStyle) {
   style.value = value
 }

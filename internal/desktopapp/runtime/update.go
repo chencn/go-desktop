@@ -41,6 +41,7 @@ func (s *Runtime) CheckUpdate() githubrelease.CheckResult {
 	return result
 }
 
+// releaseAssetNames 返回当前版本允许匹配的 Windows 安装资产名，与 main.go 注入的检查器保持同一优先级。
 func releaseAssetNames(version string) []string {
 	return []string{
 		metadata.WindowsInstallerAssetName(version),
@@ -176,6 +177,8 @@ func (s *Runtime) DownloadUpdate() UpdateStatus {
 	return s.downloadUpdateForCheck(check, ok)
 }
 
+// downloadUpdateForCheck 执行下载校验主流程；ok=false 表示当前进程没有可用的检查结果。
+// 下载与状态推进全程持有 updateOperationLock，避免并发下载改写同一临时文件。
 func (s *Runtime) downloadUpdateForCheck(check githubrelease.CheckResult, ok bool) UpdateStatus {
 	s.updateOperationLock.Lock()
 	defer s.updateOperationLock.Unlock()
@@ -409,6 +412,7 @@ func (s *Runtime) InstallPendingUpdateOnStartup() (status UpdateStatus) {
 	return s.InstallDownloadedUpdate()
 }
 
+// idleUpdateStatus 返回尚未检查更新时的初始状态。
 func idleUpdateStatus() UpdateStatus {
 	return UpdateStatus{
 		Status:    "idle",
@@ -417,6 +421,8 @@ func idleUpdateStatus() UpdateStatus {
 	}
 }
 
+// shouldReturnMemoryUpdateStatus 判断活跃状态是否只能来自内存；
+// 这类中间态不落盘，磁盘恢复只针对 verified/pending_install 的静止态。
 func shouldReturnMemoryUpdateStatus(status UpdateStatus) bool {
 	switch status.Status {
 	case "downloading", "verifying", "verified", "pending_install", "installing", "install_started":
@@ -464,10 +470,12 @@ func (s *Runtime) setUpdateStatus(status UpdateStatus) {
 	}
 }
 
+// failUpdate 以空状态为基底构造错误更新状态。
 func (s *Runtime) failUpdate(reason, message string) UpdateStatus {
 	return s.failUpdateFromStatus(UpdateStatus{}, reason, message)
 }
 
+// failUpdateFromStatus 在保留已有字段（版本、资产名等）的前提下改写为错误状态并广播。
 func (s *Runtime) failUpdateFromStatus(status UpdateStatus, reason, message string) UpdateStatus {
 	status.Status = "error"
 	status.Message = message
@@ -525,6 +533,7 @@ func statusFromCheckResult(result githubrelease.CheckResult) UpdateStatus {
 	return status
 }
 
+// progressPercent 计算下载进度百分比，归一化到 0-100；未知总大小时返回 0。
 func progressPercent(downloaded, total int64) float64 {
 	if total <= 0 || downloaded <= 0 {
 		return 0
@@ -536,6 +545,7 @@ func progressPercent(downloaded, total int64) float64 {
 	return value
 }
 
+// localisedErrorMessage 把底层错误翻译成面向用户的中文失败说明；未知错误给出通用文案。
 func localisedErrorMessage(action string, err error) string {
 	action = strings.TrimSpace(action)
 	if action == "" {

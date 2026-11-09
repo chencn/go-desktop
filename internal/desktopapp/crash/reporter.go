@@ -1,3 +1,6 @@
+// Package crash 提供最早期的崩溃面包屑日志和启动哨兵状态。
+// 它不能依赖 Runtime、SQLite 或 Wails；crash.log 只保留尾部，状态文件用于
+// 下次启动识别「上次进程没有正常结束」并导入线索到应用日志页。
 package crash
 
 import (
@@ -20,21 +23,21 @@ const maxCrashLogBytes int64 = 512 * 1024
 
 // State 记录一次桌面进程启动的关键阶段；状态文件未被清理时，下次启动会把它视为异常退出线索。
 type State struct {
-	PID       int      `json:"pid"`
-	Args      []string `json:"args"`
-	StartedAt string   `json:"startedAt"`
-	UpdatedAt string   `json:"updatedAt"`
-	Phase     string   `json:"phase"`
+	PID       int      `json:"pid"`       // 启动进程号，用于存活检测
+	Args      []string `json:"args"`      // 启动参数原样记录
+	StartedAt string   `json:"startedAt"` // 启动时间（RFC3339Nano UTC）；空值视为无效状态
+	UpdatedAt string   `json:"updatedAt"` // 最后阶段更新时间（RFC3339Nano UTC）
+	Phase     string   `json:"phase"`     // 最后经过的启动阶段；正常退出时以「正常退出」开头
 }
 
 // Reporter 是 main 最早安装的落盘日志器，不能依赖 Runtime、SQLite 或 Wails。
 type Reporter struct {
-	logPath     string
-	statePath   string
-	state       State
-	clean       bool
-	cleanReason string
-	lock        sync.Mutex
+	logPath     string      // crash.log 兜底日志路径；空值时不写文件
+	statePath   string      // 启动哨兵状态文件路径；空值时不维护状态
+	state       State       // 当前启动状态，随阶段推进持续落盘
+	clean       bool        // 是否已标记正常退出；未标记的状态会被下次启动视为崩溃
+	cleanReason string      // 正常退出的标记原因，进诊断日志
+	lock        sync.Mutex  // 保护 state 与 clean 的并发访问
 }
 
 // NewReporter 创建最早期 crash 日志器。
@@ -240,6 +243,7 @@ func (r *Reporter) Finish(operation string) {
 	r.Append("crash", "进程结束但未标记正常退出：%s", strings.TrimSpace(operation))
 }
 
+// cleanSnapshot 返回当前是否已标记正常退出及标记原因。
 func (r *Reporter) cleanSnapshot() (bool, string) {
 	if r == nil {
 		return false, ""
@@ -249,6 +253,7 @@ func (r *Reporter) cleanSnapshot() (bool, string) {
 	return r.clean, r.cleanReason
 }
 
+// markPhase 更新状态文件中的当前启动阶段；空阶段忽略。
 func (r *Reporter) markPhase(phase string) {
 	phase = strings.TrimSpace(phase)
 	if r == nil || phase == "" {
@@ -261,6 +266,7 @@ func (r *Reporter) markPhase(phase string) {
 	r.writeState()
 }
 
+// writeState 尽力把当前状态落盘；路径为空或序列化失败时静默跳过，不影响主流程。
 func (r *Reporter) writeState() {
 	if r == nil || r.statePath == "" {
 		return
@@ -304,6 +310,7 @@ func PreviousLogTail(path string, limit int, notAfter string) []string {
 	return lines
 }
 
+// parseCrashLogLineTime 从 crash.log 行首的制表符分隔字段解析时间戳。
 func parseCrashLogLineTime(line string) (time.Time, bool) {
 	parts := strings.SplitN(line, "\t", 2)
 	if len(parts) == 0 {
@@ -312,6 +319,7 @@ func parseCrashLogLineTime(line string) (time.Time, bool) {
 	return parseCrashLogTime(parts[0])
 }
 
+// parseCrashLogTime 解析 RFC3339Nano 时间戳；空值或格式错误返回 false。
 func parseCrashLogTime(value string) (time.Time, bool) {
 	parsed, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(value))
 	if err != nil {
@@ -320,10 +328,12 @@ func parseCrashLogTime(value string) (time.Time, bool) {
 	return parsed, true
 }
 
+// crashStateMarkedClean 判断状态是否已标记为正常退出（Phase 以「正常退出」开头）。
 func crashStateMarkedClean(state State) bool {
 	return strings.HasPrefix(strings.TrimSpace(state.Phase), "正常退出")
 }
 
+// crashStateBelongsToLiveProcess 判断状态里的 PID 是否仍是存活进程；当前进程自身视为存活。
 func crashStateBelongsToLiveProcess(state State) bool {
 	if state.PID <= 0 || state.PID == os.Getpid() {
 		return state.PID == os.Getpid()

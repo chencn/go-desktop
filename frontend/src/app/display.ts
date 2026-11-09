@@ -10,6 +10,7 @@ export type ThemeMode = 'light' | 'dark'
 // DisplaySize 对应 Element Plus 全局组件尺寸（el-config-provider size）。
 export type DisplaySize = 'large' | 'default' | 'small'
 
+/** 前端显示偏好快照：亮暗模式、全局尺寸与液态玻璃光学三项，字段名与 Go 侧 JSON tag 一致。 */
 export type DisplayPreferences = {
   backdrop: boolean
   lgIntensity: number

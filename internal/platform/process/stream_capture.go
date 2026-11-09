@@ -1,3 +1,5 @@
+// Package process 提供进程级工具：stdout/stderr 捕获和存活检测。
+// 供崩溃哨兵判断上次进程是否仍在运行、日志管线接管进程标准流使用。
 package process
 
 import (
@@ -16,16 +18,16 @@ const maxCapturedLineBytes = 1024 * 1024
 // StreamCapture 临时接管进程级 stdout/stderr，把输出镜像回原流并按行回调。
 // 它修改的是全局 os.Stdout/os.Stderr，调用方必须在不再捕获时调用 Close。
 type StreamCapture struct {
-	oldStdout    *os.File
-	oldStderr    *os.File
-	stdoutReader *os.File
-	stdoutWriter *os.File
-	stderrReader *os.File
-	stderrWriter *os.File
-	onLine       func(stream, line string)
-	onError      func(stream string, err error)
-	wait         sync.WaitGroup
-	closeOnce    sync.Once
+	oldStdout    *os.File          // 接管前的原始 stdout
+	oldStderr    *os.File          // 接管前的原始 stderr
+	stdoutReader *os.File          // stdout pipe 读端，由后台 goroutine 消费
+	stdoutWriter *os.File          // stdout pipe 写端，接管期间作为全局 stdout
+	stderrReader *os.File          // stderr pipe 读端，由后台 goroutine 消费
+	stderrWriter *os.File          // stderr pipe 写端，接管期间作为全局 stderr
+	onLine       func(stream, line string)   // 每行回调；stream 为 stdout/stderr
+	onError      func(stream string, err error) // 读取失败回调
+	wait         sync.WaitGroup    // 等待两个复制 goroutine 退出
+	closeOnce    sync.Once         // 保证 Close 只执行一次
 }
 
 // NewStreamCapture 开始捕获 stdout/stderr。

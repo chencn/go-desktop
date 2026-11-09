@@ -1,5 +1,6 @@
-// 文件职责：提供离线授权码载荷、签发和验签能力。
-
+// Package license 提供离线授权码的载荷定义、Ed25519 签发和验签。
+// 授权码格式为 GD1-base64url(payload).base64url(signature)，签名覆盖产品、
+// 设备码和过期时间；公钥与模式由构建期注入，本包不做任何持久化。
 package license
 
 import (
@@ -16,25 +17,25 @@ const Prefix = "GD1"
 
 // Payload 是授权码签名覆盖的 JSON 载荷。
 type Payload struct {
-	Version    int       `json:"v"`
-	Product    string    `json:"product"`
-	DeviceCode string    `json:"deviceCode"`
-	IssuedAt   time.Time `json:"issuedAt"`
-	ExpiresAt  time.Time `json:"expiresAt,omitempty"`
+	Version    int       `json:"v"`                    // 载荷格式版本，当前固定为 1
+	Product    string    `json:"product"`              // 产品标识，验签时必须与构建配置一致
+	DeviceCode string    `json:"deviceCode"`           // 绑定的设备短码，验签时必须与当前设备一致
+	IssuedAt   time.Time `json:"issuedAt"`             // 签发时间
+	ExpiresAt  time.Time `json:"expiresAt,omitempty"`  // 过期时间；零值表示永久有效
 }
 
 // VerifyOptions 是验签所需的本地上下文。
 type VerifyOptions struct {
-	PublicKey  ed25519.PublicKey
-	Product    string
-	DeviceCode string
-	Now        time.Time
+	PublicKey  ed25519.PublicKey // 构建期注入的授权公钥
+	Product    string            // 当前产品标识，与 Payload.Product 比对
+	DeviceCode string            // 当前设备短码，与 Payload.DeviceCode 比对
+	Now        time.Time         // 验签时刻；零值时使用 UTC 当前时间
 }
 
 // Status 是验签成功后的授权状态和原始载荷。
 type Status struct {
-	Authorized bool
-	Payload    Payload
+	Authorized bool     // 固定为 true，仅在验签全部通过时返回
+	Payload    Payload  // 解码后的原始载荷，供上层读取过期时间等信息
 }
 
 // Issue 使用 Ed25519 私钥签发离线授权码，格式为 GD1-base64url(payload).base64url(signature)。

@@ -75,6 +75,7 @@ func (s *Runtime) ShowMainWindow() {
 	s.RecordLog("window", "窗口已显示")
 }
 
+// applyMainWindowAlwaysOnTop 同步主窗口置顶状态；窗口尚未创建时忽略。
 func (s *Runtime) applyMainWindowAlwaysOnTop(alwaysOnTop bool) {
 	s.lock.RLock()
 	window := s.mainWindow
@@ -128,6 +129,7 @@ func (s *Runtime) RecordStartupLaunch(launch StartupLaunch) {
 	s.recordStartupLaunch(launch, "")
 }
 
+// recordStartupLaunch 记录桌面快捷方式启动来源；suffix 用于第二实例日志区分入口。
 func (s *Runtime) recordStartupLaunch(launch StartupLaunch, suffix string) {
 	if !launch.DesktopShortcut {
 		return

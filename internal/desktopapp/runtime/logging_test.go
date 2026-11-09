@@ -4,6 +4,8 @@ import (
 	"testing"
 )
 
+// TestInitRuntimeLoggerKeepsExistingLogger 验证并发或重复初始化 logger 时不会覆盖已打开的
+// 文件 writer。回归背景：懒初始化被两个调用方同时触发时，后到者覆盖会泄漏先者的文件句柄。
 func TestInitRuntimeLoggerKeepsExistingLogger(t *testing.T) {
 	runtime := &Runtime{
 		options:    ServiceOptions{AppName: "go-desktop"},

@@ -1,3 +1,4 @@
+// Package checksum 提供文件校验和计算工具，供更新包 SHA256 校验复用。
 package checksum
 
 import (

@@ -30,6 +30,7 @@ export type NavigationItem = {
   title: string
 }
 
+/** 导航分组：侧栏按组渲染标题与条目。 */
 export type NavigationGroup = {
   items: NavigationItem[]
   title: string
@@ -53,8 +54,10 @@ export const navigationGroups: NavigationGroup[] = [
   },
 ]
 
+/** 扁平化后的全部导航项，顺序与 navigationGroups 声明一致。 */
 export const navigation: NavigationItem[] = navigationGroups.flatMap((group) => group.items)
 
+/** 按 ViewKey 查找导航项；无匹配返回 undefined。 */
 export function navigationItem(view: ViewKey) {
   return navigation.find((item) => item.key === view)
 }

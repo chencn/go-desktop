@@ -18,7 +18,9 @@ import {
   type UpdateStatus,
 } from '../api/wails'
 
+/** 启动诊断面板追踪的启动期 API 清单，key 与 readStartupApi 调用一一对应。 */
 export type StartupApiKey = 'settings' | 'displayPreferences' | 'appInfo' | 'environmentInfo' | 'licenseStatus' | 'updateStatus' | 'logFiles' | 'logs'
+/** 启动 API 调用状态：idle 未调用、loading 进行中、ok 成功、error 失败。 */
 export type StartupApiCallState = 'idle' | 'loading' | 'ok' | 'error'
 
 // 单个启动 API 的读状态，用于启动诊断面板区分“未调用、调用中、成功、失败”。
@@ -28,6 +30,7 @@ export type StartupApiStatus = {
   updatedAt: string
 }
 
+/** 按 StartupApiKey 建索引的启动 API 状态表。 */
 export type StartupApiStatusMap = Record<StartupApiKey, StartupApiStatus>
 
 // 前端纯状态模型；更新链只保存最近一次检查结果和当前生命周期快照，不维护历史列表。
@@ -127,6 +130,7 @@ export const initialAppState: AppState = {
   startupApiStatuses: defaultStartupApiStatuses(),
 }
 
+/** 构造每个启动 API 的 idle 初始状态表。 */
 export function defaultStartupApiStatuses(): StartupApiStatusMap {
   return {
     settings: defaultStartupApiStatus(),
@@ -140,10 +144,12 @@ export function defaultStartupApiStatuses(): StartupApiStatusMap {
   }
 }
 
+/** 判断显示偏好是否已读取完毕（成功或失败均可），决定外壳是否可以进入主题渲染。 */
 export function isDisplayPreferencesReadyForShell(status: StartupApiStatus) {
   return status.state === 'ok' || status.state === 'error'
 }
 
+/** 构造单个启动 API 的 idle 初始状态。 */
 function defaultStartupApiStatus(): StartupApiStatus {
   return { state: 'idle', message: '', updatedAt: '' }
 }
@@ -207,6 +213,7 @@ export function toMessage(error: unknown) {
   return '操作失败，请查看日志。'
 }
 
+/** 去除首尾空白后返回；空白消息统一替换为可展示的默认失败文案。 */
 function normalizeErrorMessage(message: string) {
   const trimmed = message.trim()
   if (!trimmed) return '操作失败，请查看日志。'
@@ -214,6 +221,7 @@ function normalizeErrorMessage(message: string) {
   return parsedMessage || trimmed
 }
 
+/** 尝试把形如 JSON 对象的字符串解析出 message 字段；不是 JSON 或没有 message 返回空串。 */
 function messageFromJsonString(value: string) {
   if (!value.startsWith('{') || !value.endsWith('}')) return ''
   try {
@@ -223,6 +231,7 @@ function messageFromJsonString(value: string) {
   }
 }
 
+/** 从对象中提取字符串 message 字段；非对象或空值返回空串。 */
 function messageFromObject(value: unknown) {
   if (!value || typeof value !== 'object') return ''
   const message = (value as { message?: unknown }).message

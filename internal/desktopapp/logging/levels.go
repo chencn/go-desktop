@@ -1,3 +1,5 @@
+// Package logging 提供日志严重级别的归一化、排序权重和 slog 级别映射。
+// 前端日志页和进程输出捕获都依赖这里的口径，业务模块不应自行维护级别枚举。
 package logging
 
 import (

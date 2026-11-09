@@ -1,3 +1,6 @@
+// Package filelog 提供按日轮转的文件日志 writer 和日志文件读取工具。
+// 写入侧按本地日期切 appName-YYYY-MM-DD.log 文件；读取侧兼容当前 JSONL
+// 和旧版 TSV 两种行格式，并负责把可查询文件名限制在日志目录内。
 package filelog
 
 import (
@@ -14,20 +17,20 @@ import (
 
 // Entry 是文件日志读取后的标准结构，对应 runtime.LogEntry 的 adapter 层模型。
 type Entry struct {
-	Time     string
-	Scope    string
-	Message  string
-	Severity string
+	Time     string // 日志时间（RFC3339Nano UTC）
+	Scope    string // 归一化后的日志作用域，空值归入 app
+	Message  string // 日志正文，已去首尾空白
+	Severity string // 归一化后的 debug/info/warning/error
 }
 
 // FileInfo 描述一个可供前端选择的日志文件。
 type FileInfo struct {
-	Date       string
-	FileName   string
-	FilePath   string
-	SizeBytes  int64
-	ModifiedAt string
-	Current    bool
+	Date       string // 文件代表日期（YYYY-MM-DD）；旧版单文件取修改时间
+	FileName   string // 文件名，前端查询时回传
+	FilePath   string // 完整路径，用于诊断展示
+	SizeBytes  int64  // 当前文件大小（字节）
+	ModifiedAt string // 最后修改时间（RFC3339Nano UTC）
+	Current    bool   // 是否为当前正在写入的每日文件
 }
 
 // DailyWriter 按本地日期轮转 appName-YYYY-MM-DD.log，只负责写入和轮转，不负责清理。

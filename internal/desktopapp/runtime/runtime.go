@@ -1,6 +1,6 @@
-// 文件职责：Runtime 状态容器定义。集中持有设置、日志、更新、授权、窗口和 Wails API 状态。
-// 装配与生命周期见 service.go，DTO 定义见 types.go。
-
+// Package runtime 是桌面应用的进程级运行时：装配设置、显示偏好、日志、更新、
+// 授权和 Wails 窗口，并向 app facade 暴露统一的 API 方法集。
+// 更新链路只维护当前进程状态，不保存历史或事件数据。
 package runtime
 
 import (

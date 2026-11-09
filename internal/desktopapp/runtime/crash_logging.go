@@ -7,6 +7,7 @@ import (
 	"github.com/chencn/go-desktop/internal/desktopapp/crash"
 )
 
+// previousCrashTailLines 限制导入上次崩溃日志的尾部行数，避免把整份 crash.log 灌进内存视图。
 const previousCrashTailLines = 40
 
 // CrashState 是 crash 包状态模型的 runtime 对外别名，供启动流程传递上次进程状态。

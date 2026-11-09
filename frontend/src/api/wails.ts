@@ -144,6 +144,7 @@ export type UpdateCheckResult = {
 // 设置类型
 // ============================================================================
 
+/** 持久化日志最低级别，与 Go 侧 settings.NormalizeLogLevel 的取值一致。 */
 export type LogLevel = 'debug' | 'info' | 'warning' | 'error'
 
 /** 应用设置 */
@@ -171,6 +172,7 @@ export type Settings = {
 }
 
 
+/** 运行期默认设置：项目元数据默认值 + 本地默认日志级别，冷启动和预览兜底使用。 */
 export const defaultRuntimeSettings: Settings = {
   ...defaultSettings,
   logLevel: 'info',

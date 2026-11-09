@@ -11,6 +11,7 @@ import { useAppStore } from '@/stores/app'
 import { formatDateTime } from '@/shared/format'
 import { projectMetadata } from '@/shared/project'
 
+/** 关于页只读详情行：label 展示名 + value 单行文本。 */
 type DetailItem = {
   label: string
   value: string

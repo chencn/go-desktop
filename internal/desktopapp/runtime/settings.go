@@ -1,13 +1,4 @@
-// ============================================================================
-// 文件: settings.go
-// 描述: 设置管理模块
-//
-// 功能概述:
-// - 提供设置的读取、保存、加载功能
-// - 设置以 SQLite KV 配置项持久化
-// - 支持默认值和参数校验
-// - 自动清理过期日志
-// ============================================================================
+// 文件职责：设置的读取、保存与回滚。持久化走 SQLite KV 配置项，系统集成失败时整体回滚。
 
 package runtime
 
@@ -99,6 +90,8 @@ func (s *Runtime) SaveSettings(settings Settings) (Settings, error) {
 	return settings, nil
 }
 
+// rollbackSettingsAfterIntegrationFailure 在系统集成失败时回滚 SQLite、内存快照和日志级别。
+// 返回回滚自身的错误（如有），与原始同步错误一起由 SaveSettings 用 errors.Join 上抛。
 func (s *Runtime) rollbackSettingsAfterIntegrationFailure(previous Settings) error {
 	var rollbackErr error
 	if err := s.saveConfigValues(context.Background(), appsettings.Values(toDomainSettings(previous))); err != nil {

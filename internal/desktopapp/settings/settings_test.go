@@ -6,6 +6,8 @@ import (
 	appsettings "github.com/chencn/go-desktop/internal/desktopapp/settings"
 )
 
+// TestSettingsConfigurationKeepsRepositoryMetadataOutOfUserSettings 验证设置 KV 只包含用户可编辑项，
+// 仓库归属等只读元数据（github.owner/github.repo）不得进入配置项或持久化值，防止被设置页篡改。
 func TestSettingsConfigurationKeepsRepositoryMetadataOutOfUserSettings(t *testing.T) {
 	definitions := appsettings.Definitions()
 	values := appsettings.Values(appsettings.Default())

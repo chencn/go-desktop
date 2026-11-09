@@ -1,5 +1,5 @@
-// 文件职责：下载安装包、校验 SHA256，并只允许从更新缓存目录启动静默安装器。
-
+// Package update 负责更新安装包的下载、SHA256 校验和静默安装器启动。
+// 所有文件操作都限制在更新缓存目录内；校验不通过的安装包不会被保留或启动。
 package update
 
 import (
@@ -33,38 +33,38 @@ type Config struct {
 
 // Manager 持有更新下载和安装所需的依赖。
 type Manager struct {
-	cacheDir string
-	client   *http.Client
-	runner   InstallerRunner
-	now      func() time.Time
+	cacheDir string            // 更新缓存根目录，所有文件操作限制在其内
+	client   *http.Client      // 下载 HTTP 客户端
+	runner   InstallerRunner   // 平台安装器启动函数
+	now      func() time.Time  // 完成时间来源，测试可注入
 }
 
 // ReleaseAsset 是检查器选中的安装资产。
 type ReleaseAsset struct {
-	LatestVersion    string
-	TagName          string
-	AssetName        string
-	AssetSizeBytes   int64
-	AssetDownloadURL string
-	Sha256           string
+	LatestVersion    string // 目标版本（三段数字 semver）
+	TagName          string // 原始 Git 标签名
+	AssetName        string // 安装资产文件名
+	AssetSizeBytes   int64  // 预期资产大小（字节），用于下载进度
+	AssetDownloadURL string // 资产下载地址（可含代理前缀）
+	Sha256           string // 预期 SHA256，校验失败时删除已下载文件
 }
 
 // DownloadResult 描述已下载且通过 SHA256 校验的安装包。
 type DownloadResult struct {
-	Version     string `json:"version"`
-	AssetName   string `json:"assetName"`
-	FilePath    string `json:"filePath"`
-	SizeBytes   int64  `json:"sizeBytes"`
-	Sha256      string `json:"sha256"`
-	Verified    bool   `json:"verified"`
-	CompletedAt string `json:"completedAt"`
+	Version     string `json:"version"`     // 目标版本
+	AssetName   string `json:"assetName"`   // 安装资产文件名
+	FilePath    string `json:"filePath"`    // 落盘路径，必须位于更新缓存目录内
+	SizeBytes   int64  `json:"sizeBytes"`   // 实际文件大小（字节）
+	Sha256      string `json:"sha256"`      // 实际校验和（小写十六进制）
+	Verified    bool   `json:"verified"`    // 固定为 true，仅在复算通过时返回
+	CompletedAt string `json:"completedAt"` // 完成时间（RFC3339 UTC）
 }
 
 // Progress 是下载或校验阶段的进度快照。
 type Progress struct {
-	Stage           string
-	DownloadedBytes int64
-	TotalBytes      int64
+	Stage           string // 当前阶段：downloading 或 verifying
+	DownloadedBytes int64  // 已下载字节数
+	TotalBytes      int64  // 预期总字节数；未知时为 0
 }
 
 // ProgressFunc 在下载写入和校验开始时回调；调用方不得在回调里阻塞太久。

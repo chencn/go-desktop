@@ -436,14 +436,17 @@ func ReadPreviousCrashState(path string) (CrashState, bool) {
 	return appruntime.ReadPreviousCrashState(path)
 }
 
+// toCheckResult 把 adapter 检查结果转成 app 包 DTO；同构类型直接换包名。
 func toCheckResult(value githubrelease.CheckResult) CheckResult {
 	return CheckResult(value)
 }
 
+// toUpdateStatus 把 runtime 更新状态转成 app 包 DTO；同构类型直接换包名。
 func toUpdateStatus(value appruntime.UpdateStatus) UpdateStatus {
 	return UpdateStatus(value)
 }
 
+// toLogEntries 把 runtime 日志切片转成 app 包 DTO；nil 输入返回 nil 保持 JSON null 语义。
 func toLogEntries(values []appruntime.LogEntry) []LogEntry {
 	if values == nil {
 		return nil
@@ -455,6 +458,7 @@ func toLogEntries(values []appruntime.LogEntry) []LogEntry {
 	return result
 }
 
+// toLogFileInfos 把 runtime 日志文件列表转成 app 包 DTO；nil 输入返回 nil 保持 JSON null 语义。
 func toLogFileInfos(values []appruntime.LogFileInfo) []LogFileInfo {
 	if values == nil {
 		return nil
@@ -466,10 +470,12 @@ func toLogFileInfos(values []appruntime.LogFileInfo) []LogFileInfo {
 	return result
 }
 
+// toLogStats 把 runtime 日志统计转成 app 包 DTO；同构类型直接换包名。
 func toLogStats(value appruntime.LogStats) LogStats {
 	return LogStats(value)
 }
 
+// toLogResponse 把 runtime 分页日志响应转成 app 包 DTO，逐字段展开并递归转换嵌套切片。
 func toLogResponse(value appruntime.LogResponse) LogResponse {
 	return LogResponse{
 		Logs:     toLogEntries(value.Logs),
@@ -484,6 +490,7 @@ func toLogResponse(value appruntime.LogResponse) LogResponse {
 	}
 }
 
+// toDisplayPreferences 把 runtime 显示偏好转成 app 包 DTO；两包字段名一致，逐字段复制。
 func toDisplayPreferences(value appruntime.DisplayPreferences) DisplayPreferences {
 	return DisplayPreferences{
 		ThemeMode:   value.ThemeMode,
@@ -494,6 +501,7 @@ func toDisplayPreferences(value appruntime.DisplayPreferences) DisplayPreference
 	}
 }
 
+// fromDisplayPreferences 把 app 包显示偏好转回 runtime 类型，供保存入口使用。
 func fromDisplayPreferences(value DisplayPreferences) appruntime.DisplayPreferences {
 	return appruntime.DisplayPreferences{
 		ThemeMode:   value.ThemeMode,

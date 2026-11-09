@@ -1,13 +1,6 @@
-// ============================================================================
-// 文件: preferences.go
-// 描述: 显示偏好领域模型（Element Plus 主题模型 V3）
-//
-// 功能概述:
-// - 提供亮暗模式 / 全局尺寸 / 液态玻璃光学（极光舞台、折射风格、光强）五项偏好的默认值、归一化和序列化
-// - 通过 SQLite JSON KV 配置项持久化，旧版本 key（v1/v2）不再读取
-// - 玻璃三项是 V3 结构的追加字段：老数据缺字段时按默认值补齐，不回退主题与尺寸
-// ============================================================================
-
+// Package display 定义显示偏好领域模型（Element Plus 主题模型 V3，含液态玻璃光学）。
+// 持久化走 SQLite JSON KV 配置项 display.preferences.v3；旧版本 key（v1/v2）
+// 不再读取，老数据缺字段时按默认值补齐，不回退主题与尺寸。
 package display
 
 import (
@@ -18,9 +11,9 @@ import (
 )
 
 const (
-	KeyPreferencesV3 = "display.preferences.v3"
+	KeyPreferencesV3 = "display.preferences.v3" // V3 偏好在 SQLite JSON KV 中的配置键
 
-	preferencesVersion = 3
+	preferencesVersion = 3 // JSON 结构版本号，写入时固定，读取时不再校验旧版本 key
 
 	// DefaultGlassStyle 是设计稿默认档：自然高透（Fresnel）。
 	DefaultGlassStyle = "fresnel"
